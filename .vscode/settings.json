@@ -1,0 +1,12 @@
+{
+    "git.ignoreLimitWarning": true,
+    "typescript.tsdk": "node_modules\\typescript\\lib",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "files.eol": "\n",
+    "debug.javascript.codelens.npmScripts": "never"
+}

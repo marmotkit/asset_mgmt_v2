@@ -18,11 +18,11 @@ class AuthServiceClass {
     id: '1',
     memberNo: 'A001',
     username: 'admin',
-    name: 'Administrator',
+    password: 'admin123',
+    name: '系統管理員',
     email: 'admin@example.com',
     role: 'admin' as UserRole,
     status: 'active' as UserStatus,
-    password: 'admin123',
     preferences: [],
     isFirstLogin: false,
     createdAt: new Date(),
@@ -31,7 +31,13 @@ class AuthServiceClass {
 
   private currentUser: User | null = null;
 
-  private constructor() {}
+  private constructor() {
+    // 從 localStorage 恢復使用者狀態
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      this.currentUser = JSON.parse(storedUser);
+    }
+  }
 
   public static getInstance(): AuthServiceClass {
     if (!AuthServiceClass.instance) {
@@ -42,12 +48,23 @@ class AuthServiceClass {
 
   // 登入
   async login(username: string, password: string): Promise<User> {
-    // 模擬登入驗證
-    if (username === this.mockAdmin.username && password === this.mockAdmin.password) {
-      this.currentUser = { ...this.mockAdmin };
-      return this.currentUser;
+    try {
+      // 模擬登入驗證
+      if (username === this.mockAdmin.username && password === this.mockAdmin.password) {
+        const { password: _, ...userWithoutPassword } = this.mockAdmin;
+        this.currentUser = userWithoutPassword;
+
+        // 儲存到 localStorage
+        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+        localStorage.setItem('token', 'mock-jwt-token');
+
+        return userWithoutPassword;
+      }
+      throw new Error('Invalid credentials');
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-    throw new Error('Invalid credentials');
   }
 
   // 註冊
@@ -74,14 +91,14 @@ class AuthServiceClass {
 
   // 登出
   logout(): void {
-    localStorage.removeItem('token');
+    this.currentUser = null;
     localStorage.removeItem('user');
-    localStorage.removeItem('userRole');
+    localStorage.removeItem('token');
   }
 
   // 檢查是否已登入
   isAuthenticated(): boolean {
-    return localStorage.getItem('token') !== null;
+    return !!this.currentUser && !!this.getToken();
   }
 
   // 檢查是否為管理員
@@ -92,9 +109,7 @@ class AuthServiceClass {
 
   // 取得當前使用者
   getCurrentUser(): User | null {
-    const userStr = localStorage.getItem('user');
-    if (!userStr) return null;
-    return JSON.parse(userStr);
+    return this.currentUser;
   }
 
   // 取得 JWT Token

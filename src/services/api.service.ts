@@ -21,6 +21,23 @@ interface PaginationParams {
 class ApiServiceClass {
   private baseUrl = '/api';
 
+  private mockUsers: User[] = [
+    {
+      id: '1',
+      memberNo: 'A001',
+      username: 'admin',
+      name: '系統管理員',
+      email: 'admin@example.com',
+      role: 'admin' as UserRole,
+      status: 'active' as UserStatus,
+      preferences: [],
+      isFirstLogin: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    // 可以加入更多模擬資料
+  ];
+
   async fetchWithAuth(url: string, options: RequestInit = {}): Promise<any> {
     const token = AuthService.getToken();
     const headers = {
@@ -100,17 +117,51 @@ class ApiServiceClass {
   }
 
   async updateUserStatus(userId: string, status: UserStatus): Promise<User> {
-    return this.fetchWithAuth(`/users/${userId}/status`, {
-      method: 'PUT',
-      body: JSON.stringify({ status }),
-    });
+    try {
+      // 模擬 API 延遲
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // 更新模擬資料
+      const userIndex = this.mockUsers.findIndex(u => u.id === userId);
+      if (userIndex === -1) {
+        throw new Error('找不到使用者');
+      }
+
+      this.mockUsers[userIndex] = {
+        ...this.mockUsers[userIndex],
+        status,
+        updatedAt: new Date()
+      };
+
+      return this.mockUsers[userIndex];
+    } catch (error) {
+      console.error('更新使用者狀態失敗:', error);
+      throw new Error('更新使用者狀態失敗');
+    }
   }
 
   async updateUserRole(userId: string, role: UserRole): Promise<User> {
-    return this.fetchWithAuth(`/users/${userId}/role`, {
-      method: 'PUT',
-      body: JSON.stringify({ role }),
-    });
+    try {
+      // 模擬 API 延遲
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // 更新模擬資料
+      const userIndex = this.mockUsers.findIndex(u => u.id === userId);
+      if (userIndex === -1) {
+        throw new Error('找不到使用者');
+      }
+
+      this.mockUsers[userIndex] = {
+        ...this.mockUsers[userIndex],
+        role,
+        updatedAt: new Date()
+      };
+
+      return this.mockUsers[userIndex];
+    } catch (error) {
+      console.error('更新使用者角色失敗:', error);
+      throw new Error('更新使用者角色失敗');
+    }
   }
 
   // 投資偏好相關 API
@@ -155,16 +206,25 @@ class ApiServiceClass {
   }
 
   async getUsersPaginated(params: PaginationParams): Promise<PaginatedResponse<User>> {
-    const queryParams = new URLSearchParams({
-      page: params.page.toString(),
-      pageSize: params.pageSize.toString(),
-      ...(params.sortBy && { sortBy: params.sortBy }),
-      ...(params.sortOrder && { sortOrder: params.sortOrder }),
-      ...(params.search && { search: params.search }),
-      ...(params.filters && { filters: JSON.stringify(params.filters) }),
-    });
+    try {
+      // 模擬 API 延遲
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-    return this.fetchWithAuth(`/users?${queryParams.toString()}`);
+      // 模擬分頁
+      const start = params.page * params.pageSize;
+      const end = start + params.pageSize;
+      const items = this.mockUsers.slice(start, end);
+
+      return {
+        items,
+        total: this.mockUsers.length,
+        page: params.page,
+        pageSize: params.pageSize
+      };
+    } catch (error) {
+      console.error('獲取使用者列表失敗:', error);
+      throw new Error('獲取使用者列表失敗');
+    }
   }
 }
 

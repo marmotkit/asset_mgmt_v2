@@ -13,7 +13,7 @@ import {
   Alert,
 } from '@mui/material';
 import { UserPreferences, PreferencesManagerProps } from '../../../types/preferences';
-import ApiService from '../../../services/api.service';
+import { ApiService } from '../../../services';
 
 const INVESTMENT_OPTIONS = [
   '股票',
@@ -66,7 +66,7 @@ const PreferencesManager: React.FC<PreferencesManagerProps> = ({ userId, onUpdat
     const {
       target: { value },
     } = event;
-    
+
     if (preferences) {
       setPreferences({
         ...preferences,
@@ -99,7 +99,7 @@ const PreferencesManager: React.FC<PreferencesManagerProps> = ({ userId, onUpdat
 
   const handleSave = async () => {
     if (!preferences) return;
-    
+
     setLoading(true);
     try {
       await ApiService.updateUserPreferences(userId, preferences);
