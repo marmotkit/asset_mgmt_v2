@@ -8,6 +8,16 @@ export type InvestmentStatus =
     | 'terminated'  // 已終止
     | 'pending';    // 審核中
 
+// 合約檔案介面
+export interface ContractFile {
+    id: string;
+    filename: string;
+    uploadDate: Date;
+    fileSize: number;
+    fileType: string;
+    url: string;
+}
+
 // 基本投資項目介面
 interface BaseInvestment {
     id: string;
@@ -21,6 +31,7 @@ interface BaseInvestment {
     notes?: string;            // 備註
     createdAt: Date;
     updatedAt: Date;
+    contract?: ContractFile;    // 新增合約檔案欄位
 }
 
 // 動產投資

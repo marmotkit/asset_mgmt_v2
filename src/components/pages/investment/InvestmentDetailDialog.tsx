@@ -13,9 +13,10 @@ import {
     Select,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { Investment, InvestmentType, MovableInvestment, ImmovableInvestment } from '../../../types/investment';
+import { Investment, InvestmentType, MovableInvestment, ImmovableInvestment, ContractFile } from '../../../types/investment';
 import { Company } from '../../../types/company';
 import ApiService from '../../../services/api.service';
+import ContractUpload from './ContractUpload';
 
 interface InvestmentDetailDialogProps {
     open: boolean;
@@ -115,6 +116,43 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
         return investmentType === 'movable'
             ? formData as Partial<MovableInvestment>
             : formData as Partial<ImmovableInvestment>;
+    };
+
+    const handleUploadContract = async (file: File) => {
+        try {
+            // 這裡應該調用實際的上傳 API
+            const uploadFormData = new FormData();
+            uploadFormData.append('file', file);
+            uploadFormData.append('investmentId', formData.id || '');
+
+            // 模擬上傳
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            const mockContract: ContractFile = {
+                id: Date.now().toString(),
+                filename: file.name,
+                uploadDate: new Date(),
+                fileSize: file.size,
+                fileType: file.type,
+                url: URL.createObjectURL(file),
+            };
+
+            handleChange('contract', mockContract);
+        } catch (error) {
+            console.error('上傳合約失敗:', error);
+            throw error;
+        }
+    };
+
+    const handleDeleteContract = async () => {
+        try {
+            // 這裡應該調用實際的刪除 API
+            await new Promise(resolve => setTimeout(resolve, 500));
+            handleChange('contract', undefined);
+        } catch (error) {
+            console.error('刪除合約失敗:', error);
+            throw error;
+        }
     };
 
     return (
@@ -307,6 +345,14 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
                             label="備註"
                             value={formData.notes || ''}
                             onChange={(e) => handleChange('notes', e.target.value)}
+                        />
+                    </Grid>
+
+                    <Grid item xs={12}>
+                        <ContractUpload
+                            contract={formData.contract}
+                            onUpload={handleUploadContract}
+                            onDelete={handleDeleteContract}
                         />
                     </Grid>
                 </Grid>

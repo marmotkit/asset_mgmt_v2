@@ -9,6 +9,8 @@ import {
     Paper,
     IconButton,
     Chip,
+    Link,
+    Typography,
 } from '@mui/material';
 import {
     Edit as EditIcon,
@@ -86,6 +88,7 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
                         <TableCell>開始日期</TableCell>
                         <TableCell>結束日期</TableCell>
                         <TableCell>狀態</TableCell>
+                        <TableCell>合約</TableCell>
                         <TableCell>操作</TableCell>
                     </TableRow>
                 </TableHead>
@@ -107,6 +110,17 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
                                     color={statusColors[investment.status]}
                                     size="small"
                                 />
+                            </TableCell>
+                            <TableCell>
+                                {investment.contract ? (
+                                    <Link href={investment.contract.url} target="_blank">
+                                        查看合約
+                                    </Link>
+                                ) : (
+                                    <Typography variant="caption" color="textSecondary">
+                                        未上傳
+                                    </Typography>
+                                )}
                             </TableCell>
                             <TableCell>
                                 <IconButton size="small" onClick={() => onEdit(investment)}>
