@@ -20,6 +20,7 @@ export interface Company {
         fax?: string;       // 傳真電話
         email: string;      // 電子郵件
     };
+    notes?: string;       // 新增備註欄位
     createdAt: Date;      // 建立時間
     updatedAt: Date;      // 更新時間
 } 

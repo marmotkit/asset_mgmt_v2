@@ -335,6 +335,7 @@ class ApiServiceClass {
         nameEn: companyData.nameEn,
         industry: companyData.industry,
         contact: companyData.contact!,
+        notes: companyData.notes,
         createdAt: new Date(),
         updatedAt: new Date()
       };

@@ -45,6 +45,7 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
             fax: '',
             email: '',
         },
+        notes: '',
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -62,6 +63,7 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
                     fax: '',
                     email: '',
                 },
+                notes: '',
             });
         }
         setErrors({});
@@ -200,6 +202,18 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
                             error={!!errors['contact.email']}
                             helperText={errors['contact.email']}
                             required
+                        />
+                    </Grid>
+
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={4}
+                            label="備註"
+                            value={formData.notes || ''}
+                            onChange={(e) => handleChange('notes', e.target.value)}
+                            placeholder="請輸入備註事項..."
                         />
                     </Grid>
                 </Grid>
