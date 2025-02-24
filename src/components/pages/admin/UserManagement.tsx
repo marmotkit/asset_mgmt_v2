@@ -117,7 +117,7 @@ const UserManagement: React.FC = () => {
 
   useEffect(() => {
     loadUsers();
-  }, [page, pageSize, sortBy, sortOrder]);
+  }, [page, pageSize, sortBy, sortOrder, searchQuery]);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -127,10 +127,23 @@ const UserManagement: React.FC = () => {
         pageSize,
         sortBy,
         sortOrder,
+        search: searchQuery,
       });
 
-      setUsers(response.items);
-      setTotal(response.total);
+      const filteredItems = response.items.filter(user => {
+        if (!searchQuery) return true;
+
+        const searchLower = searchQuery.toLowerCase();
+        return (
+          user.memberNo.toLowerCase().includes(searchLower) ||
+          user.username.toLowerCase().includes(searchLower) ||
+          user.name.toLowerCase().includes(searchLower) ||
+          user.email.toLowerCase().includes(searchLower)
+        );
+      });
+
+      setUsers(filteredItems);
+      setTotal(filteredItems.length);
     } catch (err) {
       setError('載入使用者資料失敗');
     } finally {
@@ -292,6 +305,16 @@ const UserManagement: React.FC = () => {
     setImportMenuAnchor(null);
   };
 
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+    setPage(0);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setPage(0);
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <LoadingSpinner open={loading} />
@@ -342,9 +365,9 @@ const UserManagement: React.FC = () => {
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <TextField
             size="small"
-            placeholder="搜尋..."
+            placeholder="搜尋會員編號、帳號、姓名或信箱..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearch}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -353,12 +376,13 @@ const UserManagement: React.FC = () => {
               ),
               endAdornment: searchQuery && (
                 <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearchQuery('')}>
+                  <IconButton size="small" onClick={handleClearSearch}>
                     <ClearIcon />
                   </IconButton>
                 </InputAdornment>
               ),
             }}
+            sx={{ width: 300 }}
           />
         </Box>
       </Toolbar>
