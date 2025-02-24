@@ -20,6 +20,7 @@ interface PaginationParams {
 
 class ApiServiceClass {
   private baseUrl = '/api';
+  private readonly STORAGE_KEY = 'mock_users';
 
   private mockUsers: User[] = [
     {
@@ -37,6 +38,22 @@ class ApiServiceClass {
     },
     // 可以加入更多模擬資料
   ];
+
+  constructor() {
+    // 從 localStorage 讀取資料
+    const storedUsers = localStorage.getItem(this.STORAGE_KEY);
+    if (storedUsers) {
+      this.mockUsers = JSON.parse(storedUsers);
+    } else {
+      // 如果沒有儲存的資料，就儲存預設資料
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.mockUsers));
+    }
+  }
+
+  // 儲存資料到 localStorage
+  private saveUsers(): void {
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.mockUsers));
+  }
 
   async fetchWithAuth(url: string, options: RequestInit = {}): Promise<any> {
     const token = AuthService.getToken();
@@ -83,7 +100,6 @@ class ApiServiceClass {
 
   async createUser(userData: Partial<User>): Promise<User> {
     try {
-      // 模擬 API 延遲
       await new Promise(resolve => setTimeout(resolve, 500));
 
       const newUser: User = {
@@ -101,6 +117,7 @@ class ApiServiceClass {
       };
 
       this.mockUsers.push(newUser);
+      this.saveUsers(); // 儲存到 localStorage
       return newUser;
     } catch (error) {
       console.error('創建使用者失敗:', error);
@@ -123,6 +140,7 @@ class ApiServiceClass {
         updatedAt: new Date()
       };
 
+      this.saveUsers(); // 儲存到 localStorage
       return this.mockUsers[userIndex];
     } catch (error) {
       console.error('更新使用者失敗:', error);
@@ -166,6 +184,7 @@ class ApiServiceClass {
         updatedAt: new Date()
       };
 
+      this.saveUsers(); // 儲存到 localStorage
       return this.mockUsers[userIndex];
     } catch (error) {
       console.error('更新使用者狀態失敗:', error);
@@ -190,6 +209,7 @@ class ApiServiceClass {
         updatedAt: new Date()
       };
 
+      this.saveUsers(); // 儲存到 localStorage
       return this.mockUsers[userIndex];
     } catch (error) {
       console.error('更新使用者角色失敗:', error);

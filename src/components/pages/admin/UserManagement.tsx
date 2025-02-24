@@ -46,6 +46,7 @@ import {
   PersonAdd as PersonAddIcon,
   FileUpload as FileUploadIcon,
   FileDownload as FileDownloadIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { User, UserRole, UserStatus } from '../../../types/user';
 import { ApiService } from '../../../services';
@@ -112,6 +113,7 @@ const UserManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importMenuAnchor, setImportMenuAnchor] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     loadUsers();
@@ -183,45 +185,46 @@ const UserManagement: React.FC = () => {
 
   const validateForm = () => {
     if (!selectedUser) return false;
-    
+
     const errors: string[] = [];
-    
+
     if (!selectedUser.username) errors.push('帳號為必填');
     if (!selectedUser.email) errors.push('電子郵件為必填');
     if (!selectedUser.firstName) errors.push('名字為必填');
     if (!selectedUser.lastName) errors.push('姓氏為必填');
-    
+
     // 電子郵件格式驗證
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (selectedUser.email && !emailRegex.test(selectedUser.email)) {
       errors.push('電子郵件格式不正確');
     }
-    
+
     if (errors.length > 0) {
       setError(errors.join('\n'));
       return false;
     }
-    
+
     return true;
-  };
-
-  const handleExportClick = (event: React.MouseEvent<HTMLElement>) => {
-    // Implementation of handleExportClick
-  };
-
-  const handleExportClose = () => {
-    // Implementation of handleExportClose
   };
 
   const handleExport = async (format: 'excel' | 'csv') => {
     setLoading(true);
     try {
-      // Implementation of handleExport
+      // 取得所有使用者資料
+      const response = await ApiService.getUsersPaginated({
+        page: 0,
+        pageSize: 1000, // 取得較大數量的資料
+      });
+
+      if (format === 'excel') {
+        exportToExcel(response.items, '會員資料.xlsx');
+      } else {
+        exportToCsv(response.items, '會員資料.csv');
+      }
     } catch (error) {
       setError('匯出資料失敗');
     } finally {
       setLoading(false);
-      handleExportClose();
     }
   };
 
@@ -271,6 +274,24 @@ const UserManagement: React.FC = () => {
     // Implementation of handleExportUsers
   };
 
+  const handleDownloadTemplate = (format: 'excel' | 'csv') => {
+    const templateData: Partial<User>[] = [{
+      memberNo: 'C001',
+      username: 'user001',
+      name: '王小明',
+      email: 'user001@example.com',
+      role: 'normal',
+      status: 'active',
+    }];
+
+    if (format === 'excel') {
+      exportToExcel(templateData as User[], '會員匯入範本.xlsx');
+    } else {
+      exportToCsv(templateData as User[], '會員匯入範本.csv');
+    }
+    setImportMenuAnchor(null);
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <LoadingSpinner open={loading} />
@@ -280,125 +301,78 @@ const UserManagement: React.FC = () => {
         onClose={() => setError(null)}
       />
 
-      <Box sx={{ p: 2 }}>
-        <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
-          <ButtonGroup>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => {
-                setSelectedUser(null);
-                setDialogOpen(true);
-              }}
-              startIcon={<PersonAddIcon />}
-            >
-              新增會員
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleImportUsers}
-              startIcon={<FileUploadIcon />}
-            >
-              匯入會員
-            </Button>
-          </ButtonGroup>
+      <Toolbar sx={{ mb: 2 }}>
+        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          會員管理
+        </Typography>
 
-          {selectedUsers.length > 0 && (
-            <ButtonGroup>
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={handleBatchEnable}
-                startIcon={<ActivateIcon />}
-              >
-                批次啟用
-              </Button>
-              <Button
-                variant="outlined"
-                color="warning"
-                onClick={handleBatchDisable}
-                startIcon={<BlockIcon />}
-              >
-                批次停用
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={handleBatchDelete}
-                startIcon={<DeleteIcon />}
-              >
-                批次刪除
-              </Button>
-            </ButtonGroup>
-          )}
+        <ButtonGroup variant="contained" sx={{ mr: 2 }}>
+          <Button
+            startIcon={<PersonAddIcon />}
+            onClick={() => {
+              setSelectedUser(null);
+              setDialogOpen(true);
+            }}
+          >
+            新增會員
+          </Button>
 
           <Button
-            variant="outlined"
-            color="primary"
-            onClick={handleExportUsers}
-            startIcon={<ExportIcon />}
+            startIcon={<FileDownloadIcon />}
+            onClick={() => handleExport('excel')}
           >
             匯出會員
           </Button>
-        </Box>
 
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <FormControl sx={{ minWidth: 120 }} size="small">
-            <InputLabel>會員等級</InputLabel>
-            <Select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              label="會員等級"
-            >
-              <MenuItem value="all">全部</MenuItem>
-              <MenuItem value="normal">一般會員</MenuItem>
-              <MenuItem value="lifetime">終生會員</MenuItem>
-              <MenuItem value="business">商務會員</MenuItem>
-            </Select>
-          </FormControl>
+          <Button
+            startIcon={<FileUploadIcon />}
+            onClick={handleImportUsers}
+          >
+            匯入會員
+          </Button>
 
-          <FormControl sx={{ minWidth: 120 }} size="small">
-            <InputLabel>狀態</InputLabel>
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              label="狀態"
-            >
-              <MenuItem value="all">全部</MenuItem>
-              <MenuItem value="active">啟用</MenuItem>
-              <MenuItem value="pending">待審核</MenuItem>
-              <MenuItem value="disabled">停用</MenuItem>
-            </Select>
-          </FormControl>
+          <Button
+            startIcon={<MoreVertIcon />}
+            onClick={(e) => setImportMenuAnchor(e.currentTarget)}
+          >
+            下載範本
+          </Button>
+        </ButtonGroup>
 
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <TextField
             size="small"
-            label="搜尋"
-            variant="outlined"
+            placeholder="搜尋..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ minWidth: 200 }}
             InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
+              startAdornment: (
+                <InputAdornment position="start">
                   <SearchIcon />
+                </InputAdornment>
+              ),
+              endAdornment: searchQuery && (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => setSearchQuery('')}>
+                    <ClearIcon />
+                  </IconButton>
                 </InputAdornment>
               ),
             }}
           />
         </Box>
-      </Box>
+      </Toolbar>
 
       <Menu
-        anchorEl={null}
-        open={false}
+        anchorEl={importMenuAnchor}
+        open={Boolean(importMenuAnchor)}
+        onClose={() => setImportMenuAnchor(null)}
       >
-        <MenuItem onClick={() => handleExport('excel')}>
-          匯出為 Excel
+        <MenuItem onClick={() => handleDownloadTemplate('excel')}>
+          Excel 範本
         </MenuItem>
-        <MenuItem onClick={() => handleExport('csv')}>
-          匯出為 CSV
+        <MenuItem onClick={() => handleDownloadTemplate('csv')}>
+          CSV 範本
         </MenuItem>
       </Menu>
 
@@ -435,36 +409,36 @@ const UserManagement: React.FC = () => {
                 </TableCell>
                 <TableCell>{user.memberNo}</TableCell>
                 <TableCell>{user.username}</TableCell>
-                <TableCell>{`${user.lastName}${user.firstName}`}</TableCell>
+                <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
-                  <Chip 
+                  <Chip
                     label={
                       user.role === 'admin' ? '管理員' :
-                      user.role === 'normal' ? '一般會員' :
-                      user.role === 'lifetime' ? '終身會員' :
-                      '商務會員'
+                        user.role === 'normal' ? '一般會員' :
+                          user.role === 'lifetime' ? '終身會員' :
+                            '商務會員'
                     }
-                    color="primary" 
+                    color="primary"
                   />
                 </TableCell>
                 <TableCell>
-                  <Chip 
+                  <Chip
                     label={
                       user.status === 'active' ? '啟用' :
-                      user.status === 'pending' ? '待審核' :
-                      '停用'
+                        user.status === 'pending' ? '待審核' :
+                          '停用'
                     }
                     color={
                       user.status === 'active' ? 'success' :
-                      user.status === 'pending' ? 'warning' :
-                      'error'
+                        user.status === 'pending' ? 'warning' :
+                          'error'
                     }
                   />
                 </TableCell>
                 <TableCell>
-                  <IconButton 
-                    size="small" 
+                  <IconButton
+                    size="small"
                     onClick={() => handleEditUser(user)}
                   >
                     <EditIcon />
@@ -491,7 +465,7 @@ const UserManagement: React.FC = () => {
             ))}
           </TableBody>
         </Table>
-        
+
         <TablePagination
           component="div"
           count={total}
@@ -503,7 +477,7 @@ const UserManagement: React.FC = () => {
             setPage(0);
           }}
           labelRowsPerPage="每頁顯示筆數"
-          labelDisplayedRows={({ from, to, count }) => 
+          labelDisplayedRows={({ from, to, count }) =>
             `${from}-${to} 筆，共 ${count} 筆`
           }
         />
@@ -522,7 +496,7 @@ const UserManagement: React.FC = () => {
         title=""
         content=""
         onConfirm={handleConfirmOperation}
-        onClose={() => {}}
+        onClose={() => { }}
       />
 
       <ImportDialog

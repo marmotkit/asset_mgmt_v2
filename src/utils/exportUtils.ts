@@ -31,9 +31,9 @@ const formatDate = (date: Date): string => {
 export const exportToExcel = (users: User[], fileName: string = 'users.xlsx') => {
   const data = users.map(user => ({
     '帳號': user.username,
-    '姓名': `${user.lastName || ''}${user.firstName || ''}`,
+    '姓名': user.name,
     '電子郵件': user.email,
-    '電話': user.phone || '',
+    '會員編號': user.memberNo,
     '會員等級': roleToString(user.role),
     '狀態': statusToString(user.status),
     '建立時間': formatDate(user.createdAt),
@@ -48,13 +48,13 @@ export const exportToExcel = (users: User[], fileName: string = 'users.xlsx') =>
 
 // 匯出 CSV
 export const exportToCsv = (users: User[], fileName: string = 'users.csv') => {
-  const headers = ['帳號', '姓名', '電子郵件', '電話', '會員等級', '狀態', '建立時間', '最後更新'];
-  
+  const headers = ['帳號', '姓名', '電子郵件', '會員編號', '會員等級', '狀態', '建立時間', '最後更新'];
+
   const rows = users.map(user => [
     user.username,
-    `${user.lastName || ''}${user.firstName || ''}`,
+    user.name,
     user.email,
-    user.phone || '',
+    user.memberNo,
     roleToString(user.role),
     statusToString(user.status),
     formatDate(user.createdAt),

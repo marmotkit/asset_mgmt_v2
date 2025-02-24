@@ -12,8 +12,7 @@ export interface User {
   id: string;          // UUID
   memberNo: string;    // 會員編號 (C001, V001, B001 etc.)
   username: string;    // 帳號
-  password?: string;   // 密碼（可選，僅用於創建/更新時）
-  name: string;        // 姓名
+  name: string;        // 使用單一的 name 欄位
   email: string;       // 電子郵件
   role: UserRole;      // 會員等級
   status: UserStatus;  // 狀態
@@ -25,6 +24,7 @@ export interface User {
   isFirstLogin: boolean; // 是否首次登入
   createdAt: Date;     // 建立時間
   updatedAt: Date;     // 更新時間
+  password?: string;   // 可選欄位，僅用於創建/更新時
 }
 
 export interface InvestmentPreference {
