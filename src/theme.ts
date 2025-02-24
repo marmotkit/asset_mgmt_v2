@@ -1,6 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 
-export const theme = createTheme({
+const theme = createTheme({
   palette: {
     primary: {
       main: '#1976d2',
@@ -20,4 +20,18 @@ export const theme = createTheme({
       'sans-serif',
     ].join(','),
   },
-}); 
+  components: {
+    MuiFormControl: {
+      styleOverrides: {
+        root: {
+          '& .MuiInputLabel-root': {
+            backgroundColor: '#fff',
+            px: 1,
+          },
+        },
+      },
+    },
+  },
+});
+
+export default theme; 

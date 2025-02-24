@@ -8,6 +8,12 @@ export type InvestmentStatus =
     | 'terminated'  // 已終止
     | 'pending';    // 審核中
 
+// 收款狀態
+export type PaymentStatus = 'paid' | 'pending' | 'overdue';  // 已收 | 未收 | 催收
+
+// 收款方式
+export type PaymentMethod = 'transfer' | 'cash' | 'linepay' | 'other';
+
 // 合約檔案介面
 export interface ContractFile {
     id: string;
@@ -16,6 +22,17 @@ export interface ContractFile {
     fileSize: number;
     fileType: string;
     url: string;
+}
+
+// 租金收款記錄
+export interface RentalPayment {
+    id: string;
+    dueDate: Date;        // 應收日期
+    amount: number;       // 應收金額
+    status: PaymentStatus; // 收款狀態
+    paidDate?: Date;      // 實際收款日期
+    paymentMethod?: PaymentMethod; // 收款方式
+    notes?: string;       // 備註
 }
 
 // 基本投資項目介面
@@ -32,6 +49,8 @@ interface BaseInvestment {
     createdAt: Date;
     updatedAt: Date;
     contract?: ContractFile;    // 新增合約檔案欄位
+    monthlyRental: number;     // 每月租金
+    rentalPayments: RentalPayment[]; // 租金收款記錄
 }
 
 // 動產投資

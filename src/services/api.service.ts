@@ -2,7 +2,7 @@ import { AuthService } from './auth.service';
 import { User, UserRole, UserStatus } from '../types/user';
 import { UserPreferences } from '../types/preferences';
 import { Company, IndustryType } from '../types/company';
-import { Investment } from '../types/investment';
+import { Investment, RentalPayment } from '../types/investment';
 
 interface PaginatedResponse<T> {
   items: T[];
@@ -471,13 +471,44 @@ class ApiServiceClass {
         localStorage.setItem(`contract_${contract.id}`, await fetch(contract.url).then(r => r.blob()).then(b => b.toString()));
       }
 
+      // 生成租金收款記錄
+      if (newInvestment.startDate && newInvestment.monthlyRental) {
+        newInvestment.rentalPayments = this.generateRentalPayments(
+          newInvestment.startDate,
+          newInvestment.endDate,
+          newInvestment.monthlyRental
+        );
+      }
+
       this.mockInvestments.push(newInvestment);
       this.saveInvestments();
       return newInvestment;
     } catch (error) {
       console.error('創建投資項目失敗:', error);
-      throw new Error('創建投資項目失敗');
+      throw error;
     }
+  }
+
+  private generateRentalPayments(
+    startDate: Date,
+    endDate: Date | undefined,
+    monthlyRental: number
+  ): RentalPayment[] {
+    const payments: RentalPayment[] = [];
+    const start = new Date(startDate);
+    const end = endDate || new Date(start.getFullYear() + 1, start.getMonth(), start.getDate());
+
+    let currentDate = new Date(start.getFullYear(), start.getMonth(), 1);
+    while (currentDate <= end) {
+      payments.push({
+        id: `payment-${Date.now()}-${currentDate.getTime()}`,
+        dueDate: new Date(currentDate),
+        amount: monthlyRental,
+        status: 'pending',
+      });
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+    return payments;
   }
 
   async updateInvestment(id: string, investmentData: Partial<Investment>): Promise<Investment> {

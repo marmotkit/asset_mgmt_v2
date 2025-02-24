@@ -11,12 +11,15 @@ import {
     FormControl,
     InputLabel,
     Select,
+    InputAdornment,
+    Typography,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { Investment, InvestmentType, MovableInvestment, ImmovableInvestment, ContractFile } from '../../../types/investment';
+import { Investment, InvestmentType, MovableInvestment, ImmovableInvestment, ContractFile, RentalPayment } from '../../../types/investment';
 import { Company } from '../../../types/company';
 import ApiService from '../../../services/api.service';
 import ContractUpload from './ContractUpload';
+import RentalPaymentList from './RentalPaymentList';
 
 interface InvestmentDetailDialogProps {
     open: boolean;
@@ -155,6 +158,46 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
         }
     };
 
+    // 生成租金收款記錄
+    const generateRentalPayments = (startDate: Date, endDate: Date | undefined, monthlyRental: number) => {
+        const payments: RentalPayment[] = [];
+        const start = new Date(startDate);
+        const end = endDate ? new Date(endDate) : new Date(start.getFullYear() + 1, start.getMonth(), start.getDate());
+
+        let currentDate = new Date(start.getFullYear(), start.getMonth(), 1);
+        while (currentDate <= end) {
+            payments.push({
+                id: `${formData.id}-${currentDate.getTime()}`,
+                dueDate: new Date(currentDate),
+                amount: monthlyRental,
+                status: 'pending',
+            });
+            currentDate.setMonth(currentDate.getMonth() + 1);
+        }
+        return payments;
+    };
+
+    const handleMonthlyRentalChange = (value: number) => {
+        if (formData.startDate) {
+            const payments = generateRentalPayments(
+                formData.startDate,
+                formData.endDate,
+                value
+            );
+            handleChange('monthlyRental', value);
+            handleChange('rentalPayments', payments);
+        }
+    };
+
+    const handleUpdatePayment = async (updatedPayment: RentalPayment) => {
+        const payments = [...(formData.rentalPayments || [])];
+        const index = payments.findIndex(p => p.id === updatedPayment.id);
+        if (index !== -1) {
+            payments[index] = updatedPayment;
+            handleChange('rentalPayments', payments);
+        }
+    };
+
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle>
@@ -163,13 +206,24 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
             <DialogContent>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
                     <Grid item xs={12}>
-                        <FormControl fullWidth>
+                        <FormControl
+                            fullWidth
+                            sx={{
+                                '& .MuiInputLabel-root': {
+                                    backgroundColor: 'background.paper',
+                                    px: 1,
+                                },
+                            }}
+                        >
                             <InputLabel>選擇公司</InputLabel>
                             <Select
                                 value={formData.companyId || ''}
                                 onChange={(e) => handleChange('companyId', e.target.value)}
                                 error={!!errors.companyId}
                             >
+                                <MenuItem value="">
+                                    <em>請選擇</em>
+                                </MenuItem>
                                 {companies.map((company) => (
                                     <MenuItem key={company.id} value={company.id}>
                                         {company.name}
@@ -177,6 +231,11 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
                                 ))}
                             </Select>
                         </FormControl>
+                        {errors.companyId && (
+                            <Typography color="error" variant="caption">
+                                {errors.companyId}
+                            </Typography>
+                        )}
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
@@ -323,7 +382,15 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
                     </Grid>
 
                     <Grid item xs={12}>
-                        <FormControl fullWidth>
+                        <FormControl
+                            fullWidth
+                            sx={{
+                                '& .MuiInputLabel-root': {
+                                    backgroundColor: 'background.paper',
+                                    px: 1,
+                                },
+                            }}
+                        >
                             <InputLabel>狀態</InputLabel>
                             <Select
                                 value={formData.status || 'pending'}
@@ -355,6 +422,31 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
                             onDelete={handleDeleteContract}
                         />
                     </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
+                            label="每月租金"
+                            type="number"
+                            value={formData.monthlyRental || ''}
+                            onChange={(e) => handleMonthlyRentalChange(parseFloat(e.target.value))}
+                            InputProps={{
+                                startAdornment: <InputAdornment position="start">NT$</InputAdornment>,
+                            }}
+                        />
+                    </Grid>
+
+                    {formData.rentalPayments && formData.rentalPayments.length > 0 && (
+                        <Grid item xs={12}>
+                            <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+                                租金收款記錄
+                            </Typography>
+                            <RentalPaymentList
+                                payments={formData.rentalPayments}
+                                onUpdatePayment={handleUpdatePayment}
+                            />
+                        </Grid>
+                    )}
                 </Grid>
             </DialogContent>
             <DialogActions>
