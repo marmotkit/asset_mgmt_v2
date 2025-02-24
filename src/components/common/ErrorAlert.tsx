@@ -1,24 +1,15 @@
 import React from 'react';
-import { Alert, Snackbar } from '@mui/material';
+import { Alert } from '@mui/material';
 
 interface ErrorAlertProps {
-  open: boolean;
   message: string;
-  onClose: () => void;
 }
 
-const ErrorAlert: React.FC<ErrorAlertProps> = ({ open, message, onClose }) => {
+const ErrorAlert: React.FC<ErrorAlertProps> = ({ message }) => {
   return (
-    <Snackbar
-      open={open}
-      autoHideDuration={6000}
-      onClose={onClose}
-      anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-    >
-      <Alert onClose={onClose} severity="error" sx={{ width: '100%' }}>
-        {message}
-      </Alert>
-    </Snackbar>
+    <Alert severity="error" sx={{ m: 2 }}>
+      {message}
+    </Alert>
   );
 };
 

@@ -315,15 +315,11 @@ const UserManagement: React.FC = () => {
     setPage(0);
   };
 
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorAlert message={error} />;
+
   return (
     <Box sx={{ p: 3 }}>
-      <LoadingSpinner open={loading} />
-      <ErrorAlert
-        open={!!error}
-        message={error || ''}
-        onClose={() => setError(null)}
-      />
-
       <Toolbar sx={{ mb: 2 }}>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
           會員管理

@@ -2,6 +2,7 @@ import { AuthService } from './auth.service';
 import { User, UserRole, UserStatus } from '../types/user';
 import { UserPreferences } from '../types/preferences';
 import { Company, IndustryType } from '../types/company';
+import { Investment } from '../types/investment';
 
 interface PaginatedResponse<T> {
   items: T[];
@@ -23,6 +24,7 @@ class ApiServiceClass {
   private baseUrl = '/api';
   private readonly STORAGE_KEY = 'mock_users';
   private readonly COMPANIES_STORAGE_KEY = 'mock_companies';
+  private readonly INVESTMENTS_STORAGE_KEY = 'mock_investments';
 
   private mockUsers: User[] = [
     {
@@ -59,6 +61,8 @@ class ApiServiceClass {
     }
   ];
 
+  private mockInvestments: Investment[] = [];
+
   constructor() {
     // 從 localStorage 讀取資料
     const storedUsers = localStorage.getItem(this.STORAGE_KEY);
@@ -75,6 +79,13 @@ class ApiServiceClass {
     } else {
       localStorage.setItem(this.COMPANIES_STORAGE_KEY, JSON.stringify(this.mockCompanies));
     }
+
+    const storedInvestments = localStorage.getItem(this.INVESTMENTS_STORAGE_KEY);
+    if (storedInvestments) {
+      this.mockInvestments = JSON.parse(storedInvestments);
+    } else {
+      localStorage.setItem(this.INVESTMENTS_STORAGE_KEY, JSON.stringify(this.mockInvestments));
+    }
   }
 
   // 儲存資料到 localStorage
@@ -84,6 +95,10 @@ class ApiServiceClass {
 
   private saveCompanies(): void {
     localStorage.setItem(this.COMPANIES_STORAGE_KEY, JSON.stringify(this.mockCompanies));
+  }
+
+  private saveInvestments(): void {
+    localStorage.setItem(this.INVESTMENTS_STORAGE_KEY, JSON.stringify(this.mockInvestments));
   }
 
   async fetchWithAuth(url: string, options: RequestInit = {}): Promise<any> {
@@ -386,6 +401,78 @@ class ApiServiceClass {
     } catch (error) {
       console.error('刪除公司失敗:', error);
       throw new Error('刪除公司失敗');
+    }
+  }
+
+  // 投資相關 API
+  async getInvestments(): Promise<Investment[]> {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return this.mockInvestments;
+    } catch (error) {
+      console.error('獲取投資列表失敗:', error);
+      throw new Error('獲取投資列表失敗');
+    }
+  }
+
+  async createInvestment(investmentData: Partial<Investment>): Promise<Investment> {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const newInvestment: Investment = {
+        id: Date.now().toString(),
+        ...investmentData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Investment;
+
+      this.mockInvestments.push(newInvestment);
+      this.saveInvestments();
+      return newInvestment;
+    } catch (error) {
+      console.error('創建投資項目失敗:', error);
+      throw new Error('創建投資項目失敗');
+    }
+  }
+
+  async updateInvestment(id: string, investmentData: Partial<Investment>): Promise<Investment> {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const index = this.mockInvestments.findIndex(i => i.id === id);
+      if (index === -1) {
+        throw new Error('找不到投資項目');
+      }
+
+      const updatedInvestment = {
+        ...this.mockInvestments[index],
+        ...investmentData,
+        updatedAt: new Date(),
+      } as Investment;
+
+      this.mockInvestments[index] = updatedInvestment;
+      this.saveInvestments();
+      return updatedInvestment;
+    } catch (error) {
+      console.error('更新投資項目失敗:', error);
+      throw new Error('更新投資項目失敗');
+    }
+  }
+
+  async deleteInvestment(id: string): Promise<void> {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const index = this.mockInvestments.findIndex(i => i.id === id);
+      if (index === -1) {
+        throw new Error('找不到投資項目');
+      }
+
+      this.mockInvestments.splice(index, 1);
+      this.saveInvestments();
+    } catch (error) {
+      console.error('刪除投資項目失敗:', error);
+      throw new Error('刪除投資項目失敗');
     }
   }
 }

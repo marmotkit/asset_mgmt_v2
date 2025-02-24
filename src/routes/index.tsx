@@ -5,6 +5,7 @@ import Layout from '../components/layout/Layout';
 import Login from '../components/pages/auth/Login';
 import UserManagement from '../components/pages/admin/UserManagement';
 import CompanyManagement from '../components/pages/company/CompanyManagement';
+import InvestmentManagement from '../components/pages/investment/InvestmentManagement';
 
 // 保護路由的高階組件
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -44,7 +45,7 @@ const AppRoutes = () => {
 
       <Route path="/investment" element={
         <ProtectedRoute>
-          <div>投資管理</div>
+          <InvestmentManagement />
         </ProtectedRoute>
       } />
 
