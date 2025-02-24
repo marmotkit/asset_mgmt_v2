@@ -82,17 +82,52 @@ class ApiServiceClass {
   }
 
   async createUser(userData: Partial<User>): Promise<User> {
-    return this.fetchWithAuth(`${this.baseUrl}/users`, {
-      method: 'POST',
-      body: JSON.stringify(userData)
-    });
+    try {
+      // 模擬 API 延遲
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const newUser: User = {
+        id: Date.now().toString(),
+        memberNo: userData.memberNo!,
+        username: userData.username!,
+        name: userData.name!,
+        email: userData.email!,
+        role: userData.role || 'normal',
+        status: userData.status || 'active',
+        preferences: [],
+        isFirstLogin: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      this.mockUsers.push(newUser);
+      return newUser;
+    } catch (error) {
+      console.error('創建使用者失敗:', error);
+      throw new Error('創建使用者失敗');
+    }
   }
 
   async updateUser(id: string, userData: Partial<User>): Promise<User> {
-    return this.fetchWithAuth(`${this.baseUrl}/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(userData)
-    });
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const userIndex = this.mockUsers.findIndex(u => u.id === id);
+      if (userIndex === -1) {
+        throw new Error('找不到使用者');
+      }
+
+      this.mockUsers[userIndex] = {
+        ...this.mockUsers[userIndex],
+        ...userData,
+        updatedAt: new Date()
+      };
+
+      return this.mockUsers[userIndex];
+    } catch (error) {
+      console.error('更新使用者失敗:', error);
+      throw new Error('更新使用者失敗');
+    }
   }
 
   async deleteUser(id: string): Promise<void> {
@@ -118,10 +153,8 @@ class ApiServiceClass {
 
   async updateUserStatus(userId: string, status: UserStatus): Promise<User> {
     try {
-      // 模擬 API 延遲
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // 更新模擬資料
       const userIndex = this.mockUsers.findIndex(u => u.id === userId);
       if (userIndex === -1) {
         throw new Error('找不到使用者');
@@ -207,10 +240,8 @@ class ApiServiceClass {
 
   async getUsersPaginated(params: PaginationParams): Promise<PaginatedResponse<User>> {
     try {
-      // 模擬 API 延遲
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // 模擬分頁
       const start = params.page * params.pageSize;
       const end = start + params.pageSize;
       const items = this.mockUsers.slice(start, end);

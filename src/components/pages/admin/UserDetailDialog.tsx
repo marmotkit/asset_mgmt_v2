@@ -95,16 +95,14 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
     const newRole = event.target.value as UserRole;
     try {
       const existingNumbers = existingUsers.map(user => user.memberNo);
-      const newMemberNo = !initialUserData?.memberNo 
+      const newMemberNo = !initialUserData?.memberNo
         ? await generateMemberNo(newRole, existingNumbers)
         : userData.memberNo;
 
-      setUserData((prev: Partial<User>) => ({
+      setUserData(prev => ({
         ...prev,
         role: newRole,
-        memberNo: newMemberNo || '',
-        preferences: prev.preferences || [],
-        isFirstLogin: prev.isFirstLogin ?? true,
+        memberNo: newMemberNo,
       }));
     } catch (err) {
       setError('生成會員編號時發生錯誤');
@@ -142,7 +140,7 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
       <DialogTitle>
         {initialUserData?.id ? '編輯會員資料' : '新增會員'}
       </DialogTitle>
-      
+
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
           <Tab label="基本資料" />
@@ -160,6 +158,7 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
                 label="會員編號"
                 value={userData.memberNo || ''}
                 disabled
+                helperText="會員編號將根據會員等級自動生成"
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -214,7 +213,7 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
                   label="會員等級"
                 >
                   <MenuItem value="normal">一般會員</MenuItem>
-                  <MenuItem value="lifetime">終生會員</MenuItem>
+                  <MenuItem value="lifetime">終身會員</MenuItem>
                   <MenuItem value="business">商務會員</MenuItem>
                 </Select>
               </FormControl>
@@ -254,9 +253,9 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
 
       <DialogActions>
         <Button onClick={onClose}>取消</Button>
-        <Button 
-          onClick={handleSubmit} 
-          variant="contained" 
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
           disabled={loading}
         >
           {loading ? <CircularProgress size={24} /> : '儲存'}
