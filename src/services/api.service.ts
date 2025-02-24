@@ -82,7 +82,28 @@ class ApiServiceClass {
 
     const storedInvestments = localStorage.getItem(this.INVESTMENTS_STORAGE_KEY);
     if (storedInvestments) {
-      this.mockInvestments = JSON.parse(storedInvestments);
+      // 將儲存的資料轉換回正確的日期格式
+      this.mockInvestments = JSON.parse(storedInvestments, (key, value) => {
+        // 處理日期欄位
+        if (['startDate', 'endDate', 'purchaseDate', 'uploadDate', 'createdAt', 'updatedAt'].includes(key) && value) {
+          return new Date(value);
+        }
+        // 處理合約檔案
+        if (key === 'contract' && value) {
+          // 如果是合約檔案，重新建立 URL
+          const file = value;
+          if (file.fileType.startsWith('application/')) {
+            // 這裡我們需要另外儲存檔案內容
+            const storedFile = localStorage.getItem(`contract_${file.id}`);
+            if (storedFile) {
+              const blob = new Blob([storedFile], { type: file.fileType });
+              file.url = URL.createObjectURL(blob);
+            }
+          }
+          return file;
+        }
+        return value;
+      });
     } else {
       localStorage.setItem(this.INVESTMENTS_STORAGE_KEY, JSON.stringify(this.mockInvestments));
     }
@@ -98,7 +119,20 @@ class ApiServiceClass {
   }
 
   private saveInvestments(): void {
-    localStorage.setItem(this.INVESTMENTS_STORAGE_KEY, JSON.stringify(this.mockInvestments));
+    // 在儲存前處理檔案
+    const investmentsToStore = this.mockInvestments.map(investment => {
+      if (investment.contract?.url) {
+        // 儲存檔案內容
+        fetch(investment.contract.url)
+          .then(response => response.blob())
+          .then(blob => {
+            localStorage.setItem(`contract_${investment.contract!.id}`, blob.toString());
+          });
+      }
+      return investment;
+    });
+
+    localStorage.setItem(this.INVESTMENTS_STORAGE_KEY, JSON.stringify(investmentsToStore));
   }
 
   async fetchWithAuth(url: string, options: RequestInit = {}): Promise<any> {
@@ -422,9 +456,20 @@ class ApiServiceClass {
       const newInvestment: Investment = {
         id: Date.now().toString(),
         ...investmentData,
+        startDate: investmentData.startDate ? new Date(investmentData.startDate) : new Date(),
+        endDate: investmentData.endDate ? new Date(investmentData.endDate) : undefined,
+        purchaseDate: investmentData.type === 'movable' && investmentData.purchaseDate
+          ? new Date(investmentData.purchaseDate)
+          : undefined,
         createdAt: new Date(),
         updatedAt: new Date(),
       } as Investment;
+
+      // 如果有合約檔案，確保 URL 被正確處理
+      if (newInvestment.contract) {
+        const contract = newInvestment.contract;
+        localStorage.setItem(`contract_${contract.id}`, await fetch(contract.url).then(r => r.blob()).then(b => b.toString()));
+      }
 
       this.mockInvestments.push(newInvestment);
       this.saveInvestments();
@@ -444,11 +489,20 @@ class ApiServiceClass {
         throw new Error('找不到投資項目');
       }
 
+      // 處理日期欄位
       const updatedInvestment = {
         ...this.mockInvestments[index],
         ...investmentData,
+        startDate: investmentData.startDate ? new Date(investmentData.startDate) : this.mockInvestments[index].startDate,
+        endDate: investmentData.endDate ? new Date(investmentData.endDate) : this.mockInvestments[index].endDate,
         updatedAt: new Date(),
       } as Investment;
+
+      // 處理合約檔案
+      if (updatedInvestment.contract?.url) {
+        const contract = updatedInvestment.contract;
+        localStorage.setItem(`contract_${contract.id}`, await fetch(contract.url).then(r => r.blob()).then(b => b.toString()));
+      }
 
       this.mockInvestments[index] = updatedInvestment;
       this.saveInvestments();
@@ -466,6 +520,12 @@ class ApiServiceClass {
       const index = this.mockInvestments.findIndex(i => i.id === id);
       if (index === -1) {
         throw new Error('找不到投資項目');
+      }
+
+      // 刪除相關的合約檔案
+      const investment = this.mockInvestments[index];
+      if (investment.contract) {
+        localStorage.removeItem(`contract_${investment.contract.id}`);
       }
 
       this.mockInvestments.splice(index, 1);

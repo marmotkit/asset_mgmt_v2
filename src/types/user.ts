@@ -16,11 +16,12 @@ export interface User {
   email: string;       // 電子郵件
   role: UserRole;      // 會員等級
   status: UserStatus;  // 狀態
+  companyId?: string;    // 新增：關聯的公司 ID
   firstName?: string;
   lastName?: string;
   phone?: string;
   contactInfo?: string;
-  preferences: string[]; // 使用者偏好
+  preferences: UserPreferences[];
   isFirstLogin: boolean; // 是否首次登入
   createdAt: Date;     // 建立時間
   updatedAt: Date;     // 更新時間

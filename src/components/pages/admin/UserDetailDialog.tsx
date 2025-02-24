@@ -23,6 +23,8 @@ import PreferencesManager from '../user/PreferencesManager';
 import UserActivityLog from './UserActivityLog';
 import { SelectChangeEvent } from '@mui/material/Select';
 import { generateMemberNo } from '../../../utils/memberNoGenerator';
+import { Company } from '../../../types/company';
+import ApiService from '../../../services/api.service';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -73,10 +75,21 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
   const [userData, setUserData] = useState<Partial<User>>(defaultUserData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [companies, setCompanies] = useState<Company[]>([]);
 
   useEffect(() => {
     setUserData(initialUserData || defaultUserData);
+    loadCompanies();
   }, [initialUserData]);
+
+  const loadCompanies = async () => {
+    try {
+      const data = await ApiService.getCompanies();
+      setCompanies(data);
+    } catch (error) {
+      console.error('載入公司資料失敗:', error);
+    }
+  };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -113,6 +126,13 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
     setUserData((prev: Partial<User>) => ({
       ...prev,
       status: event.target.value as UserStatus,
+    }));
+  };
+
+  const handleCompanyChange = (event: SelectChangeEvent) => {
+    setUserData((prev: Partial<User>) => ({
+      ...prev,
+      companyId: event.target.value as string,
     }));
   };
 
@@ -229,6 +249,24 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
                   <MenuItem value="active">啟用</MenuItem>
                   <MenuItem value="disabled">停用</MenuItem>
                   <MenuItem value="pending">待審核</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>所屬公司</InputLabel>
+                <Select
+                  value={userData.companyId || ''}
+                  onChange={handleCompanyChange}
+                >
+                  <MenuItem value="">
+                    <em>無</em>
+                  </MenuItem>
+                  {companies.map((company) => (
+                    <MenuItem key={company.id} value={company.id}>
+                      {company.name}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>

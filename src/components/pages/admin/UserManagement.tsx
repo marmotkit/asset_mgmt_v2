@@ -56,6 +56,7 @@ import UserDetailDialog from './UserDetailDialog';
 import { exportToExcel, exportToCsv } from '../../../utils/exportUtils';
 import ImportDialog from './ImportDialog';
 import { SelectChangeEvent } from '@mui/material/Select';
+import { Company } from '../../../types/company';
 
 interface UserDialogData {
   username: string;
@@ -114,9 +115,11 @@ const UserManagement: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importMenuAnchor, setImportMenuAnchor] = useState<null | HTMLElement>(null);
+  const [companies, setCompanies] = useState<Record<string, Company>>({});
 
   useEffect(() => {
     loadUsers();
+    loadCompanies();
   }, [page, pageSize, sortBy, sortOrder, searchQuery]);
 
   const loadUsers = async () => {
@@ -148,6 +151,19 @@ const UserManagement: React.FC = () => {
       setError('載入使用者資料失敗');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCompanies = async () => {
+    try {
+      const companiesList = await ApiService.getCompanies();
+      const companiesMap = companiesList.reduce((acc, company) => {
+        acc[company.id] = company;
+        return acc;
+      }, {} as Record<string, Company>);
+      setCompanies(companiesMap);
+    } catch (error) {
+      console.error('載入公司資料失敗:', error);
     }
   };
 
@@ -410,6 +426,7 @@ const UserManagement: React.FC = () => {
               <TableCell>帳號</TableCell>
               <TableCell>姓名</TableCell>
               <TableCell>電子郵件</TableCell>
+              <TableCell>所屬公司</TableCell>
               <TableCell>會員等級</TableCell>
               <TableCell>狀態</TableCell>
               <TableCell>操作</TableCell>
@@ -431,6 +448,9 @@ const UserManagement: React.FC = () => {
                 <TableCell>{user.username}</TableCell>
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  {user.companyId ? companies[user.companyId]?.name : '-'}
+                </TableCell>
                 <TableCell>
                   <Chip
                     label={
