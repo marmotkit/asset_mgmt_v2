@@ -18,9 +18,6 @@ export const theme = createTheme({
       '"Helvetica Neue"',
       'Arial',
       'sans-serif',
-      '"Apple Color Emoji"',
-      '"Segoe UI Emoji"',
-      '"Segoe UI Symbol"',
     ].join(','),
   },
 }); 

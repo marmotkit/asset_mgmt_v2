@@ -1,6 +1,7 @@
 import { AuthService } from './auth.service';
 import { User, UserRole, UserStatus } from '../types/user';
 import { UserPreferences } from '../types/preferences';
+import { Company, IndustryType } from '../types/company';
 
 interface PaginatedResponse<T> {
   items: T[];
@@ -21,6 +22,7 @@ interface PaginationParams {
 class ApiServiceClass {
   private baseUrl = '/api';
   private readonly STORAGE_KEY = 'mock_users';
+  private readonly COMPANIES_STORAGE_KEY = 'mock_companies';
 
   private mockUsers: User[] = [
     {
@@ -39,6 +41,24 @@ class ApiServiceClass {
     // 可以加入更多模擬資料
   ];
 
+  private mockCompanies: Company[] = [
+    {
+      id: '1',
+      companyNo: 'A001',
+      name: '測試公司',
+      nameEn: 'Test Corp',
+      industry: '科技業',
+      contact: {
+        name: '王小明',
+        phone: '02-12345678',
+        fax: '02-12345679',
+        email: 'contact@test.com'
+      },
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  ];
+
   constructor() {
     // 從 localStorage 讀取資料
     const storedUsers = localStorage.getItem(this.STORAGE_KEY);
@@ -48,11 +68,22 @@ class ApiServiceClass {
       // 如果沒有儲存的資料，就儲存預設資料
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.mockUsers));
     }
+
+    const storedCompanies = localStorage.getItem(this.COMPANIES_STORAGE_KEY);
+    if (storedCompanies) {
+      this.mockCompanies = JSON.parse(storedCompanies);
+    } else {
+      localStorage.setItem(this.COMPANIES_STORAGE_KEY, JSON.stringify(this.mockCompanies));
+    }
   }
 
   // 儲存資料到 localStorage
   private saveUsers(): void {
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.mockUsers));
+  }
+
+  private saveCompanies(): void {
+    localStorage.setItem(this.COMPANIES_STORAGE_KEY, JSON.stringify(this.mockCompanies));
   }
 
   async fetchWithAuth(url: string, options: RequestInit = {}): Promise<any> {
@@ -275,6 +306,85 @@ class ApiServiceClass {
     } catch (error) {
       console.error('獲取使用者列表失敗:', error);
       throw new Error('獲取使用者列表失敗');
+    }
+  }
+
+  // 公司相關 API
+  async getCompanies(): Promise<Company[]> {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return this.mockCompanies;
+    } catch (error) {
+      console.error('獲取公司列表失敗:', error);
+      throw new Error('獲取公司列表失敗');
+    }
+  }
+
+  async createCompany(companyData: Partial<Company>): Promise<Company> {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const lastCompany = this.mockCompanies[this.mockCompanies.length - 1];
+      const lastNo = lastCompany ? parseInt(lastCompany.companyNo.slice(1)) : 0;
+      const newNo = (lastNo + 1).toString().padStart(3, '0');
+
+      const newCompany: Company = {
+        id: Date.now().toString(),
+        companyNo: `A${newNo}`,
+        name: companyData.name!,
+        nameEn: companyData.nameEn,
+        industry: companyData.industry,
+        contact: companyData.contact!,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      this.mockCompanies.push(newCompany);
+      this.saveCompanies();
+      return newCompany;
+    } catch (error) {
+      console.error('創建公司失敗:', error);
+      throw new Error('創建公司失敗');
+    }
+  }
+
+  async updateCompany(id: string, companyData: Partial<Company>): Promise<Company> {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const companyIndex = this.mockCompanies.findIndex(c => c.id === id);
+      if (companyIndex === -1) {
+        throw new Error('找不到公司');
+      }
+
+      this.mockCompanies[companyIndex] = {
+        ...this.mockCompanies[companyIndex],
+        ...companyData,
+        updatedAt: new Date()
+      };
+
+      this.saveCompanies();
+      return this.mockCompanies[companyIndex];
+    } catch (error) {
+      console.error('更新公司失敗:', error);
+      throw new Error('更新公司失敗');
+    }
+  }
+
+  async deleteCompany(id: string): Promise<void> {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const companyIndex = this.mockCompanies.findIndex(c => c.id === id);
+      if (companyIndex === -1) {
+        throw new Error('找不到公司');
+      }
+
+      this.mockCompanies.splice(companyIndex, 1);
+      this.saveCompanies();
+    } catch (error) {
+      console.error('刪除公司失敗:', error);
+      throw new Error('刪除公司失敗');
     }
   }
 }

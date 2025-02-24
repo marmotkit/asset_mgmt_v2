@@ -2,9 +2,10 @@ import React from 'react';
 import {
   Drawer,
   List,
-  ListItemButton,
+  ListItem,
   ListItemIcon,
   ListItemText,
+  ListItemButton,
   Box,
   Toolbar,
   Divider
@@ -20,50 +21,91 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-interface SidebarProps {
-  open: boolean;
-}
-
-const Sidebar: React.FC<SidebarProps> = ({ open }) => {
+const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const menuItems = [
-    { text: '會員管理', icon: <PeopleIcon />, path: '/member/users' },
-    { text: '公司資訊', icon: <BusinessIcon />, path: '/member/company' },
-    { text: '投資管理', icon: <InvestmentIcon />, path: '/member/investment' },
-    { text: '會員服務', icon: <ServiceIcon />, path: '/member/service' },
-    { text: '交易支付', icon: <PaymentIcon />, path: '/member/payment' },
-    { text: '通知提醒', icon: <NotificationIcon />, path: '/member/notifications' },
-    { text: '安全隱私', icon: <SecurityIcon />, path: '/member/security' }
+    {
+      text: '會員管理',
+      icon: <PeopleIcon />,
+      path: '/users'
+    },
+    {
+      text: '公司資訊',
+      icon: <BusinessIcon />,
+      path: '/companies'
+    },
+    {
+      text: '投資管理',
+      icon: <InvestmentIcon />,
+      path: '/investment'
+    },
+    {
+      text: '會員服務',
+      icon: <ServiceIcon />,
+      path: '/services'
+    },
+    {
+      text: '交易支付',
+      icon: <PaymentIcon />,
+      path: '/payment'
+    },
+    {
+      text: '通知提醒',
+      icon: <NotificationIcon />,
+      path: '/notifications'
+    },
+    {
+      text: '安全隱私',
+      icon: <SecurityIcon />,
+      path: '/security'
+    }
   ];
 
   return (
     <Drawer
-      variant="persistent"
-      open={open}
+      variant="permanent"
       sx={{
-        width: 240,
+        width: '240px',
         flexShrink: 0,
+        position: 'fixed',
+        height: '100vh',
         '& .MuiDrawer-paper': {
-          width: 240,
+          width: '240px',
           boxSizing: 'border-box',
+          borderRight: '1px solid rgba(0, 0, 0, 0.12)',
+          backgroundColor: '#fff',
+          position: 'fixed',
+          height: '100vh',
         },
       }}
     >
       <Toolbar /> {/* 為 AppBar 預留空間 */}
-      <Divider />
-      <Box sx={{ overflow: 'auto' }}>
+      <Box sx={{
+        overflow: 'auto',
+        height: 'calc(100vh - 64px)',
+      }}>
         <List>
           {menuItems.map((item) => (
-            <ListItemButton
-              key={item.text}
-              selected={location.pathname === item.path}
-              onClick={() => navigate(item.path)}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
+            <ListItem key={item.path} disablePadding>
+              <ListItemButton
+                selected={location.pathname === item.path}
+                onClick={() => navigate(item.path)}
+                sx={{
+                  '&.Mui-selected': {
+                    backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                  },
+                  '&.Mui-selected:hover': {
+                    backgroundColor: 'rgba(25, 118, 210, 0.12)',
+                  },
+                  py: 1.5,  // 增加按鈕高度
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            </ListItem>
           ))}
         </List>
       </Box>
