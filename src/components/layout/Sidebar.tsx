@@ -17,7 +17,8 @@ import {
   Support as ServiceIcon,
   Payment as PaymentIcon,
   Notifications as NotificationIcon,
-  Security as SecurityIcon
+  Security as SecurityIcon,
+  Receipt as FeeIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -30,6 +31,11 @@ const Sidebar: React.FC = () => {
       text: '會員管理',
       icon: <PeopleIcon />,
       path: '/users'
+    },
+    {
+      text: '會費管理',
+      icon: <FeeIcon />,
+      path: '/fees'
     },
     {
       text: '公司資訊',
