@@ -1,4 +1,5 @@
 import React from 'react';
+<<<<<<< Updated upstream
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/layout/MainLayout';
@@ -98,6 +99,24 @@ const AppRoutes = () => {
 
       {/* 404 路由 */}
       <Route path="*" element={<div>404 Not Found</div>} />
+=======
+import { Routes, Route } from 'react-router-dom';
+import UserManagement from '../components/pages/admin/UserManagement';
+import Dashboard from '../components/pages/Dashboard';
+import InvestmentManagement from '../components/pages/investment/InvestmentManagement';
+import CompanyManagement from '../components/pages/company/CompanyManagement';
+import FeeManagement from '../pages/admin/FeeManagement';
+
+const AppRoutes: React.FC = () => {
+  return (
+    <Routes>
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/admin/users" element={<UserManagement />} />
+      <Route path="/admin/fee-management" element={<FeeManagement />} />
+      <Route path="/investment" element={<InvestmentManagement />} />
+      <Route path="/company" element={<CompanyManagement />} />
+>>>>>>> Stashed changes
     </Routes>
   );
 };

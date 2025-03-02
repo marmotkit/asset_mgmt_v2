@@ -30,12 +30,19 @@ const drawerWidth = 240;
 
 const menuItems = [
   { text: '會員管理', icon: <PersonIcon />, path: '/admin/users' },
+  { text: '會員收費管理', icon: <PaymentIcon />, path: '/admin/fee-management' },
   { text: '公司資訊', icon: <BusinessIcon />, path: '/company' },
   { text: '投資管理', icon: <AccountBalanceIcon />, path: '/investment' },
   { text: '會員服務', icon: <SupportIcon />, path: '/services' },
   { text: '交易支付', icon: <PaymentIcon />, path: '/payment' },
   { text: '通知提醒', icon: <NotificationsIcon />, path: '/notifications' },
   { text: '安全隱私', icon: <SecurityIcon />, path: '/security' },
+  {
+    text: `Copyright © ${new Date().getFullYear()}\nKT.Liang. All rights reserved.`,
+    icon: null,
+    path: '',
+    isFooter: true
+  }
 ];
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -49,19 +56,16 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
 
   const drawer = (
-    <Box>
+    <>
       <Toolbar>
         <Typography variant="h6" noWrap>
           資產管理系統
         </Typography>
       </Toolbar>
       <Divider />
-      <List>
-        {menuItems.map((item) => (
-          <ListItem
-            key={item.text}
-            disablePadding
-          >
+      <List sx={{ flexGrow: 1 }}>
+        {menuItems.filter(item => !item.isFooter).map((item) => (
+          <ListItem key={item.text} disablePadding>
             <ListItemButton
               selected={location.pathname === item.path}
               onClick={() => {
@@ -75,7 +79,15 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </ListItem>
         ))}
       </List>
-    </Box>
+
+      {menuItems.find(item => item.isFooter) && (
+        <Box sx={{ p: 2, textAlign: 'center' }}>
+          <Typography variant="caption" color="text.secondary">
+            {menuItems.find(item => item.isFooter)?.text}
+          </Typography>
+        </Box>
+      )}
+    </>
   );
 
   return (
@@ -140,6 +152,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: drawerWidth,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
             },
           }}
           open
@@ -149,15 +164,25 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </Box>
 
       <Box
-        component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh',
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: 8,
         }}
       >
-        {children}
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            p: 3,
+            width: { sm: `calc(100% - ${drawerWidth}px)` },
+            mt: 8,
+          }}
+        >
+          {children}
+        </Box>
       </Box>
     </Box>
   );
