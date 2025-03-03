@@ -12,7 +12,18 @@ import {
     IconButton,
     Typography,
     TextField,
-    InputAdornment
+    InputAdornment,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Grid,
+    SelectChangeEvent
 } from '@mui/material';
 import { Search as SearchIcon, Edit as EditIcon } from '@mui/icons-material';
 
@@ -25,6 +36,7 @@ interface PaymentStatus {
     dueDate: string;
     status: 'pending' | 'paid' | 'overdue' | 'terminated';
     paidDate?: string;
+    note?: string;
 }
 
 const mockPayments: PaymentStatus[] = [
@@ -36,7 +48,8 @@ const mockPayments: PaymentStatus[] = [
         amount: 30000,
         dueDate: '2024-12-31',
         status: 'paid',
-        paidDate: '2024-01-15'
+        paidDate: '2024-01-15',
+        note: '準時繳費'
     },
     {
         id: '2',
@@ -45,7 +58,8 @@ const mockPayments: PaymentStatus[] = [
         memberType: '商務會員',
         amount: 300000,
         dueDate: '2024-12-31',
-        status: 'pending'
+        status: 'pending',
+        note: ''
     }
 ];
 
@@ -64,6 +78,39 @@ const getStatusChip = (status: PaymentStatus['status']) => {
 const FeePaymentStatus: React.FC = () => {
     const [payments, setPayments] = useState<PaymentStatus[]>(mockPayments);
     const [searchTerm, setSearchTerm] = useState('');
+    const [editingPayment, setEditingPayment] = useState<PaymentStatus | null>(null);
+    const [open, setOpen] = useState(false);
+
+    const handleEditClick = (payment: PaymentStatus) => {
+        setEditingPayment({ ...payment });
+        setOpen(true);
+    };
+
+    const handleClose = () => {
+        setOpen(false);
+        setEditingPayment(null);
+    };
+
+    const handleSave = () => {
+        if (editingPayment) {
+            setPayments(payments.map(payment =>
+                payment.id === editingPayment.id ? editingPayment : payment
+            ));
+            handleClose();
+        }
+    };
+
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent
+    ) => {
+        if (editingPayment) {
+            const { name, value } = e.target;
+            setEditingPayment({
+                ...editingPayment,
+                [name]: name === 'amount' ? Number(value) : value
+            });
+        }
+    };
 
     const filteredPayments = payments.filter(payment =>
         payment.memberName.includes(searchTerm) ||
@@ -117,7 +164,7 @@ const FeePaymentStatus: React.FC = () => {
                                 <TableCell>{payment.paidDate || '-'}</TableCell>
                                 <TableCell>{getStatusChip(payment.status)}</TableCell>
                                 <TableCell>
-                                    <IconButton size="small">
+                                    <IconButton size="small" onClick={() => handleEditClick(payment)}>
                                         <EditIcon />
                                     </IconButton>
                                 </TableCell>
@@ -126,6 +173,108 @@ const FeePaymentStatus: React.FC = () => {
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+                <DialogTitle>
+                    編輯收款資訊
+                </DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={2} sx={{ pt: 2 }}>
+                        <Grid item xs={6}>
+                            <TextField
+                                fullWidth
+                                label="會員編號"
+                                name="memberId"
+                                value={editingPayment?.memberId || ''}
+                                disabled
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <TextField
+                                fullWidth
+                                label="姓名"
+                                name="memberName"
+                                value={editingPayment?.memberName || ''}
+                                disabled
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <TextField
+                                fullWidth
+                                label="會員類型"
+                                name="memberType"
+                                value={editingPayment?.memberType || ''}
+                                disabled
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <TextField
+                                fullWidth
+                                label="金額"
+                                name="amount"
+                                type="number"
+                                value={editingPayment?.amount || ''}
+                                onChange={handleChange}
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <TextField
+                                fullWidth
+                                label="到期日"
+                                name="dueDate"
+                                type="date"
+                                value={editingPayment?.dueDate || ''}
+                                onChange={handleChange}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>狀態</InputLabel>
+                                <Select
+                                    name="status"
+                                    value={editingPayment?.status || ''}
+                                    onChange={handleChange}
+                                    label="狀態"
+                                >
+                                    <MenuItem value="pending">待收款</MenuItem>
+                                    <MenuItem value="paid">已收款</MenuItem>
+                                    <MenuItem value="overdue">逾期</MenuItem>
+                                    <MenuItem value="terminated">終止</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={6}>
+                            <TextField
+                                fullWidth
+                                label="繳費日期"
+                                name="paidDate"
+                                type="date"
+                                value={editingPayment?.paidDate || ''}
+                                onChange={handleChange}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="備註"
+                                name="note"
+                                multiline
+                                rows={4}
+                                value={editingPayment?.note || ''}
+                                onChange={handleChange}
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose}>取消</Button>
+                    <Button onClick={handleSave} variant="contained">
+                        儲存
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };
