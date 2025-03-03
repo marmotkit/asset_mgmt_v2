@@ -14,6 +14,18 @@ export type PaymentStatus = 'paid' | 'pending' | 'overdue';  // 已收 | 未收 
 // 收款方式
 export type PaymentMethod = 'transfer' | 'cash' | 'linepay' | 'other';
 
+// 分潤類型
+export type ProfitSharingType = 'percentage' | 'fixed' | 'other';
+
+// 分潤設定介面
+export interface ProfitSharingSettings {
+    type: ProfitSharingType;
+    value: number;              // 百分比或固定金額
+    description?: string;       // 其他類型的說明
+    minimumAmount?: number;     // 最低分潤金額
+    maximumAmount?: number;     // 最高分潤金額
+}
+
 // 合約檔案介面
 export interface ContractFile {
     id: string;
@@ -51,6 +63,7 @@ interface BaseInvestment {
     contract?: ContractFile;    // 新增合約檔案欄位
     monthlyRental: number;     // 每月租金
     rentalPayments: RentalPayment[]; // 租金收款記錄
+    profitSharing?: ProfitSharingSettings; // 新增分潤設定
 }
 
 // 動產投資

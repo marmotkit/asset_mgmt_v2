@@ -11,6 +11,8 @@ import {
     Chip,
     Link,
     Typography,
+    Tooltip,
+    Box,
 } from '@mui/material';
 import {
     Edit as EditIcon,
@@ -19,6 +21,8 @@ import {
 import { Investment, InvestmentStatus } from '../../../types/investment';
 import { Company } from '../../../types/company';
 import ApiService from '../../../services/api.service';
+import { formatDate } from '../../../utils/dateUtils';
+import { formatCurrency } from '../../../utils/numberUtils';
 
 interface InvestmentListProps {
     investments: Investment[];
@@ -64,17 +68,20 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
         }
     };
 
-    const formatDate = (date: Date) => {
-        return new Date(date).toLocaleDateString('zh-TW');
-    };
+    const renderProfitSharingInfo = (investment: Investment) => {
+        if (!investment.profitSharing) return '未設定';
 
-    const formatAmount = (amount: number) => {
-        return new Intl.NumberFormat('zh-TW', {
-            style: 'currency',
-            currency: 'TWD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(amount);
+        const { type, value, description } = investment.profitSharing;
+        switch (type) {
+            case 'percentage':
+                return `${value}%`;
+            case 'fixed':
+                return `固定 ${formatCurrency(value)}`;
+            case 'other':
+                return `其他: ${description || ''}`;
+            default:
+                return '未設定';
+        }
     };
 
     return (
@@ -84,10 +91,11 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
                     <TableRow>
                         <TableCell>項目名稱</TableCell>
                         <TableCell>公司名稱</TableCell>
-                        <TableCell>投資金額</TableCell>
+                        <TableCell align="right">投資金額</TableCell>
                         <TableCell>開始日期</TableCell>
                         <TableCell>結束日期</TableCell>
                         <TableCell>狀態</TableCell>
+                        <TableCell>分潤設定</TableCell>
                         <TableCell>合約</TableCell>
                         <TableCell>操作</TableCell>
                     </TableRow>
@@ -99,7 +107,7 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
                             <TableCell>
                                 {companies[investment.companyId]?.name || '-'}
                             </TableCell>
-                            <TableCell>{formatAmount(investment.amount)}</TableCell>
+                            <TableCell align="right">{formatCurrency(investment.amount)}</TableCell>
                             <TableCell>{formatDate(investment.startDate)}</TableCell>
                             <TableCell>
                                 {investment.endDate ? formatDate(investment.endDate) : '-'}
@@ -110,6 +118,11 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
                                     color={statusColors[investment.status]}
                                     size="small"
                                 />
+                            </TableCell>
+                            <TableCell>
+                                <Typography variant="body2">
+                                    {renderProfitSharingInfo(investment)}
+                                </Typography>
                             </TableCell>
                             <TableCell>
                                 {investment.contract ? (
@@ -123,16 +136,16 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
                                 )}
                             </TableCell>
                             <TableCell>
-                                <IconButton size="small" onClick={() => onEdit(investment)}>
-                                    <EditIcon />
-                                </IconButton>
-                                <IconButton
-                                    size="small"
-                                    color="error"
-                                    onClick={() => onDelete(investment.id)}
-                                >
-                                    <DeleteIcon />
-                                </IconButton>
+                                <Tooltip title="編輯">
+                                    <IconButton size="small" onClick={() => onEdit(investment)}>
+                                        <EditIcon />
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title="刪除">
+                                    <IconButton size="small" onClick={() => onDelete(investment.id)}>
+                                        <DeleteIcon />
+                                    </IconButton>
+                                </Tooltip>
                             </TableCell>
                         </TableRow>
                     ))}

@@ -13,9 +13,10 @@ import {
     Select,
     InputAdornment,
     Typography,
+    FormHelperText,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { Investment, InvestmentType, MovableInvestment, ImmovableInvestment, ContractFile, RentalPayment } from '../../../types/investment';
+import { Investment, InvestmentType, MovableInvestment, ImmovableInvestment, ContractFile, RentalPayment, ProfitSharingType } from '../../../types/investment';
 import { Company } from '../../../types/company';
 import ApiService from '../../../services/api.service';
 import ContractUpload from './ContractUpload';
@@ -108,6 +109,21 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
             const newData = {
                 ...prev,
                 [field]: value
+            };
+            return investmentType === 'movable'
+                ? newData as Partial<MovableInvestment>
+                : newData as Partial<ImmovableInvestment>;
+        });
+    };
+
+    const handleProfitSharingChange = (field: string, value: any) => {
+        setFormData(prev => {
+            const newData = {
+                ...prev,
+                profitSharing: {
+                    ...prev.profitSharing,
+                    [field]: value
+                }
             };
             return investmentType === 'movable'
                 ? newData as Partial<MovableInvestment>
@@ -447,6 +463,67 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
                             />
                         </Grid>
                     )}
+
+                    <Grid item xs={12}>
+                        <Typography variant="subtitle1" sx={{ mb: 2 }}>分潤設定</Typography>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6}>
+                                <FormControl fullWidth>
+                                    <InputLabel>分潤類型</InputLabel>
+                                    <Select
+                                        value={formData.profitSharing?.type || ''}
+                                        onChange={(e) => handleProfitSharingChange('type', e.target.value)}
+                                    >
+                                        <MenuItem value="percentage">百分比</MenuItem>
+                                        <MenuItem value="fixed">固定金額</MenuItem>
+                                        <MenuItem value="other">其他</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label={formData.profitSharing?.type === 'percentage' ? '百分比值' : '金額'}
+                                    type="number"
+                                    value={formData.profitSharing?.value || ''}
+                                    onChange={(e) => handleProfitSharingChange('value', parseFloat(e.target.value))}
+                                    InputProps={{
+                                        endAdornment: formData.profitSharing?.type === 'percentage' ? '%' : '元'
+                                    }}
+                                />
+                            </Grid>
+                            {formData.profitSharing?.type === 'other' && (
+                                <Grid item xs={12}>
+                                    <TextField
+                                        fullWidth
+                                        label="其他分潤說明"
+                                        multiline
+                                        rows={2}
+                                        value={formData.profitSharing?.description || ''}
+                                        onChange={(e) => handleProfitSharingChange('description', e.target.value)}
+                                    />
+                                </Grid>
+                            )}
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="最低分潤金額"
+                                    type="number"
+                                    value={formData.profitSharing?.minimumAmount || ''}
+                                    onChange={(e) => handleProfitSharingChange('minimumAmount', parseFloat(e.target.value))}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="最高分潤金額"
+                                    type="number"
+                                    value={formData.profitSharing?.maximumAmount || ''}
+                                    onChange={(e) => handleProfitSharingChange('maximumAmount', parseFloat(e.target.value))}
+                                />
+                            </Grid>
+                        </Grid>
+                    </Grid>
                 </Grid>
             </DialogContent>
             <DialogActions>
