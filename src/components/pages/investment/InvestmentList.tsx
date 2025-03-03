@@ -18,7 +18,7 @@ import {
     Edit as EditIcon,
     Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { Investment, InvestmentStatus } from '../../../types/investment';
+import { Investment, InvestmentStatus, ProfitSharingType } from '../../../types/investment';
 import { Company } from '../../../types/company';
 import ApiService from '../../../services/api.service';
 import { formatDate } from '../../../utils/dateUtils';
@@ -84,6 +84,48 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
         }
     };
 
+    const calculateTotalRental = (investment: Investment): number => {
+        return investment.rentalPayments
+            ?.filter(payment => payment.status === 'paid')
+            ?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
+    };
+
+    const calculateTotalProfitSharing = (investment: Investment): number => {
+        const totalRental = calculateTotalRental(investment);
+
+        if (!investment.profitSharing) return 0;
+
+        const { type, value } = investment.profitSharing;
+        let profitAmount = 0;
+
+        switch (type) {
+            case 'percentage':
+                profitAmount = totalRental * (value / 100);
+                break;
+            case 'fixed':
+                // 固定金額乘以已收租金次數
+                const paidPaymentsCount = investment.rentalPayments
+                    ?.filter(payment => payment.status === 'paid')
+                    ?.length || 0;
+                profitAmount = value * paidPaymentsCount;
+                break;
+            case 'other':
+                // 其他類型暫不計算
+                profitAmount = 0;
+                break;
+        }
+
+        // 檢查最低和最高分潤限制
+        if (investment.profitSharing.minimumAmount) {
+            profitAmount = Math.max(profitAmount, investment.profitSharing.minimumAmount);
+        }
+        if (investment.profitSharing.maximumAmount) {
+            profitAmount = Math.min(profitAmount, investment.profitSharing.maximumAmount);
+        }
+
+        return profitAmount;
+    };
+
     return (
         <TableContainer component={Paper}>
             <Table>
@@ -96,6 +138,8 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
                         <TableCell>結束日期</TableCell>
                         <TableCell>狀態</TableCell>
                         <TableCell>分潤設定</TableCell>
+                        <TableCell align="right">累積租金</TableCell>
+                        <TableCell align="right">累積分潤</TableCell>
                         <TableCell>合約</TableCell>
                         <TableCell>操作</TableCell>
                     </TableRow>
@@ -122,6 +166,16 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
                             <TableCell>
                                 <Typography variant="body2">
                                     {renderProfitSharingInfo(investment)}
+                                </Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                                <Typography variant="body2">
+                                    {formatCurrency(calculateTotalRental(investment))}
+                                </Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                                <Typography variant="body2">
+                                    {formatCurrency(calculateTotalProfitSharing(investment))}
                                 </Typography>
                             </TableCell>
                             <TableCell>
