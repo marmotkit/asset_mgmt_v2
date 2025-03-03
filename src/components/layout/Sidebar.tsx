@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Drawer,
   List,
@@ -8,7 +8,10 @@ import {
   ListItemButton,
   Box,
   Toolbar,
-  Divider
+  Divider,
+  Typography,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   People as PeopleIcon,
@@ -18,13 +21,36 @@ import {
   Payment as PaymentIcon,
   Notifications as NotificationIcon,
   Security as SecurityIcon,
-  Receipt as FeeIcon
+  Receipt as FeeIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [version, setVersion] = useState('1.0');
+  const currentYear = new Date().getFullYear();
+
+  const handleVersionClick = (event: React.MouseEvent<HTMLElement>) => {
+    const isLeftClick = event.button === 0;
+    const currentVersionParts = version.split('.');
+    const major = parseInt(currentVersionParts[0]);
+    let minor = parseInt(currentVersionParts[1]);
+
+    if (isLeftClick) {
+      // 左鍵點擊，版本號加0.1
+      minor = minor === 9 ? 0 : minor + 1;
+      const newMajor = minor === 0 ? major + 1 : major;
+      setVersion(`${newMajor}.${minor}`);
+    } else if (event.button === 2) {
+      // 右鍵點擊，版本號減0.1
+      event.preventDefault();
+      if (major === 1 && minor === 0) return; // 不允許低於 1.0
+      minor = minor === 0 ? 9 : minor - 1;
+      const newMajor = minor === 9 ? major - 1 : major;
+      setVersion(`${newMajor}.${minor}`);
+    }
+  };
 
   const menuItems = [
     {
@@ -84,13 +110,15 @@ const Sidebar: React.FC = () => {
           backgroundColor: '#fff',
           position: 'fixed',
           height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
         },
       }}
     >
       <Toolbar /> {/* 為 AppBar 預留空間 */}
       <Box sx={{
         overflow: 'auto',
-        height: 'calc(100vh - 64px)',
+        flex: 1,
       }}>
         <List>
           {menuItems.map((item) => (
@@ -114,6 +142,39 @@ const Sidebar: React.FC = () => {
             </ListItem>
           ))}
         </List>
+      </Box>
+      <Box
+        sx={{
+          p: 2,
+          borderTop: '1px solid rgba(0, 0, 0, 0.12)',
+          backgroundColor: '#f5f5f5',
+        }}
+      >
+        <Typography
+          variant="caption"
+          component="div"
+          align="center"
+          color="text.secondary"
+          sx={{ mb: 1 }}
+        >
+          Copy Right © {currentYear} XXXX
+        </Typography>
+        <Typography
+          variant="caption"
+          component="div"
+          align="center"
+          sx={{
+            cursor: 'pointer',
+            userSelect: 'none',
+            '&:hover': {
+              color: 'primary.main',
+            },
+          }}
+          onMouseDown={handleVersionClick}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          Version {version}
+        </Typography>
       </Box>
     </Drawer>
   );
