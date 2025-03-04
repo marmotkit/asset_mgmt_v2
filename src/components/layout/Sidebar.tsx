@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Drawer,
   List,
@@ -28,8 +28,16 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [version, setVersion] = useState('1.0');
+  const [version, setVersion] = useState(() => {
+    // 從 localStorage 讀取版本號，如果沒有則使用預設值 '1.0'
+    return localStorage.getItem('app_version') || '1.0';
+  });
   const currentYear = new Date().getFullYear();
+
+  // 當版本號改變時，保存到 localStorage
+  useEffect(() => {
+    localStorage.setItem('app_version', version);
+  }, [version]);
 
   const handleVersionClick = (event: React.MouseEvent<HTMLElement>) => {
     const isLeftClick = event.button === 0;

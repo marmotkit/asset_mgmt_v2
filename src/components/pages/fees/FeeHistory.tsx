@@ -1,0 +1,483 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Typography,
+    TextField,
+    Button,
+    Grid,
+    Chip,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    CircularProgress,
+    SelectChangeEvent,
+    IconButton,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Tooltip,
+    Alert,
+    Snackbar
+} from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import {
+    Download as DownloadIcon,
+    Edit as EditIcon,
+    Delete as DeleteIcon
+} from '@mui/icons-material';
+import type { FeeHistory as FeeHistoryType, FeeHistoryFilter, PaymentStatus } from '../../../types/fee';
+import { formatDate } from '../../../utils/dateUtils';
+import { formatCurrency } from '../../../utils/numberUtils';
+import { feeHistoryService } from '../../../services/feeHistoryService';
+
+type StatusOption = {
+    value: '' | PaymentStatus;
+    label: string;
+};
+
+const getStatusChip = (status: PaymentStatus) => {
+    const statusConfig = {
+        '待收款': { label: '待收款', color: 'warning' as const },
+        '已收款': { label: '已收款', color: 'success' as const },
+        '逾期': { label: '逾期', color: 'error' as const },
+        '終止': { label: '終止', color: 'default' as const }
+    };
+
+    const config = statusConfig[status] || { label: status, color: 'default' as const };
+    return <Chip label={config.label} color={config.color} size="small" />;
+};
+
+const statusOptions: StatusOption[] = [
+    { value: '', label: '全部' },
+    { value: '待收款', label: '待收款' },
+    { value: '已收款', label: '已收款' },
+    { value: '逾期', label: '逾期' },
+    { value: '終止', label: '終止' }
+];
+
+const FeeHistory: React.FC = () => {
+    const [feeHistory, setFeeHistory] = useState<FeeHistoryType[]>([]);
+    const [filter, setFilter] = useState<FeeHistoryFilter>({
+        userId: '',
+        status: undefined,
+        startDate: undefined,
+        endDate: undefined
+    });
+    const [dateRange, setDateRange] = useState<{
+        startDate: Date | null;
+        endDate: Date | null;
+    }>({
+        startDate: null,
+        endDate: null
+    });
+    const [loading, setLoading] = useState(true);
+    const [editingRecord, setEditingRecord] = useState<FeeHistoryType | null>(null);
+    const [deleteRecord, setDeleteRecord] = useState<FeeHistoryType | null>(null);
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'success' as 'success' | 'error'
+    });
+
+    const loadFeeHistory = async () => {
+        setLoading(true);
+        try {
+            const historyFilter: FeeHistoryFilter = {
+                ...filter,
+                startDate: dateRange.startDate ? dateRange.startDate.toISOString().split('T')[0] : undefined,
+                endDate: dateRange.endDate ? dateRange.endDate.toISOString().split('T')[0] : undefined
+            };
+            const data = await feeHistoryService.getHistories(historyFilter);
+            setFeeHistory(data);
+        } catch (error) {
+            console.error('載入會費歷史記錄失敗:', error);
+            setFeeHistory([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadFeeHistory();
+    }, [filter, dateRange]);
+
+    const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFilter(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleStatusChange = (e: SelectChangeEvent<PaymentStatus | ''>) => {
+        const value = e.target.value as PaymentStatus | '';
+        setFilter(prev => ({
+            ...prev,
+            status: value === '' ? undefined : value as PaymentStatus
+        }));
+    };
+
+    const handleDateChange = (field: 'startDate' | 'endDate') => (date: Date | null) => {
+        setDateRange(prev => ({
+            ...prev,
+            [field]: date
+        }));
+    };
+
+    const handleExport = async () => {
+        try {
+            const blob = await feeHistoryService.exportToExcel(filter);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `會費歷史記錄_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('匯出失敗:', error);
+        }
+    };
+
+    const handleEditClick = (record: FeeHistoryType) => {
+        setEditingRecord({ ...record });
+    };
+
+    const handleEditSave = async () => {
+        if (!editingRecord) return;
+
+        try {
+            const updated = await feeHistoryService.updateRecord(editingRecord.id, editingRecord);
+            if (updated) {
+                setFeeHistory(prev => prev.map(r => r.id === updated.id ? updated : r));
+                setSnackbar({
+                    open: true,
+                    message: '更新成功',
+                    severity: 'success'
+                });
+            }
+        } catch (error) {
+            console.error('更新失敗:', error);
+            setSnackbar({
+                open: true,
+                message: '更新失敗',
+                severity: 'error'
+            });
+        }
+        setEditingRecord(null);
+    };
+
+    const handleDeleteClick = (record: FeeHistoryType) => {
+        setDeleteRecord(record);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteRecord) return;
+
+        try {
+            const success = await feeHistoryService.deleteRecord(deleteRecord.id);
+            if (success) {
+                setFeeHistory(prev => prev.filter(r => r.id !== deleteRecord.id));
+                setSnackbar({
+                    open: true,
+                    message: '刪除成功',
+                    severity: 'success'
+                });
+            }
+        } catch (error) {
+            console.error('刪除失敗:', error);
+            setSnackbar({
+                open: true,
+                message: '刪除失敗',
+                severity: 'error'
+            });
+        }
+        setDeleteRecord(null);
+    };
+
+    const handleFieldChange = (field: keyof FeeHistoryType, value: any) => {
+        if (editingRecord) {
+            setEditingRecord(prev => ({
+                ...prev!,
+                [field]: value
+            }));
+        }
+    };
+
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    return (
+        <Box>
+            <Typography variant="h6" sx={{ mb: 3 }}>
+                會費歷史記錄
+            </Typography>
+
+            <Paper sx={{ p: 2, mb: 3 }}>
+                <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} sm={3}>
+                        <TextField
+                            fullWidth
+                            label="會員編號/姓名"
+                            name="userId"
+                            value={filter.userId}
+                            onChange={handleTextChange}
+                            size="small"
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={3}>
+                        <FormControl fullWidth size="small">
+                            <InputLabel>收款狀態</InputLabel>
+                            <Select<PaymentStatus | ''>
+                                name="status"
+                                value={filter.status || ''}
+                                onChange={handleStatusChange}
+                                label="收款狀態"
+                            >
+                                {statusOptions.map(option => (
+                                    <MenuItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={2}>
+                        <DatePicker
+                            label="起始日期"
+                            value={dateRange.startDate}
+                            onChange={handleDateChange('startDate')}
+                            slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={2}>
+                        <DatePicker
+                            label="結束日期"
+                            value={dateRange.endDate}
+                            onChange={handleDateChange('endDate')}
+                            slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={2}>
+                        <Button
+                            fullWidth
+                            variant="contained"
+                            startIcon={<DownloadIcon />}
+                            onClick={handleExport}
+                        >
+                            匯出報表
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Paper>
+
+            <TableContainer component={Paper}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>會員編號</TableCell>
+                            <TableCell>姓名</TableCell>
+                            <TableCell>會員類型</TableCell>
+                            <TableCell align="right">金額</TableCell>
+                            <TableCell>到期日</TableCell>
+                            <TableCell>繳費日期</TableCell>
+                            <TableCell>繳費方式</TableCell>
+                            <TableCell>收據號碼</TableCell>
+                            <TableCell>狀態</TableCell>
+                            <TableCell>備註</TableCell>
+                            <TableCell>操作</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {feeHistory.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={11} align="center">
+                                    目前沒有符合條件的歷史記錄
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            feeHistory.map((record) => (
+                                <TableRow key={record.id}>
+                                    <TableCell>{record.userId}</TableCell>
+                                    <TableCell>{record.userName}</TableCell>
+                                    <TableCell>{record.memberType}</TableCell>
+                                    <TableCell align="right">{formatCurrency(record.amount)}</TableCell>
+                                    <TableCell>{formatDate(record.dueDate)}</TableCell>
+                                    <TableCell>{record.paymentDate ? formatDate(record.paymentDate) : '-'}</TableCell>
+                                    <TableCell>{record.paymentMethod || '-'}</TableCell>
+                                    <TableCell>{record.receiptNumber || '-'}</TableCell>
+                                    <TableCell>{getStatusChip(record.status)}</TableCell>
+                                    <TableCell>{record.note || '-'}</TableCell>
+                                    <TableCell>
+                                        <Tooltip title="編輯">
+                                            <IconButton size="small" onClick={() => handleEditClick(record)}>
+                                                <EditIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="刪除">
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => handleDeleteClick(record)}
+                                                color="error"
+                                            >
+                                                <DeleteIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+
+            {/* 編輯對話框 */}
+            <Dialog open={!!editingRecord} onClose={() => setEditingRecord(null)} maxWidth="md" fullWidth>
+                <DialogTitle>
+                    編輯歷史記錄
+                </DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={2} sx={{ pt: 2 }}>
+                        <Grid item xs={6}>
+                            <TextField
+                                fullWidth
+                                label="會員編號"
+                                value={editingRecord?.userId || ''}
+                                disabled
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <TextField
+                                fullWidth
+                                label="姓名"
+                                value={editingRecord?.userName || ''}
+                                disabled
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <TextField
+                                fullWidth
+                                label="會員類型"
+                                value={editingRecord?.memberType || ''}
+                                disabled
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <TextField
+                                fullWidth
+                                label="金額"
+                                type="number"
+                                value={editingRecord?.amount || ''}
+                                onChange={(e) => handleFieldChange('amount', Number(e.target.value))}
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <TextField
+                                fullWidth
+                                label="到期日"
+                                type="date"
+                                value={editingRecord?.dueDate || ''}
+                                onChange={(e) => handleFieldChange('dueDate', e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <TextField
+                                fullWidth
+                                label="繳費日期"
+                                type="date"
+                                value={editingRecord?.paymentDate || ''}
+                                onChange={(e) => handleFieldChange('paymentDate', e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>狀態</InputLabel>
+                                <Select
+                                    value={editingRecord?.status || ''}
+                                    onChange={(e) => handleFieldChange('status', e.target.value)}
+                                    label="狀態"
+                                >
+                                    <MenuItem value="待收款">待收款</MenuItem>
+                                    <MenuItem value="已收款">已收款</MenuItem>
+                                    <MenuItem value="逾期">逾期</MenuItem>
+                                    <MenuItem value="終止">終止</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={6}>
+                            <TextField
+                                fullWidth
+                                label="收據號碼"
+                                value={editingRecord?.receiptNumber || ''}
+                                onChange={(e) => handleFieldChange('receiptNumber', e.target.value)}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="備註"
+                                multiline
+                                rows={4}
+                                value={editingRecord?.note || ''}
+                                onChange={(e) => handleFieldChange('note', e.target.value)}
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditingRecord(null)}>取消</Button>
+                    <Button onClick={handleEditSave} variant="contained">
+                        儲存
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* 刪除確認對話框 */}
+            <Dialog open={!!deleteRecord} onClose={() => setDeleteRecord(null)}>
+                <DialogTitle>確認刪除</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        確定要刪除 {deleteRecord?.userName} 的歷史記錄嗎？此操作無法復原。
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteRecord(null)}>取消</Button>
+                    <Button onClick={handleDeleteConfirm} variant="contained" color="error">
+                        刪除
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* 提示訊息 */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={3000}
+                onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} severity={snackbar.severity}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
+        </Box>
+    );
+};
+
+export default FeeHistory; 

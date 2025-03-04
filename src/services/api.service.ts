@@ -40,7 +40,45 @@ class ApiServiceClass {
       createdAt: new Date(),
       updatedAt: new Date()
     },
-    // 可以加入更多模擬資料
+    {
+      id: '2',
+      memberNo: 'C001',
+      username: 'user1',
+      name: '張三',
+      email: 'user1@example.com',
+      role: 'normal' as UserRole,
+      status: 'active' as UserStatus,
+      preferences: [],
+      isFirstLogin: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: '3',
+      memberNo: 'B001',
+      username: 'user2',
+      name: '李四',
+      email: 'user2@example.com',
+      role: 'business' as UserRole,
+      status: 'active' as UserStatus,
+      preferences: [],
+      isFirstLogin: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: '4',
+      memberNo: 'V001',
+      username: 'user3',
+      name: '王五',
+      email: 'user3@example.com',
+      role: 'lifetime' as UserRole,
+      status: 'active' as UserStatus,
+      preferences: [],
+      isFirstLogin: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
   ];
 
   private mockCompanies: Company[] = [
@@ -163,15 +201,34 @@ class ApiServiceClass {
     sortOrder?: 'asc' | 'desc';
     filters?: Record<string, any>;
   }): Promise<PaginatedResponse<User>> {
-    const queryString = new URLSearchParams({
-      page: params.page.toString(),
-      pageSize: params.pageSize.toString(),
-      ...(params.sortBy && { sortBy: params.sortBy }),
-      ...(params.sortOrder && { sortOrder: params.sortOrder }),
-      ...(params.filters && { filters: JSON.stringify(params.filters) })
-    }).toString();
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500)); // 模擬 API 延遲
 
-    return this.fetchWithAuth(`${this.baseUrl}/users?${queryString}`);
+      let filteredUsers = [...this.mockUsers];
+
+      // 套用過濾條件
+      if (params.filters?.status) {
+        filteredUsers = filteredUsers.filter(user => user.status === params.filters?.status);
+      }
+      if (params.filters?.role) {
+        filteredUsers = filteredUsers.filter(user => user.role === params.filters?.role);
+      }
+
+      // 計算分頁
+      const startIndex = (params.page - 1) * params.pageSize;
+      const endIndex = startIndex + params.pageSize;
+      const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+      return {
+        items: paginatedUsers,
+        total: filteredUsers.length,
+        page: params.page,
+        pageSize: params.pageSize
+      };
+    } catch (error) {
+      console.error('獲取使用者列表失敗:', error);
+      throw new Error('獲取使用者列表失敗');
+    }
   }
 
   async getUser(id: string): Promise<User> {
@@ -229,9 +286,20 @@ class ApiServiceClass {
   }
 
   async deleteUser(id: string): Promise<void> {
-    await this.fetchWithAuth(`${this.baseUrl}/users/${id}`, {
-      method: 'DELETE'
-    });
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const userIndex = this.mockUsers.findIndex(u => u.id === id);
+      if (userIndex === -1) {
+        throw new Error('找不到使用者');
+      }
+
+      this.mockUsers.splice(userIndex, 1);
+      this.saveUsers(); // 儲存到 localStorage
+    } catch (error) {
+      console.error('刪除使用者失敗:', error);
+      throw new Error('刪除使用者失敗');
+    }
   }
 
   // 批次操作

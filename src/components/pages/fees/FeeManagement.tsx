@@ -8,8 +8,8 @@ import {
 } from '@mui/material';
 import FeeSettings from './FeeSettings';
 import FeePaymentStatus from './FeePaymentStatus';
-import FeeReminder from './FeeReminder';
-import FeeInvoice from './FeeInvoice';
+import FeeHistory from './FeeHistory';
+import { InvoiceManagement } from './InvoiceManagement';
 import FeeReport from './FeeReport';
 
 interface TabPanelProps {
@@ -59,7 +59,7 @@ const FeeManagement: React.FC = () => {
                 >
                     <Tab label="會費標準設定" />
                     <Tab label="收款狀況" />
-                    <Tab label="催繳通知" />
+                    <Tab label="歷史記錄" />
                     <Tab label="發票管理" />
                     <Tab label="會費報表" />
                 </Tabs>
@@ -72,10 +72,10 @@ const FeeManagement: React.FC = () => {
                 <FeePaymentStatus />
             </TabPanel>
             <TabPanel value={currentTab} index={2}>
-                <FeeReminder />
+                <FeeHistory />
             </TabPanel>
             <TabPanel value={currentTab} index={3}>
-                <FeeInvoice />
+                <InvoiceManagement />
             </TabPanel>
             <TabPanel value={currentTab} index={4}>
                 <FeeReport />

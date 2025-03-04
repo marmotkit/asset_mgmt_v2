@@ -30,6 +30,8 @@ import {
   DialogContentText,
   Grid,
   ButtonGroup,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -116,6 +118,15 @@ const UserManagement: React.FC = () => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importMenuAnchor, setImportMenuAnchor] = useState<null | HTMLElement>(null);
   const [companies, setCompanies] = useState<Record<string, Company>>({});
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
   useEffect(() => {
     loadUsers();
@@ -331,6 +342,28 @@ const UserManagement: React.FC = () => {
     setPage(0);
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      setLoading(true);
+      await ApiService.deleteUser(userId);
+      await loadUsers();
+      setSnackbar({
+        open: true,
+        message: '刪除成功',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('刪除失敗:', error);
+      setSnackbar({
+        open: true,
+        message: '刪除失敗',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorAlert message={error} />;
 
@@ -480,26 +513,17 @@ const UserManagement: React.FC = () => {
                   <IconButton
                     size="small"
                     onClick={() => handleEditUser(user)}
+                    color="primary"
                   >
                     <EditIcon />
                   </IconButton>
-                  {user.status === 'active' ? (
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleStatusChange(user.id, 'disabled')}
-                    >
-                      <CloseIcon />
-                    </IconButton>
-                  ) : (
-                    <IconButton
-                      size="small"
-                      color="success"
-                      onClick={() => handleStatusChange(user.id, 'active')}
-                    >
-                      <CheckIcon />
-                    </IconButton>
-                  )}
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDeleteUser(user.id)}
+                    color="error"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -544,6 +568,16 @@ const UserManagement: React.FC = () => {
         onClose={() => setImportDialogOpen(false)}
         onImport={handleImportConfirm}
       />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

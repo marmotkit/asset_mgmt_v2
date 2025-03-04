@@ -21,7 +21,8 @@ import {
 import {
     Edit as EditIcon,
     Print as PrintIcon,
-    Add as AddIcon
+    Add as AddIcon,
+    Delete as DeleteIcon
 } from '@mui/icons-material';
 
 interface InvoiceInfo {
@@ -65,6 +66,8 @@ const FeeInvoice: React.FC = () => {
     const [invoices, setInvoices] = useState<InvoiceInfo[]>(mockInvoices);
     const [open, setOpen] = useState(false);
     const [editingInvoice, setEditingInvoice] = useState<InvoiceInfo | null>(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [deletingInvoice, setDeletingInvoice] = useState<InvoiceInfo | null>(null);
 
     const handleEditClick = (invoice: InvoiceInfo) => {
         setEditingInvoice({ ...invoice });
@@ -97,6 +100,24 @@ const FeeInvoice: React.FC = () => {
     const handlePrint = (invoice: InvoiceInfo) => {
         // TODO: 實作發票列印功能
         console.log('列印發票:', invoice);
+    };
+
+    const handleDeleteClick = (invoice: InvoiceInfo) => {
+        setDeletingInvoice(invoice);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = () => {
+        if (deletingInvoice) {
+            setInvoices(invoices.filter(invoice => invoice.id !== deletingInvoice.id));
+            setDeleteConfirmOpen(false);
+            setDeletingInvoice(null);
+        }
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteConfirmOpen(false);
+        setDeletingInvoice(null);
     };
 
     return (
@@ -155,6 +176,9 @@ const FeeInvoice: React.FC = () => {
                                     </IconButton>
                                     <IconButton size="small" onClick={() => handlePrint(invoice)}>
                                         <PrintIcon />
+                                    </IconButton>
+                                    <IconButton size="small" onClick={() => handleDeleteClick(invoice)} color="error">
+                                        <DeleteIcon />
                                     </IconButton>
                                 </TableCell>
                             </TableRow>
@@ -248,6 +272,19 @@ const FeeInvoice: React.FC = () => {
                     <Button onClick={handleClose}>取消</Button>
                     <Button onClick={handleSave} variant="contained">
                         儲存
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={deleteConfirmOpen} onClose={handleDeleteCancel}>
+                <DialogTitle>確認刪除</DialogTitle>
+                <DialogContent>
+                    確定要刪除 {deletingInvoice?.companyName} 的發票資訊嗎？
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDeleteCancel}>取消</Button>
+                    <Button onClick={handleDeleteConfirm} variant="contained" color="error">
+                        刪除
                     </Button>
                 </DialogActions>
             </Dialog>
