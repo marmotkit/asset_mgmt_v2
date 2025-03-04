@@ -1,5 +1,6 @@
 import { User, UserRole, UserStatus } from '../types/user';
 import * as XLSX from 'xlsx';
+import { format } from 'date-fns';
 
 // 轉換使用者角色為中文
 const roleToString = (role: UserRole): string => {
@@ -23,8 +24,16 @@ const statusToString = (status: UserStatus): string => {
 };
 
 // 格式化日期
-const formatDate = (date: Date): string => {
-  return new Date(date).toLocaleString('zh-TW');
+export const formatDate = (date: string | Date | undefined | null): string => {
+  if (!date) return '';
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return format(dateObj, 'yyyy/MM/dd');
+};
+
+export const formatDateTime = (date: string | Date | undefined | null): string => {
+  if (!date) return '';
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return format(dateObj, 'yyyy/MM/dd HH:mm:ss');
 };
 
 // 匯出 Excel
@@ -36,8 +45,8 @@ export const exportToExcel = (users: User[], fileName: string = 'users.xlsx') =>
     '會員編號': user.memberNo,
     '會員等級': roleToString(user.role),
     '狀態': statusToString(user.status),
-    '建立時間': formatDate(user.createdAt),
-    '最後更新': formatDate(user.updatedAt)
+    '建立時間': formatDateTime(user.createdAt),
+    '最後更新': formatDateTime(user.updatedAt)
   }));
 
   const ws = XLSX.utils.json_to_sheet(data);
@@ -57,8 +66,8 @@ export const exportToCsv = (users: User[], fileName: string = 'users.csv') => {
     user.memberNo,
     roleToString(user.role),
     statusToString(user.status),
-    formatDate(user.createdAt),
-    formatDate(user.updatedAt)
+    formatDateTime(user.createdAt),
+    formatDateTime(user.updatedAt)
   ]);
 
   const csvContent = [

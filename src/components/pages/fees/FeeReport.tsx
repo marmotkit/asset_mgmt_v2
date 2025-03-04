@@ -26,7 +26,9 @@ import {
 import { Download as DownloadIcon } from '@mui/icons-material';
 import { feeHistoryService } from '../../../services/feeHistoryService';
 import { invoiceService } from '../../../services/invoiceService';
+import { memberService } from '../../../services/memberService';
 import { FeeHistory, MemberType } from '../../../types/fee';
+import { Member } from '../../../types/member';
 import * as XLSX from 'xlsx';
 
 interface DashboardStats {
@@ -60,13 +62,13 @@ export const FeeReport: React.FC = () => {
         { id: 'memberId', label: '會員編號', selected: true },
         { id: 'memberName', label: '會員姓名', selected: true },
         { id: 'memberType', label: '會員類別', selected: true },
-        { id: 'userName', label: '所屬公司', selected: true },
         { id: 'paymentDate', label: '繳費日期', selected: true },
         { id: 'paymentMethod', label: '繳費方式', selected: true },
         { id: 'status', label: '繳費狀態', selected: true },
         { id: 'hasInvoice', label: '發票/收據', selected: true }
     ]);
     const [invoiceStatus, setInvoiceStatus] = useState<{ [key: string]: boolean }>({});
+    const [members, setMembers] = useState<{ [key: string]: Member }>({});
 
     useEffect(() => {
         // 生成年度選項（從2020年到當前年度）
@@ -97,6 +99,14 @@ export const FeeReport: React.FC = () => {
                     return false;
                 });
             }
+
+            // 載入會員資料
+            const allMembers = await memberService.getMembers();
+            const memberMap = allMembers.reduce((acc, member) => {
+                acc[member.id] = member;
+                return acc;
+            }, {} as { [key: string]: Member });
+            setMembers(memberMap);
 
             setFeeRecords(filteredRecords);
 

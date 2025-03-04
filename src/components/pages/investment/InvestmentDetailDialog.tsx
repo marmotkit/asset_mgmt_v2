@@ -14,9 +14,10 @@ import {
     InputAdornment,
     Typography,
     FormHelperText,
+    Alert,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { Investment, InvestmentType, MovableInvestment, ImmovableInvestment, ContractFile, RentalPayment, ProfitSharingType } from '../../../types/investment';
+import { Investment, InvestmentType, MovableInvestment, ImmovableInvestment, ContractFile, RentalPayment, ProfitSharingType, InvestmentFormData } from '../../../types/investment';
 import { Company } from '../../../types/company';
 import ApiService from '../../../services/api.service';
 import ContractUpload from './ContractUpload';
@@ -28,6 +29,9 @@ interface InvestmentDetailDialogProps {
     investmentData: Investment | null;
     investmentType: InvestmentType;
     onSave: (data: Partial<Investment>) => Promise<void>;
+    isEditing: boolean;
+    onUpdate: (data: Partial<Investment>) => Promise<void>;
+    onCreate: (data: Partial<Investment>) => Promise<void>;
 }
 
 const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
@@ -36,13 +40,18 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
     investmentData,
     investmentType,
     onSave,
+    isEditing,
+    onUpdate,
+    onCreate,
 }) => {
     const [companies, setCompanies] = useState<Company[]>([]);
-    const [formData, setFormData] = useState<Partial<MovableInvestment | ImmovableInvestment>>({
+    const [formData, setFormData] = useState<InvestmentFormData>({
         type: investmentType,
         status: 'pending',
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         loadCompanies();
@@ -94,13 +103,40 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
     };
 
     const handleSubmit = async () => {
-        if (!validateForm()) return;
+        if (!formData.name || !formData.type || !formData.amount) {
+            setError('請填寫必要欄位');
+            return;
+        }
 
         try {
-            await onSave(formData);
+            setLoading(true);
+            const submitData = {
+                ...formData,
+                startDate: formData.startDate || undefined,
+                endDate: formData.endDate || undefined,
+                purchaseDate: formData.purchaseDate || undefined
+            };
+
+            if (formData.monthlyRental) {
+                const payments = generateRentalPayments(
+                    submitData.startDate,
+                    submitData.endDate,
+                    formData.monthlyRental
+                );
+                submitData.rentalPayments = payments;
+            }
+
+            if (isEditing) {
+                await onUpdate(submitData);
+            } else {
+                await onCreate(submitData);
+            }
             onClose();
         } catch (error) {
             console.error('儲存失敗:', error);
+            setError('儲存失敗');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -132,9 +168,7 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
     };
 
     const getTypedFormData = () => {
-        return investmentType === 'movable'
-            ? formData as Partial<MovableInvestment>
-            : formData as Partial<ImmovableInvestment>;
+        return formData;
     };
 
     const handleUploadContract = async (file: File) => {
@@ -150,7 +184,7 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
             const mockContract: ContractFile = {
                 id: Date.now().toString(),
                 filename: file.name,
-                uploadDate: new Date(),
+                uploadDate: new Date().toISOString(),
                 fileSize: file.size,
                 fileType: file.type,
                 url: URL.createObjectURL(file),
@@ -174,34 +208,58 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
         }
     };
 
-    // 生成租金收款記錄
-    const generateRentalPayments = (startDate: Date, endDate: Date | undefined, monthlyRental: number) => {
-        const payments: RentalPayment[] = [];
+    const generateRentalPayments = (startDate: string | undefined, endDate: string | undefined, monthlyRental: number) => {
+        if (!startDate) return [];
+
         const start = new Date(startDate);
         const end = endDate ? new Date(endDate) : new Date(start.getFullYear() + 1, start.getMonth(), start.getDate());
 
+        const payments: RentalPayment[] = [];
         let currentDate = new Date(start.getFullYear(), start.getMonth(), 1);
+
         while (currentDate <= end) {
             payments.push({
-                id: `${formData.id}-${currentDate.getTime()}`,
-                dueDate: new Date(currentDate),
+                id: `payment-${Date.now()}-${currentDate.getTime()}`,
+                dueDate: currentDate.toISOString(),
                 amount: monthlyRental,
                 status: 'pending',
             });
             currentDate.setMonth(currentDate.getMonth() + 1);
         }
+
         return payments;
     };
 
     const handleMonthlyRentalChange = (value: number) => {
         if (formData.startDate) {
             const payments = generateRentalPayments(
-                formData.startDate,
-                formData.endDate,
+                formData.startDate || undefined,
+                formData.endDate || undefined,
                 value
             );
             handleChange('monthlyRental', value);
             handleChange('rentalPayments', payments);
+        }
+    };
+
+    const handleDateChange = (field: 'startDate' | 'endDate' | 'purchaseDate') => (date: Date | null) => {
+        const isoDate = date ? date.toISOString() : undefined;
+        setFormData(prev => ({
+            ...prev,
+            [field]: isoDate
+        }));
+
+        // 如果是開始日期或結束日期變更，且有設定月租金，則重新生成租金收款記錄
+        if ((field === 'startDate' || field === 'endDate') && formData.monthlyRental) {
+            const payments = generateRentalPayments(
+                field === 'startDate' ? isoDate : formData.startDate,
+                field === 'endDate' ? isoDate : formData.endDate,
+                formData.monthlyRental
+            );
+            setFormData(prev => ({
+                ...prev,
+                rentalPayments: payments
+            }));
         }
     };
 
@@ -214,12 +272,27 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
         }
     };
 
+    // 生成租金收款記錄
+    if (formData.monthlyRental) {
+        const payments = generateRentalPayments(
+            formData.startDate || undefined,
+            formData.endDate || undefined,
+            formData.monthlyRental
+        );
+        formData.rentalPayments = payments;
+    }
+
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle>
-                {investmentData ? '編輯投資項目' : '新增投資項目'}
+                {isEditing ? '編輯投資項目' : '新增投資項目'}
             </DialogTitle>
             <DialogContent>
+                {error && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                        {error}
+                    </Alert>
+                )}
                 <Grid container spacing={2} sx={{ mt: 1 }}>
                     <Grid item xs={12}>
                         <FormControl
@@ -326,8 +399,14 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
                             <Grid item xs={12} sm={6}>
                                 <DatePicker
                                     label="購入日期"
-                                    value={(getTypedFormData() as Partial<MovableInvestment>).purchaseDate || null}
-                                    onChange={(date) => handleChange('purchaseDate', date)}
+                                    value={formData.purchaseDate ? new Date(formData.purchaseDate) : undefined}
+                                    onChange={(date) => handleDateChange('purchaseDate')(date)}
+                                    slotProps={{
+                                        textField: {
+                                            error: !!errors.purchaseDate,
+                                            helperText: errors.purchaseDate
+                                        }
+                                    }}
                                 />
                             </Grid>
                         </>
@@ -384,16 +463,28 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
                     <Grid item xs={12} sm={6}>
                         <DatePicker
                             label="開始日期"
-                            value={formData.startDate || null}
-                            onChange={(date) => handleChange('startDate', date)}
+                            value={formData.startDate ? new Date(formData.startDate) : undefined}
+                            onChange={(date) => handleDateChange('startDate')(date)}
+                            slotProps={{
+                                textField: {
+                                    error: !!errors.startDate,
+                                    helperText: errors.startDate
+                                }
+                            }}
                         />
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
                         <DatePicker
                             label="結束日期"
-                            value={formData.endDate || null}
-                            onChange={(date) => handleChange('endDate', date)}
+                            value={formData.endDate ? new Date(formData.endDate) : undefined}
+                            onChange={(date) => handleDateChange('endDate')(date)}
+                            slotProps={{
+                                textField: {
+                                    error: !!errors.endDate,
+                                    helperText: errors.endDate
+                                }
+                            }}
                         />
                     </Grid>
 
@@ -528,8 +619,8 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>取消</Button>
-                <Button onClick={handleSubmit} variant="contained">
-                    儲存
+                <Button onClick={handleSubmit} variant="contained" disabled={loading}>
+                    {loading ? '儲存中...' : '儲存'}
                 </Button>
             </DialogActions>
         </Dialog>

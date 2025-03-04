@@ -23,7 +23,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Edit as EditIcon } from '@mui/icons-material';
 import { RentalPayment, PaymentStatus, PaymentMethod } from '../../../types/investment';
-import { parseISO } from 'date-fns';
+import { parseISO, format } from 'date-fns';
 
 interface RentalPaymentListProps {
     payments: RentalPayment[];
@@ -57,8 +57,9 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [editFormData, setEditFormData] = useState<Partial<RentalPayment>>({});
 
-    const formatDate = (date: Date) => {
-        return new Date(date).toLocaleDateString('zh-TW');
+    const formatDate = (date: string | undefined): string => {
+        if (!date) return '';
+        return format(parseISO(date), 'yyyy/MM/dd');
     };
 
     const formatAmount = (amount: number) => {
@@ -69,46 +70,31 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
         }).format(amount);
     };
 
-    const ensureDate = (date: Date | string | undefined): Date | undefined => {
-        if (!date) return undefined;
-        if (date instanceof Date) return date;
-        try {
-            return parseISO(date);
-        } catch {
-            return undefined;
-        }
-    };
-
     const handleStatusChange = async (payment: RentalPayment, newStatus: PaymentStatus) => {
-        const updatedPayment = {
+        const updatedPayment: RentalPayment = {
             ...payment,
             status: newStatus,
-            paidDate: ensureDate(payment.paidDate),
+            paidDate: newStatus === 'paid' ? new Date().toISOString() : undefined
         };
-
-        if (newStatus === 'paid' && !updatedPayment.paidDate) {
-            updatedPayment.paidDate = new Date();
-        } else if (newStatus !== 'paid') {
-            updatedPayment.paidDate = undefined;
-        }
-
-        await onUpdatePayment(updatedPayment);
+        onUpdatePayment(updatedPayment);
     };
 
     const handlePaidDateChange = async (payment: RentalPayment, newDate: Date | null) => {
-        const updatedPayment = {
+        const updatedPayment: RentalPayment = {
             ...payment,
-            status: payment.status,
-            paidDate: newDate ? ensureDate(newDate) : undefined,
+            status: newDate ? 'paid' as PaymentStatus : 'pending' as PaymentStatus,
+            paidDate: newDate ? newDate.toISOString() : undefined,
         };
-
-        if (newDate) {
-            updatedPayment.status = 'paid';
-        } else {
-            updatedPayment.status = 'pending';
-        }
-
         await onUpdatePayment(updatedPayment);
+    };
+
+    const handlePaymentMethodChange = async (payment: RentalPayment, newMethod: PaymentMethod) => {
+        const updatedPayment: RentalPayment = {
+            ...payment,
+            paymentMethod: newMethod,
+            paidDate: payment.status === 'paid' ? new Date().toISOString() : undefined
+        };
+        onUpdatePayment(updatedPayment);
     };
 
     const handleEditClick = (payment: RentalPayment) => {
@@ -123,22 +109,27 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
         setEditFormData({});
     };
 
-    const handleEditSave = async () => {
-        if (editingPayment && editFormData) {
-            await onUpdatePayment({
-                ...editingPayment,
-                ...editFormData,
-            });
-            handleEditClose();
-        }
+    const handleEditSubmit = async () => {
+        if (!editFormData) return;
+        const updatedPayment: RentalPayment = {
+            ...editFormData,
+            id: editFormData.id || '',
+            dueDate: editFormData.dueDate || '',
+            amount: editFormData.amount || 0,
+            status: (editFormData.status || 'pending') as PaymentStatus,
+            paidDate: editFormData.status === 'paid' ? new Date().toISOString() : undefined,
+            paymentMethod: editFormData.paymentMethod
+        };
+        await onUpdatePayment(updatedPayment);
+        handleEditClose();
     };
 
     // 計算統計資訊
     const statistics = useMemo(() => {
-        const totalContractAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
+        const totalContractAmount = payments.reduce((sum: number, payment: RentalPayment) => sum + payment.amount, 0);
         const totalPaidAmount = payments
-            .filter(payment => payment.status === 'paid')
-            .reduce((sum, payment) => sum + payment.amount, 0);
+            .filter((payment: RentalPayment) => payment.status === 'paid')
+            .reduce((sum: number, payment: RentalPayment) => sum + payment.amount, 0);
         const remainingAmount = totalContractAmount - totalPaidAmount;
 
         return {
@@ -223,7 +214,7 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
                                 </TableCell>
                                 <TableCell>
                                     <DatePicker
-                                        value={payment.paidDate ? ensureDate(payment.paidDate) : null}
+                                        value={payment.paidDate ? parseISO(payment.paidDate) : null}
                                         onChange={(date) => handlePaidDateChange(payment, date)}
                                         disabled={payment.status !== 'paid'}
                                     />
@@ -233,10 +224,7 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
                                         select
                                         size="small"
                                         value={payment.paymentMethod || ''}
-                                        onChange={(e) => onUpdatePayment({
-                                            ...payment,
-                                            paymentMethod: e.target.value as PaymentMethod,
-                                        })}
+                                        onChange={(e) => handlePaymentMethodChange(payment, e.target.value as PaymentMethod)}
                                         disabled={payment.status !== 'paid'}
                                     >
                                         <MenuItem value="">
@@ -289,7 +277,7 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
                                 onChange={(e) => setEditFormData({
                                     ...editFormData,
                                     status: e.target.value as PaymentStatus,
-                                    paidDate: e.target.value === 'paid' ? new Date() : undefined,
+                                    paidDate: e.target.value === 'paid' ? new Date().toISOString() : undefined,
                                 })}
                             >
                                 {Object.entries(statusLabels).map(([value, label]) => (
@@ -306,10 +294,10 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
                         <Grid item xs={12}>
                             <DatePicker
                                 label="收款日期"
-                                value={editFormData.paidDate ? ensureDate(editFormData.paidDate) : null}
+                                value={editFormData.paidDate ? parseISO(editFormData.paidDate) : null}
                                 onChange={(date) => setEditFormData({
                                     ...editFormData,
-                                    paidDate: date ? ensureDate(date) : undefined,
+                                    paidDate: date ? date.toISOString() : undefined,
                                 })}
                                 disabled={editFormData.status !== 'paid'}
                             />
@@ -353,7 +341,7 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleEditClose}>取消</Button>
-                    <Button onClick={handleEditSave} variant="contained">
+                    <Button onClick={handleEditSubmit} variant="contained">
                         儲存
                     </Button>
                 </DialogActions>

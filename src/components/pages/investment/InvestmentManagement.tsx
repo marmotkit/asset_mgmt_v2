@@ -96,6 +96,25 @@ const InvestmentManagement: React.FC = () => {
                 onClose={() => setDialogOpen(false)}
                 investmentData={selectedInvestment}
                 investmentType={tabValue === 0 ? 'movable' : 'immovable'}
+                isEditing={!!selectedInvestment}
+                onUpdate={async (data) => {
+                    try {
+                        await ApiService.updateInvestment(selectedInvestment!.id, data);
+                        await loadInvestments();
+                        setDialogOpen(false);
+                    } catch (err) {
+                        setError('更新投資項目失敗');
+                    }
+                }}
+                onCreate={async (data) => {
+                    try {
+                        await ApiService.createInvestment(data);
+                        await loadInvestments();
+                        setDialogOpen(false);
+                    } catch (err) {
+                        setError('新增投資項目失敗');
+                    }
+                }}
                 onSave={async (data) => {
                     try {
                         if (selectedInvestment) {

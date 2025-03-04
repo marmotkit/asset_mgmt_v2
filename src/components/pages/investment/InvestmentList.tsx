@@ -21,7 +21,7 @@ import {
 import { Investment, InvestmentStatus, ProfitSharingType } from '../../../types/investment';
 import { Company } from '../../../types/company';
 import ApiService from '../../../services/api.service';
-import { formatDate } from '../../../utils/dateUtils';
+import { format } from 'date-fns';
 import { formatCurrency } from '../../../utils/numberUtils';
 
 interface InvestmentListProps {
@@ -124,6 +124,11 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
         }
 
         return profitAmount;
+    };
+
+    const formatDate = (date: string | null | undefined): string => {
+        if (!date) return '';
+        return format(new Date(date), 'yyyy/MM/dd');
     };
 
     return (

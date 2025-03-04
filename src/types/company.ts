@@ -8,19 +8,22 @@ export type IndustryType =
     | '運輸業'
     | '其他';
 
+export interface Contact {
+    name: string;      // 聯絡人姓名
+    phone: string;     // 電話
+    fax?: string;      // 傳真
+    email: string;     // 電子郵件
+}
+
 export interface Company {
     id: string;           // UUID
-    companyNo: string;    // 公司編號 (A001, A002...)
+    companyNo: string;    // 公司編號
     name: string;         // 公司名稱
-    nameEn?: string;      // 英文簡稱
-    industry?: IndustryType; // 產業類別
-    contact: {            // 聯絡資訊
-        name: string;       // 聯絡人
-        phone: string;      // 聯絡電話
-        fax?: string;       // 傳真電話
-        email: string;      // 電子郵件
-    };
-    notes?: string;       // 新增備註欄位
-    createdAt: Date;      // 建立時間
-    updatedAt: Date;      // 更新時間
-} 
+    nameEn?: string;      // 英文名稱
+    industry?: IndustryType; // 產業類型
+    contact: Contact;     // 聯絡資訊
+    notes?: string;       // 備註
+    status: string;       // 公司狀態
+    createdAt: string;    // 建立時間
+    updatedAt: string;    // 更新時間
+}

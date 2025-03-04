@@ -12,7 +12,8 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { UserPreferences, PreferencesManagerProps } from '../../../types/preferences';
+import { UserPreferences } from '../../../types/user';
+import { PreferencesManagerProps } from '../../../types/preferences';
 import { ApiService } from '../../../services';
 
 const INVESTMENT_OPTIONS = [
@@ -52,7 +53,16 @@ const PreferencesManager: React.FC<PreferencesManagerProps> = ({ userId, onUpdat
     setLoading(true);
     try {
       const response = await ApiService.getUserPreferences(userId);
-      setPreferences(response);
+      const newPreferences: UserPreferences = {
+        id: response.id || '',
+        userId: response.userId || '',
+        investmentPreferences: response.investmentPreferences || [],
+        riskTolerance: response.riskTolerance || 'low',
+        investmentPeriod: response.investmentPeriod || 'short',
+        createdAt: response.createdAt,
+        updatedAt: response.updatedAt
+      };
+      setPreferences(newPreferences);
     } catch (err) {
       setError('載入偏好設定失敗');
     } finally {
@@ -102,10 +112,16 @@ const PreferencesManager: React.FC<PreferencesManagerProps> = ({ userId, onUpdat
 
     setLoading(true);
     try {
-      await ApiService.updateUserPreferences(userId, preferences);
+      const updatedPreferences: UserPreferences = {
+        ...preferences,
+        updatedAt: new Date().toISOString()
+      };
+      await ApiService.updateUserPreferences(userId, updatedPreferences);
+      setPreferences(updatedPreferences);
       onUpdate?.();
       setError(null);
-    } catch (err) {
+    } catch (error) {
+      console.error('儲存偏好設定失敗:', error);
       setError('儲存偏好設定失敗');
     } finally {
       setLoading(false);

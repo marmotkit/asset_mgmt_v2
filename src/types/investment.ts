@@ -30,7 +30,7 @@ export interface ProfitSharingSettings {
 export interface ContractFile {
     id: string;
     filename: string;
-    uploadDate: Date;
+    uploadDate: string;
     fileSize: number;
     fileType: string;
     url: string;
@@ -39,10 +39,10 @@ export interface ContractFile {
 // 租金收款記錄
 export interface RentalPayment {
     id: string;
-    dueDate: Date;        // 應收日期
+    dueDate: string;        // 應收日期
     amount: number;       // 應收金額
     status: PaymentStatus; // 收款狀態
-    paidDate?: Date;      // 實際收款日期
+    paidDate?: string;      // 實際收款日期
     paymentMethod?: PaymentMethod; // 收款方式
     notes?: string;       // 備註
 }
@@ -54,12 +54,12 @@ interface BaseInvestment {
     name: string;               // 投資項目名稱
     description: string;        // 項目描述
     amount: number;             // 投資金額
-    startDate: Date;           // 開始日期
-    endDate?: Date;            // 結束日期
+    startDate: string | undefined;    // 開始日期
+    endDate: string | undefined;      // 結束日期
     status: InvestmentStatus;   // 狀態
     notes?: string;            // 備註
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
     contract?: ContractFile;    // 新增合約檔案欄位
     monthlyRental: number;     // 每月租金
     rentalPayments: RentalPayment[]; // 租金收款記錄
@@ -72,7 +72,7 @@ export interface MovableInvestment extends BaseInvestment {
     assetType: string;         // 動產類型
     serialNumber?: string;     // 序號
     manufacturer?: string;     // 製造商
-    purchaseDate: Date;       // 購入日期
+    purchaseDate: string | undefined; // 購入日期
 }
 
 // 不動產投資
@@ -85,4 +85,32 @@ export interface ImmovableInvestment extends BaseInvestment {
 }
 
 // 通用投資型別
-export type Investment = MovableInvestment | ImmovableInvestment; 
+export type Investment = MovableInvestment | ImmovableInvestment;
+
+// 投資表單資料
+export interface InvestmentFormData {
+    id?: string;
+    type?: InvestmentType;
+    companyId?: string;
+    name?: string;
+    description?: string;
+    amount?: number;
+    startDate?: string | undefined;
+    endDate?: string | undefined;
+    status?: InvestmentStatus;
+    notes?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    contract?: ContractFile;
+    monthlyRental?: number;
+    rentalPayments?: RentalPayment[];
+    profitSharing?: ProfitSharingSettings;
+    assetType?: string;
+    serialNumber?: string;
+    manufacturer?: string;
+    purchaseDate?: string | undefined;
+    location?: string;
+    area?: number;
+    propertyType?: string;
+    registrationNumber?: string;
+} 

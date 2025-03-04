@@ -25,8 +25,8 @@ class AuthServiceClass {
     status: 'active' as UserStatus,
     preferences: [],
     isFirstLogin: false,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   };
 
   private currentUser: User | null = null;

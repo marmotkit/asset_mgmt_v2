@@ -1,6 +1,5 @@
 import { AuthService } from './auth.service';
-import { User, UserRole, UserStatus } from '../types/user';
-import { UserPreferences } from '../types/preferences';
+import { User, UserRole, UserStatus, UserPreferences, USER_ROLE_PREFIX } from '../types/user';
 import { Company, IndustryType } from '../types/company';
 import { Investment, RentalPayment } from '../types/investment';
 
@@ -33,12 +32,12 @@ class ApiServiceClass {
       username: 'admin',
       name: '系統管理員',
       email: 'admin@example.com',
-      role: 'admin' as UserRole,
-      status: 'active' as UserStatus,
+      role: 'admin',
+      status: 'active',
       preferences: [],
       isFirstLogin: false,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z'
     },
     {
       id: '2',
@@ -46,12 +45,12 @@ class ApiServiceClass {
       username: 'user1',
       name: '張三',
       email: 'user1@example.com',
-      role: 'normal' as UserRole,
-      status: 'active' as UserStatus,
+      role: 'normal',
+      status: 'active',
       preferences: [],
       isFirstLogin: false,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z'
     },
     {
       id: '3',
@@ -59,12 +58,12 @@ class ApiServiceClass {
       username: 'user2',
       name: '李四',
       email: 'user2@example.com',
-      role: 'business' as UserRole,
-      status: 'active' as UserStatus,
+      role: 'business',
+      status: 'active',
       preferences: [],
       isFirstLogin: false,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z'
     },
     {
       id: '4',
@@ -72,12 +71,12 @@ class ApiServiceClass {
       username: 'user3',
       name: '王五',
       email: 'user3@example.com',
-      role: 'lifetime' as UserRole,
-      status: 'active' as UserStatus,
+      role: 'lifetime',
+      status: 'active',
       preferences: [],
       isFirstLogin: false,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z'
     }
   ];
 
@@ -86,16 +85,16 @@ class ApiServiceClass {
       id: '1',
       companyNo: 'A001',
       name: '測試公司',
-      nameEn: 'Test Corp',
+      nameEn: 'Test Company',
       industry: '科技業',
       contact: {
-        name: '王小明',
-        phone: '02-12345678',
-        fax: '02-12345679',
-        email: 'contact@test.com'
+        name: '測試',
+        phone: '0912345678',
+        email: 'test@test.com'
       },
-      createdAt: new Date(),
-      updatedAt: new Date()
+      status: 'active',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z'
     }
   ];
 
@@ -121,15 +120,11 @@ class ApiServiceClass {
     const storedInvestments = localStorage.getItem(this.INVESTMENTS_STORAGE_KEY);
     if (storedInvestments) {
       // 將儲存的資料轉換回正確的日期格式
-      this.mockInvestments = JSON.parse(storedInvestments, (key, value) => {
-        // 處理日期欄位
-        if (['startDate', 'endDate', 'purchaseDate', 'uploadDate', 'createdAt', 'updatedAt'].includes(key) && value) {
-          return new Date(value);
-        }
-        // 處理合約檔案
-        if (key === 'contract' && value) {
-          // 如果是合約檔案，重新建立 URL
-          const file = value;
+      this.mockInvestments = JSON.parse(storedInvestments);
+      // 處理合約檔案
+      this.mockInvestments.forEach(investment => {
+        if (investment.contract?.url) {
+          const file = investment.contract;
           if (file.fileType.startsWith('application/')) {
             // 這裡我們需要另外儲存檔案內容
             const storedFile = localStorage.getItem(`contract_${file.id}`);
@@ -138,9 +133,7 @@ class ApiServiceClass {
               file.url = URL.createObjectURL(blob);
             }
           }
-          return file;
         }
-        return value;
       });
     } else {
       localStorage.setItem(this.INVESTMENTS_STORAGE_KEY, JSON.stringify(this.mockInvestments));
@@ -159,15 +152,16 @@ class ApiServiceClass {
   private saveInvestments(): void {
     // 在儲存前處理檔案
     const investmentsToStore = this.mockInvestments.map(investment => {
-      if (investment.contract?.url) {
+      const investmentCopy = { ...investment };
+      if (investmentCopy.contract?.url) {
         // 儲存檔案內容
-        fetch(investment.contract.url)
+        fetch(investmentCopy.contract.url)
           .then(response => response.blob())
           .then(blob => {
-            localStorage.setItem(`contract_${investment.contract!.id}`, blob.toString());
+            localStorage.setItem(`contract_${investmentCopy.contract!.id}`, blob.toString());
           });
       }
-      return investment;
+      return investmentCopy;
     });
 
     localStorage.setItem(this.INVESTMENTS_STORAGE_KEY, JSON.stringify(investmentsToStore));
@@ -239,9 +233,14 @@ class ApiServiceClass {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
 
+      const lastUser = this.mockUsers[this.mockUsers.length - 1];
+      const lastNo = lastUser ? parseInt(lastUser.memberNo.slice(1)) : 0;
+      const newNo = (lastNo + 1).toString().padStart(3, '0');
+      const rolePrefix = USER_ROLE_PREFIX[userData.role || 'normal'];
+
       const newUser: User = {
         id: Date.now().toString(),
-        memberNo: userData.memberNo!,
+        memberNo: `${rolePrefix}${newNo}`,
         username: userData.username!,
         name: userData.name!,
         email: userData.email!,
@@ -249,12 +248,12 @@ class ApiServiceClass {
         status: userData.status || 'active',
         preferences: [],
         isFirstLogin: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z'
       };
 
       this.mockUsers.push(newUser);
-      this.saveUsers(); // 儲存到 localStorage
+      this.saveUsers();
       return newUser;
     } catch (error) {
       console.error('創建使用者失敗:', error);
@@ -274,10 +273,10 @@ class ApiServiceClass {
       this.mockUsers[userIndex] = {
         ...this.mockUsers[userIndex],
         ...userData,
-        updatedAt: new Date()
+        updatedAt: '2024-01-01T00:00:00.000Z'
       };
 
-      this.saveUsers(); // 儲存到 localStorage
+      this.saveUsers();
       return this.mockUsers[userIndex];
     } catch (error) {
       console.error('更新使用者失敗:', error);
@@ -329,10 +328,10 @@ class ApiServiceClass {
       this.mockUsers[userIndex] = {
         ...this.mockUsers[userIndex],
         status,
-        updatedAt: new Date()
+        updatedAt: '2024-01-01T00:00:00.000Z'
       };
 
-      this.saveUsers(); // 儲存到 localStorage
+      this.saveUsers();
       return this.mockUsers[userIndex];
     } catch (error) {
       console.error('更新使用者狀態失敗:', error);
@@ -342,22 +341,27 @@ class ApiServiceClass {
 
   async updateUserRole(userId: string, role: UserRole): Promise<User> {
     try {
-      // 模擬 API 延遲
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // 更新模擬資料
       const userIndex = this.mockUsers.findIndex(u => u.id === userId);
       if (userIndex === -1) {
         throw new Error('找不到使用者');
       }
 
+      // 更新會員編號
+      const user = this.mockUsers[userIndex];
+      const currentNo = user.memberNo.slice(1);
+      const rolePrefix = USER_ROLE_PREFIX[role];
+      const newMemberNo = `${rolePrefix}${currentNo}`;
+
       this.mockUsers[userIndex] = {
-        ...this.mockUsers[userIndex],
+        ...user,
         role,
-        updatedAt: new Date()
+        memberNo: newMemberNo,
+        updatedAt: '2024-01-01T00:00:00.000Z'
       };
 
-      this.saveUsers(); // 儲存到 localStorage
+      this.saveUsers();
       return this.mockUsers[userIndex];
     } catch (error) {
       console.error('更新使用者角色失敗:', error);
@@ -453,8 +457,9 @@ class ApiServiceClass {
         industry: companyData.industry,
         contact: companyData.contact!,
         notes: companyData.notes,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        status: 'active',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z'
       };
 
       this.mockCompanies.push(newCompany);
@@ -478,7 +483,7 @@ class ApiServiceClass {
       this.mockCompanies[companyIndex] = {
         ...this.mockCompanies[companyIndex],
         ...companyData,
-        updatedAt: new Date()
+        updatedAt: '2024-01-01T00:00:00.000Z'
       };
 
       this.saveCompanies();
@@ -524,13 +529,13 @@ class ApiServiceClass {
       const newInvestment: Investment = {
         id: Date.now().toString(),
         ...investmentData,
-        startDate: investmentData.startDate ? new Date(investmentData.startDate) : new Date(),
-        endDate: investmentData.endDate ? new Date(investmentData.endDate) : undefined,
+        startDate: investmentData.startDate || '2024-01-01T00:00:00.000Z',
+        endDate: investmentData.endDate || undefined,
         purchaseDate: investmentData.type === 'movable' && investmentData.purchaseDate
-          ? new Date(investmentData.purchaseDate)
+          ? investmentData.purchaseDate
           : undefined,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
       } as Investment;
 
       // 如果有合約檔案，確保 URL 被正確處理
@@ -558,19 +563,21 @@ class ApiServiceClass {
   }
 
   private generateRentalPayments(
-    startDate: Date,
-    endDate: Date | undefined,
+    startDate: string | undefined,
+    endDate: string | undefined,
     monthlyRental: number
   ): RentalPayment[] {
+    if (!startDate) return [];
+
     const payments: RentalPayment[] = [];
     const start = new Date(startDate);
-    const end = endDate || new Date(start.getFullYear() + 1, start.getMonth(), start.getDate());
+    const end = endDate ? new Date(endDate) : new Date(start.getFullYear() + 1, start.getMonth(), start.getDate());
 
     let currentDate = new Date(start.getFullYear(), start.getMonth(), 1);
     while (currentDate <= end) {
       payments.push({
         id: `payment-${Date.now()}-${currentDate.getTime()}`,
-        dueDate: new Date(currentDate),
+        dueDate: currentDate.toISOString(),
         amount: monthlyRental,
         status: 'pending',
       });
@@ -592,9 +599,9 @@ class ApiServiceClass {
       const updatedInvestment = {
         ...this.mockInvestments[index],
         ...investmentData,
-        startDate: investmentData.startDate ? new Date(investmentData.startDate) : this.mockInvestments[index].startDate,
-        endDate: investmentData.endDate ? new Date(investmentData.endDate) : this.mockInvestments[index].endDate,
-        updatedAt: new Date(),
+        startDate: investmentData.startDate || this.mockInvestments[index].startDate,
+        endDate: investmentData.endDate || this.mockInvestments[index].endDate,
+        updatedAt: '2024-01-01T00:00:00.000Z',
       } as Investment;
 
       // 處理合約檔案
@@ -634,6 +641,18 @@ class ApiServiceClass {
       throw new Error('刪除投資項目失敗');
     }
   }
+
+  private delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  searchInvestments = async (query?: string): Promise<Investment[]> => {
+    await this.delay(500);
+    if (!query) return this.mockInvestments;
+    const searchTerm = query.toLowerCase();
+    return this.mockInvestments.filter(investment =>
+      investment.name.toLowerCase().includes(searchTerm) ||
+      investment.description.toLowerCase().includes(searchTerm)
+    );
+  };
 }
 
 const ApiService = new ApiServiceClass();
