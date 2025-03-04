@@ -93,4 +93,6 @@ export interface PaymentStatusRecord {
     note?: string;
     feeSettingId?: string;
     paymentMethod?: PaymentMethod;
-} 
+}
+
+export type MemberType = '一般會員' | '商務會員' | '終身會員'; 

@@ -10,7 +10,7 @@ import FeeSettings from './FeeSettings';
 import FeePaymentStatus from './FeePaymentStatus';
 import FeeHistory from './FeeHistory';
 import { InvoiceManagement } from './InvoiceManagement';
-import FeeReport from './FeeReport';
+import { FeeReport } from './FeeReport';
 
 interface TabPanelProps {
     children?: React.ReactNode;
