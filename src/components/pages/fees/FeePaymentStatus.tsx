@@ -30,7 +30,7 @@ import {
     Tooltip
 } from '@mui/material';
 import { Search as SearchIcon, Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
-import { PaymentStatus, PaymentStatusRecord, FeeSetting, FeePaymentFilter } from '../../../types/fee';
+import { PaymentStatus, PaymentStatusRecord, FeeSetting, FeePaymentFilter, PaymentMethod } from '../../../types/fee';
 import { User } from '../../../types/user';
 import { feeService } from '../../../services/feeService';
 import ApiService from '../../../services/api.service';
@@ -186,15 +186,24 @@ const FeePaymentStatus: React.FC = () => {
         if (!member || !feeSetting) return;
 
         try {
-            const newPayment: Omit<PaymentStatusRecord, 'id'> = {
+            const newPayment = {
                 memberId: member.id,
                 memberName: member.name,
                 memberType: member.type,
                 amount: feeSetting.amount,
-                dueDate: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0], // 設定為當年12/31
-                status: '待收款',
+                dueDate: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+                status: '待收款' as PaymentStatus,
                 note: `${new Date().getFullYear()}年度會費`,
                 feeSettingId: feeSetting.id
+            } satisfies {
+                memberId: string;
+                memberName: string;
+                memberType: string;
+                amount: number;
+                dueDate: string;
+                status: PaymentStatus;
+                note: string;
+                feeSettingId: string;
             };
 
             const created = await feeService.createPayment(newPayment);
@@ -260,13 +269,24 @@ const FeePaymentStatus: React.FC = () => {
         );
     }
 
-    const handleFieldChange = (field: keyof PaymentStatusRecord, value: any) => {
+    const handleFieldChange = (field: keyof PaymentStatusRecord, value: string) => {
         if (editingPayment) {
             const newPayment = { ...editingPayment };
-            if (field === 'amount') {
-                newPayment[field] = Number(value);
-            } else {
-                newPayment[field] = value;
+            switch (field) {
+                case 'amount':
+                    newPayment.amount = Number(value);
+                    break;
+                case 'status':
+                    newPayment.status = value as PaymentStatus;
+                    break;
+                case 'paymentMethod':
+                    newPayment.paymentMethod = value as PaymentMethod;
+                    break;
+                case 'dueDate':
+                case 'paidDate':
+                case 'note':
+                    newPayment[field] = value;
+                    break;
             }
             setEditingPayment(newPayment);
         }
@@ -314,7 +334,9 @@ const FeePaymentStatus: React.FC = () => {
                             <TableCell align="right">金額</TableCell>
                             <TableCell>到期日</TableCell>
                             <TableCell>繳費日期</TableCell>
+                            <TableCell>收款方式</TableCell>
                             <TableCell>狀態</TableCell>
+                            <TableCell>備註</TableCell>
                             <TableCell>操作</TableCell>
                         </TableRow>
                     </TableHead>
@@ -327,7 +349,9 @@ const FeePaymentStatus: React.FC = () => {
                                 <TableCell align="right">{payment.amount.toLocaleString()}</TableCell>
                                 <TableCell>{payment.dueDate}</TableCell>
                                 <TableCell>{payment.paidDate || '-'}</TableCell>
+                                <TableCell>{payment.paymentMethod || '-'}</TableCell>
                                 <TableCell>{getStatusChip(payment.status)}</TableCell>
+                                <TableCell>{payment.note || '-'}</TableCell>
                                 <TableCell>
                                     <Tooltip title="編輯">
                                         <IconButton size="small" onClick={() => handleEditClick(payment)}>
@@ -408,15 +432,44 @@ const FeePaymentStatus: React.FC = () => {
                             <FormControl fullWidth>
                                 <InputLabel>狀態</InputLabel>
                                 <Select
-                                    name="status"
                                     value={editingPayment?.status || ''}
-                                    onChange={(e) => handleFieldChange('status', e.target.value as PaymentStatus)}
+                                    onChange={(e) => {
+                                        if (editingPayment) {
+                                            setEditingPayment({
+                                                ...editingPayment,
+                                                status: e.target.value as PaymentStatus
+                                            });
+                                        }
+                                    }}
                                     label="狀態"
                                 >
                                     <MenuItem value="待收款">待收款</MenuItem>
                                     <MenuItem value="已收款">已收款</MenuItem>
                                     <MenuItem value="逾期">逾期</MenuItem>
                                     <MenuItem value="終止">終止</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>收款方式</InputLabel>
+                                <Select
+                                    value={editingPayment?.paymentMethod || ''}
+                                    onChange={(e) => {
+                                        if (editingPayment) {
+                                            setEditingPayment({
+                                                ...editingPayment,
+                                                paymentMethod: e.target.value as PaymentMethod
+                                            });
+                                        }
+                                    }}
+                                    label="收款方式"
+                                >
+                                    <MenuItem value="轉帳">轉帳</MenuItem>
+                                    <MenuItem value="Line Pay">Line Pay</MenuItem>
+                                    <MenuItem value="現金">現金</MenuItem>
+                                    <MenuItem value="票據">票據</MenuItem>
+                                    <MenuItem value="其他">其他</MenuItem>
                                 </Select>
                             </FormControl>
                         </Grid>

@@ -425,38 +425,217 @@ export class DocumentService {
         try {
             if (doc.type === '收據') {
                 // 處理收據列印
-                const document = new Document({
-                    sections: [{
-                        properties: {},
-                        children: [
-                            // ... 收據內容 ...
-                        ]
-                    }]
-                });
+                const document = await this.generateReceiptDoc(doc as Receipt);
                 const blob = await Packer.toBlob(document);
-                saveAs(blob, `收據_${doc.receiptNumber}.docx`);
+                saveAs(blob, `收據_${(doc as Receipt).receiptNumber}.docx`);
             } else {
                 // 處理發票列印
                 const invoice = doc as Invoice;
-                const pages = doc.type === '二聯式'
+                const pages = invoice.type === '二聯式'
                     ? ['存根聯', '收執聯']
                     : ['存根聯', '報帳聯', '扣抵聯'];
 
                 // 為每一聯產生獨立的文件
-                const documents = pages.map(pageType =>
-                    this.createInvoicePage(invoice, pageType as any)
-                );
-
-                // 合併所有文件的 sections
-                const allSections: ISectionOptions[] = [];
-                for (const doc of documents) {
-                    const docWithSections = doc as unknown as { sections: ISectionOptions[] };
-                    allSections.push(...docWithSections.sections);
-                }
+                const sections = pages.map(pageType => ({
+                    properties: {},
+                    children: [
+                        new Paragraph({
+                            pageBreakBefore: true,
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({
+                                    text: `${invoice.type}發票 - ${pageType}`,
+                                    size: 32,
+                                    bold: true
+                                })
+                            ]
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.RIGHT,
+                            children: [
+                                new TextRun({
+                                    text: `開立日期：${formatDate(invoice.date)}`,
+                                    size: 24
+                                })
+                            ]
+                        }),
+                        new Paragraph({
+                            children: [
+                                new TextRun({
+                                    text: `發票號碼：${invoice.invoiceNumber}`,
+                                    size: 24
+                                })
+                            ]
+                        }),
+                        new Table({
+                            width: {
+                                size: 100,
+                                type: WidthType.PERCENTAGE
+                            },
+                            borders: {
+                                top: { style: BorderStyle.SINGLE, size: 1 },
+                                bottom: { style: BorderStyle.SINGLE, size: 1 },
+                                left: { style: BorderStyle.SINGLE, size: 1 },
+                                right: { style: BorderStyle.SINGLE, size: 1 },
+                                insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+                                insideVertical: { style: BorderStyle.SINGLE, size: 1 }
+                            },
+                            rows: [
+                                new TableRow({
+                                    children: [
+                                        new TableCell({
+                                            width: {
+                                                size: 20,
+                                                type: WidthType.PERCENTAGE
+                                            },
+                                            children: [new Paragraph('賣方資訊')]
+                                        }),
+                                        new TableCell({
+                                            width: {
+                                                size: 80,
+                                                type: WidthType.PERCENTAGE
+                                            },
+                                            children: [
+                                                new Paragraph(`名稱：${invoice.sellerName}`),
+                                                new Paragraph(`統一編號：${invoice.sellerTaxId}`)
+                                            ]
+                                        })
+                                    ]
+                                }),
+                                ...(invoice.type === '三聯式' ? [
+                                    new TableRow({
+                                        children: [
+                                            new TableCell({
+                                                width: {
+                                                    size: 20,
+                                                    type: WidthType.PERCENTAGE
+                                                },
+                                                children: [new Paragraph('買方資訊')]
+                                            }),
+                                            new TableCell({
+                                                width: {
+                                                    size: 80,
+                                                    type: WidthType.PERCENTAGE
+                                                },
+                                                children: [
+                                                    new Paragraph(`名稱：${invoice.buyerName}`),
+                                                    new Paragraph(`統一編號：${invoice.buyerTaxId}`)
+                                                ]
+                                            })
+                                        ]
+                                    })
+                                ] : [])
+                            ]
+                        }),
+                        new Paragraph({ spacing: { before: convertInchesToTwip(0.5) } }),
+                        new Table({
+                            width: {
+                                size: 100,
+                                type: WidthType.PERCENTAGE
+                            },
+                            borders: {
+                                top: { style: BorderStyle.SINGLE, size: 1 },
+                                bottom: { style: BorderStyle.SINGLE, size: 1 },
+                                left: { style: BorderStyle.SINGLE, size: 1 },
+                                right: { style: BorderStyle.SINGLE, size: 1 },
+                                insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+                                insideVertical: { style: BorderStyle.SINGLE, size: 1 }
+                            },
+                            rows: [
+                                new TableRow({
+                                    children: [
+                                        new TableCell({
+                                            width: {
+                                                size: 40,
+                                                type: WidthType.PERCENTAGE
+                                            },
+                                            children: [new Paragraph({ text: '品名', alignment: AlignmentType.CENTER })]
+                                        }),
+                                        new TableCell({
+                                            width: {
+                                                size: 15,
+                                                type: WidthType.PERCENTAGE
+                                            },
+                                            children: [new Paragraph({ text: '數量', alignment: AlignmentType.CENTER })]
+                                        }),
+                                        new TableCell({
+                                            width: {
+                                                size: 20,
+                                                type: WidthType.PERCENTAGE
+                                            },
+                                            children: [new Paragraph({ text: '單價', alignment: AlignmentType.CENTER })]
+                                        }),
+                                        new TableCell({
+                                            width: {
+                                                size: 25,
+                                                type: WidthType.PERCENTAGE
+                                            },
+                                            children: [new Paragraph({ text: '金額', alignment: AlignmentType.CENTER })]
+                                        })
+                                    ]
+                                }),
+                                ...invoice.items.map(item => new TableRow({
+                                    children: [
+                                        new TableCell({
+                                            children: [new Paragraph(item.description)]
+                                        }),
+                                        new TableCell({
+                                            children: [new Paragraph({
+                                                text: item.quantity.toString(),
+                                                alignment: AlignmentType.RIGHT
+                                            })]
+                                        }),
+                                        new TableCell({
+                                            children: [new Paragraph({
+                                                text: formatCurrency(item.unitPrice),
+                                                alignment: AlignmentType.RIGHT
+                                            })]
+                                        }),
+                                        new TableCell({
+                                            children: [new Paragraph({
+                                                text: formatCurrency(item.amount),
+                                                alignment: AlignmentType.RIGHT
+                                            })]
+                                        })
+                                    ]
+                                }))
+                            ]
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.RIGHT,
+                            spacing: { before: convertInchesToTwip(0.5) },
+                            children: [
+                                new TextRun({
+                                    text: `小計：${formatCurrency(invoice.amount)}`,
+                                    size: 24
+                                })
+                            ]
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.RIGHT,
+                            children: [
+                                new TextRun({
+                                    text: `營業稅：${formatCurrency(invoice.taxAmount)}`,
+                                    size: 24
+                                })
+                            ]
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.RIGHT,
+                            children: [
+                                new TextRun({
+                                    text: `總計：${formatCurrency(invoice.amount + invoice.taxAmount)}`,
+                                    size: 24,
+                                    bold: true
+                                })
+                            ]
+                        })
+                    ]
+                }));
 
                 // 建立合併後的文件
                 const mergedDoc = new Document({
-                    sections: allSections
+                    sections: sections
                 });
 
                 const blob = await Packer.toBlob(mergedDoc);

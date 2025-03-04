@@ -75,6 +75,12 @@ class InvoiceService {
             taxId: '12345678'
         };
     }
+
+    async deleteDocument(id: string): Promise<void> {
+        const documents = await this.getDocuments({});
+        const updatedDocuments = documents.filter(doc => doc.id !== id);
+        await storageService.updateData('documents', updatedDocuments);
+    }
 }
 
 export const invoiceService = new InvoiceService(); 

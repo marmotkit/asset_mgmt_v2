@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { FeeSetting, PaymentStatusRecord, FeeHistory } from '../types/fee';
+import { FeeSetting, PaymentStatusRecord, FeeHistory, PaymentStatus } from '../types/fee';
 import { storageService } from './storageService';
 import { feeHistoryService } from './feeHistoryService';
 
@@ -46,9 +46,18 @@ class FeeService {
         return this.paymentStatuses;
     }
 
-    async createPayment(payment: Omit<PaymentStatusRecord, 'id'>): Promise<PaymentStatusRecord> {
+    async createPayment(payment: {
+        memberId: string;
+        memberName: string;
+        memberType: string;
+        amount: number;
+        dueDate: string;
+        status: PaymentStatus;
+        note?: string;
+        feeSettingId?: string;
+    }): Promise<PaymentStatusRecord> {
         await this.loadData();
-        const newPayment = {
+        const newPayment: PaymentStatusRecord = {
             ...payment,
             id: uuidv4()
         };

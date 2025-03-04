@@ -34,7 +34,7 @@ import {
     Edit as EditIcon,
     Delete as DeleteIcon
 } from '@mui/icons-material';
-import type { FeeHistory as FeeHistoryType, FeeHistoryFilter, PaymentStatus } from '../../../types/fee';
+import { FeeHistory as FeeHistoryType, FeeHistoryFilter, PaymentStatus } from '../../../types/fee';
 import { formatDate } from '../../../utils/dateUtils';
 import { formatCurrency } from '../../../utils/numberUtils';
 import { feeHistoryService } from '../../../services/feeHistoryService';
@@ -56,7 +56,7 @@ const getStatusChip = (status: PaymentStatus) => {
     return <Chip label={config.label} color={config.color} size="small" />;
 };
 
-const statusOptions: StatusOption[] = [
+const statusOptions: { value: PaymentStatus | '', label: string }[] = [
     { value: '', label: '全部' },
     { value: '待收款', label: '待收款' },
     { value: '已收款', label: '已收款' },
@@ -64,13 +64,14 @@ const statusOptions: StatusOption[] = [
     { value: '終止', label: '終止' }
 ];
 
-const FeeHistory: React.FC = () => {
-    const [feeHistory, setFeeHistory] = useState<FeeHistoryType[]>([]);
+export const FeeHistory: React.FC = () => {
+    const [histories, setHistories] = useState<FeeHistoryType[]>([]);
     const [filter, setFilter] = useState<FeeHistoryFilter>({
+        memberId: '',
         userId: '',
-        status: undefined,
-        startDate: undefined,
-        endDate: undefined
+        status: '',
+        startDate: '',
+        endDate: ''
     });
     const [dateRange, setDateRange] = useState<{
         startDate: Date | null;
@@ -97,10 +98,10 @@ const FeeHistory: React.FC = () => {
                 endDate: dateRange.endDate ? dateRange.endDate.toISOString().split('T')[0] : undefined
             };
             const data = await feeHistoryService.getHistories(historyFilter);
-            setFeeHistory(data);
+            setHistories(data);
         } catch (error) {
             console.error('載入會費歷史記錄失敗:', error);
-            setFeeHistory([]);
+            setHistories([]);
         } finally {
             setLoading(false);
         }
@@ -116,6 +117,10 @@ const FeeHistory: React.FC = () => {
             ...prev,
             [name]: value
         }));
+    };
+
+    const isPaymentStatus = (value: string): value is PaymentStatus => {
+        return ['待收款', '已收款', '逾期', '終止'].includes(value);
     };
 
     const handleStatusChange = (e: SelectChangeEvent<PaymentStatus | ''>) => {
@@ -159,7 +164,7 @@ const FeeHistory: React.FC = () => {
         try {
             const updated = await feeHistoryService.updateRecord(editingRecord.id, editingRecord);
             if (updated) {
-                setFeeHistory(prev => prev.map(r => r.id === updated.id ? updated : r));
+                setHistories(prev => prev.map(r => r.id === updated.id ? updated : r));
                 setSnackbar({
                     open: true,
                     message: '更新成功',
@@ -187,7 +192,7 @@ const FeeHistory: React.FC = () => {
         try {
             const success = await feeHistoryService.deleteRecord(deleteRecord.id);
             if (success) {
-                setFeeHistory(prev => prev.filter(r => r.id !== deleteRecord.id));
+                setHistories(prev => prev.filter(r => r.id !== deleteRecord.id));
                 setSnackbar({
                     open: true,
                     message: '刪除成功',
@@ -241,13 +246,14 @@ const FeeHistory: React.FC = () => {
                         />
                     </Grid>
                     <Grid item xs={12} sm={3}>
-                        <FormControl fullWidth size="small">
+                        <FormControl fullWidth>
                             <InputLabel>收款狀態</InputLabel>
                             <Select<PaymentStatus | ''>
                                 name="status"
                                 value={filter.status || ''}
                                 onChange={handleStatusChange}
                                 label="收款狀態"
+                                size="small"
                             >
                                 {statusOptions.map(option => (
                                     <MenuItem key={option.value} value={option.value}>
@@ -297,21 +303,20 @@ const FeeHistory: React.FC = () => {
                             <TableCell>到期日</TableCell>
                             <TableCell>繳費日期</TableCell>
                             <TableCell>繳費方式</TableCell>
-                            <TableCell>收據號碼</TableCell>
                             <TableCell>狀態</TableCell>
                             <TableCell>備註</TableCell>
                             <TableCell>操作</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {feeHistory.length === 0 ? (
+                        {histories.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={11} align="center">
                                     目前沒有符合條件的歷史記錄
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            feeHistory.map((record) => (
+                            histories.map((record) => (
                                 <TableRow key={record.id}>
                                     <TableCell>{record.userId}</TableCell>
                                     <TableCell>{record.userName}</TableCell>
@@ -320,7 +325,6 @@ const FeeHistory: React.FC = () => {
                                     <TableCell>{formatDate(record.dueDate)}</TableCell>
                                     <TableCell>{record.paymentDate ? formatDate(record.paymentDate) : '-'}</TableCell>
                                     <TableCell>{record.paymentMethod || '-'}</TableCell>
-                                    <TableCell>{record.receiptNumber || '-'}</TableCell>
                                     <TableCell>{getStatusChip(record.status)}</TableCell>
                                     <TableCell>{record.note || '-'}</TableCell>
                                     <TableCell>
@@ -411,7 +415,12 @@ const FeeHistory: React.FC = () => {
                                 <InputLabel>狀態</InputLabel>
                                 <Select
                                     value={editingRecord?.status || ''}
-                                    onChange={(e) => handleFieldChange('status', e.target.value)}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value === '待收款' || value === '已收款' || value === '逾期' || value === '終止') {
+                                            handleFieldChange('status', value);
+                                        }
+                                    }}
                                     label="狀態"
                                 >
                                     <MenuItem value="待收款">待收款</MenuItem>
@@ -422,12 +431,25 @@ const FeeHistory: React.FC = () => {
                             </FormControl>
                         </Grid>
                         <Grid item xs={6}>
-                            <TextField
-                                fullWidth
-                                label="收據號碼"
-                                value={editingRecord?.receiptNumber || ''}
-                                onChange={(e) => handleFieldChange('receiptNumber', e.target.value)}
-                            />
+                            <FormControl fullWidth>
+                                <InputLabel>收款方式</InputLabel>
+                                <Select
+                                    value={editingRecord?.paymentMethod || ''}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value === '轉帳' || value === 'Line Pay' || value === '現金' || value === '票據' || value === '其他') {
+                                            handleFieldChange('paymentMethod', value);
+                                        }
+                                    }}
+                                    label="收款方式"
+                                >
+                                    <MenuItem value="轉帳">轉帳</MenuItem>
+                                    <MenuItem value="Line Pay">Line Pay</MenuItem>
+                                    <MenuItem value="現金">現金</MenuItem>
+                                    <MenuItem value="票據">票據</MenuItem>
+                                    <MenuItem value="其他">其他</MenuItem>
+                                </Select>
+                            </FormControl>
                         </Grid>
                         <Grid item xs={12}>
                             <TextField

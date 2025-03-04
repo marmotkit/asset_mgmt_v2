@@ -44,33 +44,33 @@ export interface ExpirationReminder {
 }
 
 export type PaymentStatus = '待收款' | '已收款' | '逾期' | '終止';
-export type PaymentMethod = '現金' | '轉帳' | '信用卡' | 'Line Pay';
+export type PaymentMethod = '轉帳' | 'Line Pay' | '現金' | '票據' | '其他';
 
 export interface FeeHistory {
     id: string;
+    memberId: string;
+    memberName: string;
+    memberType: string;
     userId: string;
     userName: string;
-    memberType: string;
     amount: number;
     dueDate: string;
-    paymentDate?: string;
     status: PaymentStatus;
+    date: string;
+    action: string;
+    paymentDate?: string;
     paymentMethod?: PaymentMethod;
     receiptNumber?: string;
     note?: string;
     createdAt: string;
     updatedAt: string;
     paymentId: string;
-    memberName: string;
-    memberId: string;
-    action: PaymentStatus;
-    date: string;
 }
 
 export interface FeeHistoryFilter {
     memberId?: string;
     userId?: string;
-    status?: PaymentStatus;
+    status?: PaymentStatus | '';
     startDate?: string;
     endDate?: string;
 }
@@ -92,4 +92,5 @@ export interface PaymentStatusRecord {
     paidDate?: string;
     note?: string;
     feeSettingId?: string;
+    paymentMethod?: PaymentMethod;
 } 

@@ -133,7 +133,14 @@ class FeeHistoryService {
 
     // 添加 deleteRecord 方法
     async deleteRecord(id: string): Promise<boolean> {
-        return this.deleteHistory(id);
+        await this.loadHistories();
+        const filteredHistories = this.histories.filter(h => h.id !== id);
+        if (filteredHistories.length === this.histories.length) {
+            return false;
+        }
+        this.histories = filteredHistories;
+        await this.saveHistories();
+        return true;
     }
 }
 

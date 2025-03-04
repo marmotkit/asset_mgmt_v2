@@ -24,13 +24,15 @@ import {
     FormControl,
     InputLabel,
     Select,
-    MenuItem
+    MenuItem,
+    DialogContentText,
+    Menu
 } from '@mui/material';
-import { Print as PrintIcon, Add as AddIcon } from '@mui/icons-material';
+import { Print as PrintIcon, Add as AddIcon, Delete as DeleteIcon, Payment as PaymentIcon } from '@mui/icons-material';
 import { DocumentIssue } from './DocumentIssue';
 import { invoiceService } from '../../../services/invoiceService';
 import { feeHistoryService } from '../../../services/feeHistoryService';
-import { FeeHistory } from '../../../types/fee';
+import { FeeHistory, PaymentMethod } from '../../../types/fee';
 import { documentService } from '../../../services/documentService';
 import type { Invoice, Receipt } from '../../../types/invoice';
 
@@ -56,6 +58,8 @@ const DocumentListDialog: React.FC<DocumentListDialogProps> = ({
         message: '',
         severity: 'success' as 'success' | 'error'
     });
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [deletingDocument, setDeletingDocument] = useState<Invoice | Receipt | null>(null);
 
     React.useEffect(() => {
         if (open) {
@@ -126,6 +130,39 @@ const DocumentListDialog: React.FC<DocumentListDialogProps> = ({
             setSelectedMemberId(selectedMember.memberId);
             setSelectedMemberName(selectedMember.memberName);
         }
+    };
+
+    const handleDeleteClick = (doc: Invoice | Receipt) => {
+        setDeletingDocument(doc);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (deletingDocument) {
+            try {
+                await invoiceService.deleteDocument(deletingDocument.id);
+                await loadDocuments();
+                setSnackbar({
+                    open: true,
+                    message: '刪除成功',
+                    severity: 'success'
+                });
+            } catch (error) {
+                console.error('刪除失敗:', error);
+                setSnackbar({
+                    open: true,
+                    message: '刪除失敗',
+                    severity: 'error'
+                });
+            }
+        }
+        setDeleteConfirmOpen(false);
+        setDeletingDocument(null);
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteConfirmOpen(false);
+        setDeletingDocument(null);
     };
 
     return (
@@ -204,13 +241,21 @@ const DocumentListDialog: React.FC<DocumentListDialogProps> = ({
                                                         {doc.amount.toLocaleString()}
                                                     </TableCell>
                                                     <TableCell>
-                                                        <IconButton
-                                                            size="small"
-                                                            title="列印"
-                                                            onClick={() => handlePrint(doc)}
-                                                        >
-                                                            <PrintIcon />
-                                                        </IconButton>
+                                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                                            <IconButton
+                                                                size="small"
+                                                                title="列印"
+                                                                onClick={() => handlePrint(doc)}
+                                                            >
+                                                                <PrintIcon />
+                                                            </IconButton>
+                                                            <IconButton
+                                                                color="error"
+                                                                onClick={() => handleDeleteClick(doc)}
+                                                            >
+                                                                <DeleteIcon />
+                                                            </IconButton>
+                                                        </Box>
                                                     </TableCell>
                                                 </TableRow>
                                             ))
@@ -223,6 +268,24 @@ const DocumentListDialog: React.FC<DocumentListDialogProps> = ({
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={onClose}>關閉</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={deleteConfirmOpen}
+                onClose={handleDeleteCancel}
+            >
+                <DialogTitle>確認刪除</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        確定要刪除這份文件嗎？此操作無法復原。
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDeleteCancel}>取消</Button>
+                    <Button onClick={handleDeleteConfirm} color="error" autoFocus>
+                        刪除
+                    </Button>
                 </DialogActions>
             </Dialog>
 
@@ -253,6 +316,15 @@ export const InvoiceManagement: React.FC = () => {
         amount: 0
     });
     const [isDocumentListOpen, setIsDocumentListOpen] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [deletingPayment, setDeletingPayment] = useState<FeeHistory | null>(null);
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'success' as 'success' | 'error'
+    });
+    const [paymentMethodAnchorEl, setPaymentMethodAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedPayment, setSelectedPayment] = useState<FeeHistory | null>(null);
 
     const loadPayments = async () => {
         try {
@@ -326,6 +398,74 @@ export const InvoiceManagement: React.FC = () => {
         handleCloseDialog();
     };
 
+    const handleDeleteClick = (payment: FeeHistory) => {
+        setDeletingPayment(payment);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (deletingPayment) {
+            try {
+                await feeHistoryService.deleteRecord(deletingPayment.id);
+                await loadPayments();
+                setSnackbar({
+                    open: true,
+                    message: '刪除成功',
+                    severity: 'success'
+                });
+            } catch (error) {
+                console.error('刪除失敗:', error);
+                setSnackbar({
+                    open: true,
+                    message: '刪除失敗',
+                    severity: 'error'
+                });
+            }
+        }
+        setDeleteConfirmOpen(false);
+        setDeletingPayment(null);
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteConfirmOpen(false);
+        setDeletingPayment(null);
+    };
+
+    const handlePaymentMethodClick = (event: React.MouseEvent<HTMLElement>, payment: FeeHistory) => {
+        setPaymentMethodAnchorEl(event.currentTarget);
+        setSelectedPayment(payment);
+    };
+
+    const handlePaymentMethodClose = () => {
+        setPaymentMethodAnchorEl(null);
+        setSelectedPayment(null);
+    };
+
+    const handlePaymentMethodSelect = async (method: PaymentMethod) => {
+        if (selectedPayment) {
+            try {
+                await feeHistoryService.updateRecord(selectedPayment.id, {
+                    paymentMethod: method,
+                    updatedAt: new Date().toISOString()
+                });
+                await loadPayments();
+                setSnackbar({
+                    open: true,
+                    message: '更新收款方式成功',
+                    severity: 'success'
+                });
+            } catch (error) {
+                console.error('更新收款方式失敗:', error);
+                setSnackbar({
+                    open: true,
+                    message: '更新收款方式失敗',
+                    severity: 'error'
+                });
+            }
+        }
+        handlePaymentMethodClose();
+    };
+
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -358,6 +498,7 @@ export const InvoiceManagement: React.FC = () => {
                             <TableCell>會員類型</TableCell>
                             <TableCell align="right">金額</TableCell>
                             <TableCell>繳費日期</TableCell>
+                            <TableCell>收款方式</TableCell>
                             <TableCell>操作</TableCell>
                         </TableRow>
                     </TableHead>
@@ -370,6 +511,14 @@ export const InvoiceManagement: React.FC = () => {
                                 <TableCell align="right">{payment.amount.toLocaleString()}</TableCell>
                                 <TableCell>{payment.paymentDate}</TableCell>
                                 <TableCell>
+                                    <Chip
+                                        label={payment.paymentMethod || '未設定'}
+                                        color={payment.paymentMethod ? 'primary' : 'default'}
+                                        size="small"
+                                        onClick={(e) => handlePaymentMethodClick(e, payment)}
+                                    />
+                                </TableCell>
+                                <TableCell>
                                     <Box sx={{ display: 'flex', gap: 1 }}>
                                         <DocumentIssue
                                             memberId={payment.memberId}
@@ -378,11 +527,12 @@ export const InvoiceManagement: React.FC = () => {
                                             amount={payment.amount}
                                             onSuccess={loadPayments}
                                         />
-                                        <Tooltip title="列印">
-                                            <IconButton onClick={() => handlePrint(payment)}>
-                                                <PrintIcon />
-                                            </IconButton>
-                                        </Tooltip>
+                                        <IconButton
+                                            color="error"
+                                            onClick={() => handleDeleteClick(payment)}
+                                        >
+                                            <DeleteIcon />
+                                        </IconButton>
                                     </Box>
                                 </TableCell>
                             </TableRow>
@@ -446,6 +596,50 @@ export const InvoiceManagement: React.FC = () => {
                 memberId={payments.length > 0 ? payments[0].memberId : ''}
                 memberName={payments.length > 0 ? payments[0].memberName : ''}
             />
+
+            <Dialog
+                open={deleteConfirmOpen}
+                onClose={handleDeleteCancel}
+            >
+                <DialogTitle>確認刪除</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        確定要刪除這筆付款記錄嗎？此操作無法復原。
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDeleteCancel}>取消</Button>
+                    <Button onClick={handleDeleteConfirm} color="error" autoFocus>
+                        刪除
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Menu
+                anchorEl={paymentMethodAnchorEl}
+                open={Boolean(paymentMethodAnchorEl)}
+                onClose={handlePaymentMethodClose}
+            >
+                <MenuItem onClick={() => handlePaymentMethodSelect('轉帳' as PaymentMethod)}>轉帳</MenuItem>
+                <MenuItem onClick={() => handlePaymentMethodSelect('Line Pay' as PaymentMethod)}>Line Pay</MenuItem>
+                <MenuItem onClick={() => handlePaymentMethodSelect('現金' as PaymentMethod)}>現金</MenuItem>
+                <MenuItem onClick={() => handlePaymentMethodSelect('票據' as PaymentMethod)}>票據</MenuItem>
+                <MenuItem onClick={() => handlePaymentMethodSelect('其他' as PaymentMethod)}>其他</MenuItem>
+            </Menu>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={3000}
+                onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+                    severity={snackbar.severity}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }; 
