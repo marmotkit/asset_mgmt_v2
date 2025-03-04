@@ -479,13 +479,6 @@ export const InvoiceManagement: React.FC = () => {
                     >
                         列印發票/收據
                     </Button>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={handleOpenDialog}
-                    >
-                        新增發票
-                    </Button>
                 </Box>
             </Box>
 
