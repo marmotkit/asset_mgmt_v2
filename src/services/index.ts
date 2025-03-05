@@ -1,2 +1,2 @@
 export { AuthService } from './auth.service';
-export { default as ApiService } from './api.service'; 
+export { ApiService, ApiServiceInstance } from './api.service';

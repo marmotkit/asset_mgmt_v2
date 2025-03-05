@@ -24,12 +24,14 @@ import {
     TablePagination,
     Select,
     FormControl,
+    InputLabel,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Edit as EditIcon, Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { RentalPayment, PaymentStatus, PaymentMethod } from '../../../types/investment';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/zh-tw';
+import { SelectChangeEvent } from '@mui/material';
 
 interface RentalPaymentListProps {
     payments: RentalPayment[];
@@ -39,22 +41,40 @@ interface RentalPaymentListProps {
 const statusColors: Record<PaymentStatus, 'success' | 'error' | 'warning'> = {
     received: 'success',
     pending: 'warning',
+    paid: 'success',
+    overdue: 'error',
+    cancelled: 'error',
     delayed: 'error'
 };
 
 const statusLabels: Record<PaymentStatus, string> = {
     received: '已收',
     pending: '待收',
+    paid: '已付',
+    overdue: '逾期',
+    cancelled: '已取消',
     delayed: '延遲'
 };
 
-const paymentMethodLabels: Record<PaymentMethod, string> = {
-    transfer: '轉賬匯款',
-    cash: '現金支付',
-    check: '支票'
+const paymentMethodOptions = {
+    cash: '現金',
+    bank_transfer: '銀行轉帳',
+    credit_card: '信用卡',
+    check: '支票',
+    transfer: '匯款',
+    other: '其他'
 };
 
 const validMethods: PaymentMethod[] = ['transfer', 'cash', 'check'];
+
+const methodLabels: Record<PaymentMethod, string> = {
+    cash: '現金',
+    bank_transfer: '銀行轉帳',
+    credit_card: '信用卡',
+    check: '支票',
+    transfer: '轉帳',
+    other: '其他'
+};
 
 const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
     payments = [],
@@ -103,12 +123,12 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
                 }
                 // 如果改為已收且沒有收款方式，設定預設值
                 if (!updatedPayment.paymentMethod) {
-                    updatedPayment.paymentMethod = 'transfer';
+                    updatedPayment.paymentMethod = 'transfer' as PaymentMethod;
                 }
             } else {
                 // 如果改為未收，清除收款相關資訊
                 updatedPayment.paidDate = undefined;
-                updatedPayment.paymentMethod = undefined;
+                updatedPayment.paymentMethod = undefined as unknown as PaymentMethod;
             }
 
             console.log('更新付款狀態:', updatedPayment);
@@ -193,6 +213,7 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
         try {
             const updatedPayment: RentalPayment = {
                 id: editFormData.id,
+                leaseItemId: editFormData.leaseItemId || '',
                 dueDate: editFormData.dueDate,
                 amount: editFormData.amount,
                 status: editFormData.status || 'pending',
@@ -200,9 +221,11 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
                     (editFormData.paidDate || dayjs().format('YYYY-MM-DD')) :
                     undefined,
                 paymentMethod: editFormData.status === 'received' ?
-                    (editFormData.paymentMethod || 'transfer') :
-                    undefined,
-                notes: editFormData.notes
+                    (editFormData.paymentMethod || 'transfer' as PaymentMethod) :
+                    'transfer' as PaymentMethod,
+                notes: editFormData.notes,
+                createdAt: editFormData.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             };
             console.log('更新的租金收款記錄:', updatedPayment);
             await onUpdatePayment(updatedPayment);
@@ -230,7 +253,7 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
             paidDate: isPaymentDate ? formattedDate : editFormData.paidDate,
             status: isPaymentDate && formattedDate ? 'received' : editFormData.status,
             paymentMethod: isPaymentDate && formattedDate ?
-                (editFormData.paymentMethod || 'transfer') :
+                (editFormData.paymentMethod || 'transfer' as PaymentMethod) :
                 editFormData.paymentMethod
         };
         console.log('更新表單數據:', updatedFormData);
@@ -285,16 +308,26 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
         // 如果狀態改為已收款，自動設定收款日期為今天
         if (field === 'status' && value === 'received' && !updatedPayment.paidDate) {
             updatedPayment.paidDate = dayjs().format('YYYY-MM-DD');
-            updatedPayment.paymentMethod = updatedPayment.paymentMethod || 'transfer';
+            updatedPayment.paymentMethod = updatedPayment.paymentMethod || 'transfer' as PaymentMethod;
         }
 
         // 如果狀態改為待收或延遲，清除收款日期和方式
         if (field === 'status' && (value === 'pending' || value === 'delayed')) {
             updatedPayment.paidDate = undefined;
-            updatedPayment.paymentMethod = undefined;
+            updatedPayment.paymentMethod = 'transfer' as PaymentMethod;
         }
 
         setEditingPayment(updatedPayment);
+    };
+
+    const handleMethodChange = (event: SelectChangeEvent<PaymentMethod>) => {
+        if (!editingPayment) return;
+
+        const newPayment: RentalPayment = {
+            ...editingPayment,
+            paymentMethod: event.target.value as PaymentMethod
+        };
+        setEditingPayment(newPayment);
     };
 
     return (
@@ -397,22 +430,22 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
                                 </TableCell>
                                 <TableCell>
                                     {editingId === payment.id ? (
-                                        <FormControl fullWidth size="small">
+                                        <FormControl fullWidth>
+                                            <InputLabel>付款方式</InputLabel>
                                             <Select
-                                                value={editingPayment?.paymentMethod || ''}
-                                                onChange={(e) => handleChange('paymentMethod', e.target.value as PaymentMethod)}
-                                                disabled={editingPayment?.status !== 'received'}
+                                                value={editingPayment?.paymentMethod || 'transfer'}
+                                                onChange={handleMethodChange}
+                                                label="付款方式"
                                             >
-                                                <MenuItem value="">請選擇</MenuItem>
-                                                {Object.entries(paymentMethodLabels).map(([value, label]) => (
-                                                    <MenuItem key={value} value={value}>
+                                                {Object.entries(methodLabels).map(([method, label]) => (
+                                                    <MenuItem key={method} value={method}>
                                                         {label}
                                                     </MenuItem>
                                                 ))}
                                             </Select>
                                         </FormControl>
                                     ) : (
-                                        payment.paymentMethod && paymentMethodLabels[payment.paymentMethod]
+                                        methodLabels[payment.paymentMethod] || payment.paymentMethod
                                     )}
                                 </TableCell>
                                 <TableCell>
@@ -503,8 +536,8 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
                                         status: value,
                                         paidDate: value === 'received' ? dayjs().format('YYYY-MM-DD') : undefined,
                                         paymentMethod: value === 'received' ?
-                                            (editFormData.paymentMethod || 'transfer') :
-                                            undefined
+                                            (editFormData.paymentMethod || 'transfer' as PaymentMethod) :
+                                            'transfer' as PaymentMethod
                                     });
                                 }}
                             >
@@ -535,31 +568,28 @@ const RentalPaymentList: React.FC<RentalPaymentListProps> = ({
                             />
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField
-                                select
-                                fullWidth
-                                label="收款方式"
-                                value={editFormData.paymentMethod || ''}
-                                onChange={(e) => {
-                                    const value = e.target.value;
-                                    if (typeof value === 'string' && validMethods.includes(value as PaymentMethod)) {
-                                        setEditFormData({
-                                            ...editFormData,
-                                            paymentMethod: value as PaymentMethod,
-                                        });
-                                    }
-                                }}
-                                disabled={editFormData.status !== 'received'}
-                            >
-                                <MenuItem value="">
-                                    <em>請選擇</em>
-                                </MenuItem>
-                                {validMethods.map((method) => (
-                                    <MenuItem key={method} value={method}>
-                                        {paymentMethodLabels[method]}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
+                            <FormControl fullWidth>
+                                <InputLabel>付款方式</InputLabel>
+                                <Select
+                                    value={editFormData.paymentMethod || ''}
+                                    onChange={(e) => {
+                                        const value = e.target.value as PaymentMethod;
+                                        if (typeof value === 'string' && validMethods.includes(value)) {
+                                            setEditFormData({
+                                                ...editFormData,
+                                                paymentMethod: value,
+                                            });
+                                        }
+                                    }}
+                                    label="付款方式"
+                                >
+                                    {Object.entries(methodLabels).map(([method, label]) => (
+                                        <MenuItem key={method} value={method}>
+                                            {label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                         </Grid>
                         <Grid item xs={12}>
                             <TextField

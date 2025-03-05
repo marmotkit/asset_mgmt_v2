@@ -2,13 +2,26 @@ import { User, UserRole, UserStatus } from '../types/user';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  admin: '管理員',
+  normal: '一般會員',
+  business: '商務會員',
+  lifetime: '永久會員'
+};
+
+export const USER_STATUS_LABELS: Record<UserStatus, string> = {
+  active: '啟用',
+  inactive: '停用',
+  suspended: '暫停'
+};
+
 // 轉換使用者角色為中文
 const roleToString = (role: UserRole): string => {
   const roleMap: Record<UserRole, string> = {
     admin: '管理員',
     normal: '一般會員',
-    lifetime: '終身會員',
-    business: '商務會員'
+    business: '商務會員',
+    lifetime: '永久會員'
   };
   return roleMap[role] || role;
 };
@@ -17,8 +30,8 @@ const roleToString = (role: UserRole): string => {
 const statusToString = (status: UserStatus): string => {
   const statusMap: Record<UserStatus, string> = {
     active: '啟用',
-    pending: '待審核',
-    disabled: '停用'
+    inactive: '停用',
+    suspended: '暫停'
   };
   return statusMap[status] || status;
 };
@@ -80,4 +93,4 @@ export const exportToCsv = (users: User[], fileName: string = 'users.csv') => {
   link.href = URL.createObjectURL(blob);
   link.download = fileName;
   link.click();
-}; 
+};

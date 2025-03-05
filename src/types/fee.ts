@@ -4,6 +4,8 @@ export interface FeeSetting {
     amount: number;
     frequency: 'monthly' | 'quarterly' | 'yearly';
     description: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface FeeRecord {

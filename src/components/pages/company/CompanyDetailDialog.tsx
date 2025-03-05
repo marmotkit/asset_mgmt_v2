@@ -19,14 +19,12 @@ interface CompanyDetailDialogProps {
 }
 
 const INDUSTRY_OPTIONS: IndustryType[] = [
-    '科技業',
-    '金融業',
-    '製造業',
-    '服務業',
-    '零售業',
-    '營建業',
-    '運輸業',
-    '其他',
+    'technology',
+    'finance',
+    'manufacturing',
+    'service',
+    'retail',
+    'other'
 ];
 
 const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
@@ -38,14 +36,13 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
     const [formData, setFormData] = useState<Partial<Company>>({
         name: '',
         nameEn: '',
-        industry: undefined,
+        companyNo: '',
+        industry: 'other',
         contact: {
             name: '',
             phone: '',
-            fax: '',
             email: '',
         },
-        notes: '',
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -56,14 +53,13 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
             setFormData({
                 name: '',
                 nameEn: '',
-                industry: undefined,
+                companyNo: '',
+                industry: 'other',
                 contact: {
                     name: '',
                     phone: '',
-                    fax: '',
                     email: '',
                 },
-                notes: '',
             });
         }
         setErrors({});
@@ -147,6 +143,15 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
                     <Grid item xs={12} sm={6}>
                         <TextField
                             fullWidth
+                            label="公司編號"
+                            value={formData.companyNo || ''}
+                            onChange={(e) => handleChange('companyNo', e.target.value)}
+                        />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
                             select
                             label="產業類別"
                             value={formData.industry || ''}
@@ -184,15 +189,6 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
                         />
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="傳真電話"
-                            value={formData.contact?.fax || ''}
-                            onChange={(e) => handleChange('contact.fax', e.target.value)}
-                        />
-                    </Grid>
-
                     <Grid item xs={12}>
                         <TextField
                             fullWidth
@@ -202,18 +198,6 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
                             error={!!errors['contact.email']}
                             helperText={errors['contact.email']}
                             required
-                        />
-                    </Grid>
-
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            multiline
-                            rows={4}
-                            label="備註"
-                            value={formData.notes || ''}
-                            onChange={(e) => handleChange('notes', e.target.value)}
-                            placeholder="請輸入備註事項..."
                         />
                     </Grid>
                 </Grid>

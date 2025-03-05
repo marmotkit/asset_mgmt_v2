@@ -1,11 +1,26 @@
-export type UserRole = 'admin' | 'normal' | 'lifetime' | 'business';
+export type UserRole = 'admin' | 'normal' | 'business' | 'lifetime';
 
-export type UserStatus = 'active' | 'disabled' | 'pending';
+export type UserStatus = 'active' | 'inactive' | 'suspended';
 
 export interface UserPreference {
+  key: string;
+  value: string | number | boolean;
+}
+
+export interface InvestmentPreferences {
+  riskTolerance: string;
+  investmentPeriod: string;
+  preferences: string[];
+}
+
+export interface UserPreferences {
   id: string;
-  name: string;
-  description?: string;
+  userId: string;
+  investmentPreferences: InvestmentPreferences;
+  riskTolerance: string;
+  investmentPeriod: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface User {
@@ -21,7 +36,7 @@ export interface User {
   lastName?: string;
   phone?: string;
   contactInfo?: string;
-  preferences: UserPreferences[];
+  preferences: UserPreference[];
   isFirstLogin: boolean; // 是否首次登入
   createdAt: string;     // 建立時間
   updatedAt: string;     // 更新時間
@@ -36,19 +51,9 @@ export interface InvestmentPreference {
   order: number;
 }
 
-export interface UserPreferences {
-  id: string;
-  userId: string;
-  investmentPreferences: string[];
-  riskTolerance: 'low' | 'medium' | 'high';
-  investmentPeriod: 'short' | 'medium' | 'long';
-  createdAt: string;
-  updatedAt: string;
-}
-
 export const USER_ROLE_PREFIX: Record<UserRole, string> = {
   normal: 'C',
-  lifetime: 'V',
   business: 'B',
+  lifetime: 'L',
   admin: 'A'
 }; 

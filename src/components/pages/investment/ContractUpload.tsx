@@ -59,7 +59,7 @@ const ContractUpload: React.FC<ContractUploadProps> = ({
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <FileIcon color="primary" />
                     <Link href={contract.url} target="_blank" sx={{ flexGrow: 1 }}>
-                        {contract.filename}
+                        {contract.fileName}
                     </Link>
                     <Typography variant="caption" color="textSecondary">
                         ({formatFileSize(contract.fileSize)})

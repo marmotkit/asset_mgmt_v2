@@ -27,13 +27,15 @@ import {
     CircularProgress,
     Snackbar,
     Alert,
-    Tooltip
+    Tooltip,
+    Tabs,
+    Tab
 } from '@mui/material';
 import { Search as SearchIcon, Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import { PaymentStatus, PaymentStatusRecord, FeeSetting, FeePaymentFilter, PaymentMethod } from '../../../types/fee';
 import { User } from '../../../types/user';
 import { feeService } from '../../../services/feeService';
-import ApiService from '../../../services/api.service';
+import { ApiService } from '../../../services/api.service';
 
 const getStatusChip = (status: PaymentStatus) => {
     const statusConfig = {
@@ -45,6 +47,23 @@ const getStatusChip = (status: PaymentStatus) => {
 
     const config = statusConfig[status] || { label: status, color: 'default' as const };
     return <Chip label={config.label} color={config.color} size="small" />;
+};
+
+const getPaymentMethodLabel = (method: PaymentMethod | undefined | string) => {
+    if (!method || method === '') return '-';
+    const methodConfig: { [key: string]: string } = {
+        '轉帳': '轉帳',
+        'transfer': '轉帳',
+        'Line Pay': 'Line Pay',
+        'linepay': 'Line Pay',
+        '現金': '現金',
+        'cash': '現金',
+        '票據': '票據',
+        'check': '票據',
+        '其他': '其他',
+        'other': '其他'
+    };
+    return methodConfig[method.toLowerCase()] || method;
 };
 
 const FeePaymentStatus: React.FC = () => {
@@ -67,6 +86,7 @@ const FeePaymentStatus: React.FC = () => {
     const [createAnnualOpen, setCreateAnnualOpen] = useState(false);
     const [selectedMember, setSelectedMember] = useState<string>('');
     const [selectedFeeSetting, setSelectedFeeSetting] = useState<string>('');
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [availableMembers, setAvailableMembers] = useState<Array<{
         id: string;
         name: string;
@@ -76,32 +96,32 @@ const FeePaymentStatus: React.FC = () => {
         { id: 'M002', name: '李四', type: '商務會員' },
         // 這裡應該從 API 獲取會員列表
     ]);
+    const [currentTab, setCurrentTab] = useState<string>(() => {
+        // 根據當前 URL 判斷是否在歷史記錄頁面
+        return window.location.pathname.includes('歷史記錄') ? '歷史記錄' : '收款狀況';
+    });
 
     // 載入資料
     useEffect(() => {
         const loadData = async () => {
             setLoading(true);
             try {
-                const [paymentData, settingsData, userData] = await Promise.all([
-                    feeService.getPayments(),
-                    feeService.getFeeSettings(),
-                    ApiService.getUsers({
-                        page: 1,
-                        pageSize: 100,
-                        filters: { status: 'active' }
-                    })
+                const [paymentData, settingsData] = await Promise.all([
+                    feeService.getPayments({ isHistoryPage: window.location.pathname.includes('歷史記錄') }),
+                    feeService.getFeeSettings()
                 ]);
 
                 setPayments(paymentData || []);
                 setFeeSettings(settingsData || []);
 
                 // 轉換會員資料格式
-                const members = userData.items.map((user: User) => ({
+                const users = await ApiService.getUsers();
+                const members = users.map((user: User) => ({
                     id: user.memberNo,
                     name: user.name,
-                    type: user.role === 'business' ? '商務會員' :
-                        user.role === 'lifetime' ? '永久會員' :
-                            user.role === 'admin' ? '管理員' : '一般會員'
+                    type: user.role === 'lifetime' ? '永久會員' :
+                        user.role === 'admin' ? '管理員' :
+                            user.role === 'business' ? '商務會員' : '一般會員'
                 }));
                 setAvailableMembers(members);
             } catch (error) {
@@ -126,12 +146,24 @@ const FeePaymentStatus: React.FC = () => {
     const handleDeleteConfirm = async () => {
         if (deletePayment) {
             try {
+                // 刪除付款記錄
                 const success = await feeService.deletePayment(deletePayment.id);
                 if (success) {
+                    // 從本地狀態中移除記錄
                     setPayments(prev => prev.filter(p => p.id !== deletePayment.id));
+                    setSnackbar({
+                        open: true,
+                        message: '成功刪除記錄',
+                        severity: 'success'
+                    });
                 }
             } catch (error) {
                 console.error('刪除失敗:', error);
+                setSnackbar({
+                    open: true,
+                    message: '刪除失敗',
+                    severity: 'error'
+                });
             }
             setDeletePayment(null);
         }
@@ -165,14 +197,20 @@ const FeePaymentStatus: React.FC = () => {
     };
 
     // 篩選資料
-    const filteredPayments = payments.filter(payment => {
-        const matchStatus = !filter.status || payment.status === filter.status;
-        const matchType = !filter.memberType || payment.memberType === filter.memberType;
-        const matchSearch = !filter.search ||
-            payment.memberName.toLowerCase().includes(filter.search.toLowerCase()) ||
-            payment.memberId.toLowerCase().includes(filter.search.toLowerCase());
-        return matchStatus && matchType && matchSearch;
-    });
+    const filteredPayments = payments
+        .filter(payment => {
+            const matchStatus = !filter.status || payment.status === filter.status;
+            const matchType = !filter.memberType || payment.memberType === filter.memberType;
+            const matchSearch = !filter.search ||
+                payment.memberName.toLowerCase().includes(filter.search.toLowerCase()) ||
+                payment.memberId.toLowerCase().includes(filter.search.toLowerCase());
+            return matchStatus && matchType && matchSearch;
+        })
+        .sort((a, b) => {
+            const dateA = new Date(a.dueDate);
+            const dateB = new Date(b.dueDate);
+            return dateB.getTime() - dateA.getTime();
+        });
 
     // 取得會員類型選項
     const memberTypes = Array.from(new Set(payments.map(p => p.memberType)));
@@ -191,9 +229,9 @@ const FeePaymentStatus: React.FC = () => {
                 memberName: member.name,
                 memberType: member.type,
                 amount: feeSetting.amount,
-                dueDate: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+                dueDate: `${selectedYear}-12-31`,
                 status: '待收款' as PaymentStatus,
-                note: `${new Date().getFullYear()}年度會費`,
+                note: `${selectedYear}年度會費`,
                 feeSettingId: feeSetting.id
             } satisfies {
                 memberId: string;
@@ -228,9 +266,12 @@ const FeePaymentStatus: React.FC = () => {
         setSelectedFeeSetting('');
     };
 
-    // 過濾掉已經存在的會員
+    // 過濾掉已經存在的會員和管理員，同時考慮年度
     const filteredAvailableMembers = availableMembers.filter(
-        member => !payments.some(p => p.memberId === member.id)
+        member => !payments.some(p =>
+            p.memberId === member.id &&
+            p.note?.includes(`${selectedYear}年度會費`)
+        ) && member.type !== '管理員'
     );
 
     const handleMemberSelect = (memberId: string) => {
@@ -242,8 +283,8 @@ const FeePaymentStatus: React.FC = () => {
             const memberTypeMap = {
                 '一般會員': '一般會員年費',
                 '商務會員': '商務會員年費',
-                '永久會員': '永久會員年費',
-                '管理員': '一般會員年費'
+                '永久會員': '永久會員5年費用',
+                '管理員': '管理員免費'
             };
             const expectedFeeName = memberTypeMap[member.type as keyof typeof memberTypeMap];
             console.log('預期的會費名稱:', expectedFeeName);
@@ -294,34 +335,29 @@ const FeePaymentStatus: React.FC = () => {
 
     return (
         <Box>
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h6">
-                    收款狀況
-                </Typography>
-                <Box>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => setCreateAnnualOpen(true)}
-                        sx={{ mr: 2 }}
-                    >
-                        產生年度應收
-                    </Button>
-                    <TextField
-                        size="small"
-                        placeholder="搜尋會員編號或姓名"
-                        value={filter.search}
-                        onChange={(e) => handleFilterChange('search', e.target.value)}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon />
-                                </InputAdornment>
-                            ),
-                        }}
-                        sx={{ width: 250 }}
-                    />
-                </Box>
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => setCreateAnnualOpen(true)}
+                    sx={{ mr: 2 }}
+                >
+                    產生年度應收
+                </Button>
+                <TextField
+                    size="small"
+                    placeholder="搜尋會員編號或姓名"
+                    value={filter.search}
+                    onChange={(e) => handleFilterChange('search', e.target.value)}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon />
+                            </InputAdornment>
+                        ),
+                    }}
+                    sx={{ width: 250 }}
+                />
             </Box>
 
             <TableContainer component={Paper}>
@@ -349,7 +385,7 @@ const FeePaymentStatus: React.FC = () => {
                                 <TableCell align="right">{payment.amount.toLocaleString()}</TableCell>
                                 <TableCell>{payment.dueDate}</TableCell>
                                 <TableCell>{payment.paidDate || '-'}</TableCell>
-                                <TableCell>{payment.paymentMethod || '-'}</TableCell>
+                                <TableCell>{getPaymentMethodLabel(payment.paymentMethod)}</TableCell>
                                 <TableCell>{getStatusChip(payment.status)}</TableCell>
                                 <TableCell>{payment.note || '-'}</TableCell>
                                 <TableCell>
@@ -435,10 +471,16 @@ const FeePaymentStatus: React.FC = () => {
                                     value={editingPayment?.status || ''}
                                     onChange={(e) => {
                                         if (editingPayment) {
-                                            setEditingPayment({
+                                            const newStatus = e.target.value as PaymentStatus;
+                                            const newPayment = {
                                                 ...editingPayment,
-                                                status: e.target.value as PaymentStatus
-                                            });
+                                                status: newStatus,
+                                                // 如果狀態改為已收款且尚未設定收款方式，預設為轉帳
+                                                paymentMethod: newStatus === '已收款' && !editingPayment.paymentMethod ? '轉帳' : editingPayment.paymentMethod,
+                                                // 如果狀態改為已收款且尚未設定繳費日期，設定為今天
+                                                paidDate: newStatus === '已收款' && !editingPayment.paidDate ? new Date().toISOString().split('T')[0] : editingPayment.paidDate
+                                            };
+                                            setEditingPayment(newPayment);
                                         }
                                     }}
                                     label="狀態"
@@ -527,6 +569,23 @@ const FeePaymentStatus: React.FC = () => {
                 <DialogContent>
                     <Grid container spacing={2} sx={{ pt: 2 }}>
                         <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="年度"
+                                type="number"
+                                value={selectedYear}
+                                onChange={(e) => {
+                                    const year = parseInt(e.target.value);
+                                    if (year >= 1911) {  // 設定最小年度為1911年
+                                        setSelectedYear(year);
+                                    }
+                                }}
+                                InputProps={{
+                                    inputProps: { min: 1911 }
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
                             <FormControl fullWidth>
                                 <InputLabel>選擇會員</InputLabel>
                                 <Select
@@ -535,13 +594,11 @@ const FeePaymentStatus: React.FC = () => {
                                     fullWidth
                                 >
                                     <MenuItem value="">請選擇會員</MenuItem>
-                                    {availableMembers
-                                        .filter(member => !payments.some(payment => payment.memberId === member.id))
-                                        .map((member) => (
-                                            <MenuItem key={member.id} value={member.id}>
-                                                {member.name} ({member.type})
-                                            </MenuItem>
-                                        ))}
+                                    {filteredAvailableMembers.map((member) => (
+                                        <MenuItem key={member.id} value={member.id}>
+                                            {member.name} ({member.type})
+                                        </MenuItem>
+                                    ))}
                                 </Select>
                             </FormControl>
                         </Grid>

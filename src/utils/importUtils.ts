@@ -7,25 +7,28 @@ interface ImportResult {
   errors?: string[];
 }
 
+// 更新角色映射
+const roleMap: Record<string, UserRole> = {
+  '管理員': 'admin',
+  '一般會員': 'normal',
+  '終身會員': 'lifetime'
+};
+
+// 更新狀態映射
+const statusMap: Record<string, UserStatus> = {
+  '啟用': 'active',
+  '停用': 'inactive',
+  '暫停': 'suspended'
+};
+
 // 將中文角色轉換為系統角色
 const stringToRole = (role: string): UserRole | undefined => {
-  const roleMap: Record<string, UserRole> = {
-    '一般會員': 'normal',
-    '終身會員': 'lifetime',
-    '商務會員': 'business',
-    '管理員': 'admin',
-  };
-  return roleMap[role];
+  return roleMap[role] || 'normal';
 };
 
 // 將中文狀態轉換為系統狀態
 const stringToStatus = (status: string): UserStatus | undefined => {
-  const statusMap: Record<string, UserStatus> = {
-    '啟用': 'active',
-    '待審核': 'pending',
-    '停用': 'disabled',
-  };
-  return statusMap[status];
+  return statusMap[status] || 'inactive';
 };
 
 // 驗證電子郵件格式
@@ -97,7 +100,7 @@ export const parseExcelFile = async (file: File): Promise<ImportResult> => {
       user.lastName = row['姓'] || '';
       user.phone = row['電話'] || '';
       user.role = role || 'normal';
-      user.status = status || 'pending';
+      user.status = status || 'inactive';
 
       users.push(user);
     });
@@ -157,4 +160,13 @@ export const parseCsvFile = async (file: File): Promise<ImportResult> => {
       errors: ['檔案解析失敗，請確認檔案格式是否正確'],
     };
   }
+};
+
+// 更新轉換函數
+export const convertToUserRole = (role: string): UserRole => {
+  return roleMap[role] || 'normal';
+};
+
+export const convertToUserStatus = (status: string): UserStatus => {
+  return statusMap[status] || 'inactive';
 }; 

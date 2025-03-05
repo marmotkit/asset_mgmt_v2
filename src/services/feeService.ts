@@ -15,15 +15,15 @@ class FeeService {
     }
 
     private async loadData(): Promise<void> {
-        try {
-            const settings = await storageService.getData<FeeSetting[]>(FEE_SETTINGS_KEY);
-            const status = await storageService.getData<PaymentStatusRecord[]>(PAYMENT_STATUS_KEY);
-            this.feeSettings = settings || [];
-            this.paymentStatuses = status || [];
-        } catch (error) {
-            console.error('載入資料失敗:', error);
-            this.feeSettings = [];
-            this.paymentStatuses = [];
+        const settings = await storageService.getData<FeeSetting[]>(FEE_SETTINGS_KEY);
+        const status = await storageService.getData<PaymentStatusRecord[]>(PAYMENT_STATUS_KEY);
+
+        if (settings) {
+            this.feeSettings = settings;
+        }
+
+        if (status) {
+            this.paymentStatuses = status;
         }
     }
 
@@ -41,8 +41,11 @@ class FeeService {
         return this.paymentStatuses;
     }
 
-    async getPayments(): Promise<PaymentStatusRecord[]> {
+    async getPayments(options?: { isHistoryPage?: boolean }): Promise<PaymentStatusRecord[]> {
         await this.loadData();
+        if (options?.isHistoryPage) {
+            return this.paymentStatuses.filter(payment => payment.status === '已收款');
+        }
         return this.paymentStatuses;
     }
 
@@ -63,24 +66,6 @@ class FeeService {
         };
         this.paymentStatuses.push(newPayment);
         await storageService.updateData(PAYMENT_STATUS_KEY, this.paymentStatuses);
-
-        // 新增歷史記錄
-        await this.addHistory({
-            paymentId: newPayment.id,
-            memberId: newPayment.memberId,
-            memberName: newPayment.memberName,
-            memberType: newPayment.memberType,
-            action: '待收款',
-            amount: newPayment.amount,
-            date: new Date().toISOString().split('T')[0],
-            dueDate: newPayment.dueDate,
-            status: newPayment.status,
-            note: newPayment.note || '',
-            userId: newPayment.memberId,
-            userName: newPayment.memberName,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        });
         return newPayment;
     }
 
@@ -89,27 +74,30 @@ class FeeService {
         const index = this.paymentStatuses.findIndex(p => p.id === id);
         if (index === -1) return null;
 
+        const oldPayment = this.paymentStatuses[index];
         this.paymentStatuses[index] = updatedPayment;
         await storageService.updateData(PAYMENT_STATUS_KEY, this.paymentStatuses);
 
-        // 新增歷史記錄
-        await this.addHistory({
-            paymentId: updatedPayment.id,
-            memberId: updatedPayment.memberId,
-            memberName: updatedPayment.memberName,
-            memberType: updatedPayment.memberType,
-            action: updatedPayment.status,
-            amount: updatedPayment.amount,
-            date: new Date().toISOString().split('T')[0],
-            dueDate: updatedPayment.dueDate,
-            paymentDate: updatedPayment.paidDate,
-            status: updatedPayment.status,
-            note: updatedPayment.note || '',
-            userId: updatedPayment.memberId,
-            userName: updatedPayment.memberName,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        });
+        // 只有當狀態變更為"已收款"時才新增歷史記錄
+        if (updatedPayment.status === '已收款' && oldPayment.status !== '已收款') {
+            await this.addHistory({
+                paymentId: updatedPayment.id,
+                memberId: updatedPayment.memberId,
+                memberName: updatedPayment.memberName,
+                memberType: updatedPayment.memberType,
+                action: updatedPayment.status,
+                amount: updatedPayment.amount,
+                date: new Date().toISOString().split('T')[0],
+                dueDate: updatedPayment.dueDate,
+                paymentDate: updatedPayment.paidDate,
+                status: updatedPayment.status,
+                note: updatedPayment.note || '',
+                userId: updatedPayment.memberId,
+                userName: updatedPayment.memberName,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+        }
         return updatedPayment;
     }
 
@@ -118,26 +106,15 @@ class FeeService {
         const payment = this.paymentStatuses.find(p => p.id === id);
         if (!payment) return false;
 
+        // 刪除付款記錄
         this.paymentStatuses = this.paymentStatuses.filter(p => p.id !== id);
         await storageService.updateData(PAYMENT_STATUS_KEY, this.paymentStatuses);
 
-        // 新增刪除記錄
-        await this.addHistory({
-            paymentId: payment.id,
-            memberId: payment.memberId,
-            memberName: payment.memberName,
-            memberType: payment.memberType,
-            action: '終止',
-            amount: payment.amount,
-            date: new Date().toISOString().split('T')[0],
-            dueDate: payment.dueDate,
-            status: payment.status,
-            note: payment.note || '',
-            userId: payment.memberId,
-            userName: payment.memberName,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        });
+        // 刪除相關的歷史記錄
+        const histories = await storageService.getData<FeeHistory[]>('fee_history') || [];
+        const updatedHistories = histories.filter(h => h.paymentId !== id);
+        await storageService.updateData('fee_history', updatedHistories);
+
         return true;
     }
 
@@ -193,59 +170,53 @@ class FeeService {
 
         if (!settings || settings.length === 0) {
             // 設定預設的會費標準
-            const defaultFeeSettings: FeeSetting[] = [
-                {
-                    id: 'FS001',
-                    name: '一般會員年費',
-                    amount: 30000,
-                    frequency: 'yearly',
-                    description: '一般會員的年度會費'
-                },
-                {
-                    id: 'FS002',
-                    name: '商務會員年費',
-                    amount: 300000,
-                    frequency: 'yearly',
-                    description: '商務會員的年度會費'
-                },
-                {
-                    id: 'FS003',
-                    name: '永久會員年費',
-                    amount: 100000,
-                    frequency: 'yearly',
-                    description: '永久會員的年度會費'
-                }
-            ];
-            await storageService.updateData(FEE_SETTINGS_KEY, defaultFeeSettings);
-        }
-
-        if (!status || status.length === 0) {
-            // 設定預設的付款資料
-            const defaultPayments: PaymentStatusRecord[] = [
+            const defaultSettings: FeeSetting[] = [
                 {
                     id: '1',
-                    memberId: 'A001',
-                    memberName: '系統管理員',
-                    memberType: '一般會員',
+                    name: '一般會員年費',
+                    description: '一般會員年費',
                     amount: 30000,
-                    dueDate: '2024-12-31',
-                    status: '已收款',
-                    paidDate: '2024-01-15',
-                    note: '準時繳費'
+                    frequency: 'yearly',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
                 },
                 {
                     id: '2',
-                    memberId: 'V001',
-                    memberName: '梁坤榮',
-                    memberType: '商務會員',
+                    name: '商務會員年費',
+                    description: '商務會員年費',
                     amount: 300000,
-                    dueDate: '2024-12-31',
-                    status: '待收款',
-                    note: ''
+                    frequency: 'yearly',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    id: '3',
+                    name: '永久會員5年費用',
+                    description: '永久會員5年費用',
+                    amount: 3000000,
+                    frequency: 'yearly',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    id: '4',
+                    name: '管理員免費',
+                    description: '管理員免費',
+                    amount: 0,
+                    frequency: 'yearly',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
                 }
             ];
-            await storageService.updateData(PAYMENT_STATUS_KEY, defaultPayments);
+            await storageService.updateData(FEE_SETTINGS_KEY, defaultSettings);
         }
+
+        if (!status) {
+            // 初始化空的付款狀態列表
+            await storageService.updateData(PAYMENT_STATUS_KEY, []);
+        }
+
+        await this.loadData();
     }
 }
 

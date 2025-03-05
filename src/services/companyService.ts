@@ -1,5 +1,5 @@
 import { Company } from '../types/company';
-import ApiService from './api.service';
+import { ApiService } from './api.service';
 
 class CompanyService {
     async getCompanies(): Promise<Company[]> {

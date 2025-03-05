@@ -44,10 +44,17 @@ const initialFeeSettings: FeeSettingType[] = [
     },
     {
         id: '3',
-        memberType: '終身會員',
+        memberType: '永久會員',
         amount: 3000000,
         period: '5年',
-        description: '終身會員5年費用'
+        description: '永久會員5年費用'
+    },
+    {
+        id: '4',
+        memberType: '管理員',
+        amount: 0,
+        period: '永久',
+        description: '管理員免費'
     }
 ];
 
