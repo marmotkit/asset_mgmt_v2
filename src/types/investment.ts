@@ -9,10 +9,10 @@ export type InvestmentStatus =
     | 'pending';    // 審核中
 
 // 收款狀態
-export type PaymentStatus = 'paid' | 'pending' | 'overdue';  // 已收 | 未收 | 催收
+export type PaymentStatus = 'pending' | 'received' | 'delayed';
 
 // 收款方式
-export type PaymentMethod = 'transfer' | 'cash' | 'linepay' | 'other';
+export type PaymentMethod = 'cash' | 'transfer' | 'check';
 
 // 分潤類型
 export type ProfitSharingType = 'percentage' | 'fixed' | 'other';

@@ -1,7 +1,8 @@
 import { AuthService } from './auth.service';
 import { User, UserRole, UserStatus, UserPreferences, USER_ROLE_PREFIX } from '../types/user';
 import { Company, IndustryType } from '../types/company';
-import { Investment, RentalPayment } from '../types/investment';
+import { Investment, RentalPayment, MovableInvestment, InvestmentType, PaymentStatus, ImmovableInvestment } from '../types/investment';
+import dayjs from 'dayjs';
 
 interface PaginatedResponse<T> {
   items: T[];
@@ -150,21 +151,13 @@ class ApiServiceClass {
   }
 
   private saveInvestments(): void {
-    // 在儲存前處理檔案
-    const investmentsToStore = this.mockInvestments.map(investment => {
-      const investmentCopy = { ...investment };
-      if (investmentCopy.contract?.url) {
-        // 儲存檔案內容
-        fetch(investmentCopy.contract.url)
-          .then(response => response.blob())
-          .then(blob => {
-            localStorage.setItem(`contract_${investmentCopy.contract!.id}`, blob.toString());
-          });
-      }
-      return investmentCopy;
-    });
-
-    localStorage.setItem(this.INVESTMENTS_STORAGE_KEY, JSON.stringify(investmentsToStore));
+    try {
+      console.log('保存投資數據到 localStorage:', this.mockInvestments);
+      localStorage.setItem(this.INVESTMENTS_STORAGE_KEY, JSON.stringify(this.mockInvestments));
+    } catch (error) {
+      console.error('保存投資數據失敗:', error);
+      throw new Error('保存投資數據失敗');
+    }
   }
 
   async fetchWithAuth(url: string, options: RequestInit = {}): Promise<any> {
@@ -514,80 +507,96 @@ class ApiServiceClass {
   // 投資相關 API
   async getInvestments(): Promise<Investment[]> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 500)); // 模擬 API 延遲
       return this.mockInvestments;
     } catch (error) {
-      console.error('獲取投資列表失敗:', error);
-      throw new Error('獲取投資列表失敗');
+      console.error('獲取投資資料失敗:', error);
+      throw error;
     }
   }
 
   async createInvestment(investmentData: Partial<Investment>): Promise<Investment> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await this.delay(500);
 
-      const newInvestment: Investment = {
+      const baseInvestment = {
         id: Date.now().toString(),
-        ...investmentData,
-        startDate: investmentData.startDate || '2024-01-01T00:00:00.000Z',
-        endDate: investmentData.endDate || undefined,
-        purchaseDate: investmentData.type === 'movable' && investmentData.purchaseDate
-          ? investmentData.purchaseDate
-          : undefined,
-        createdAt: '2024-01-01T00:00:00.000Z',
-        updatedAt: '2024-01-01T00:00:00.000Z',
-      } as Investment;
+        companyId: investmentData.companyId || '',
+        name: investmentData.name || '',
+        description: investmentData.description || '',
+        amount: investmentData.amount || 0,
+        startDate: investmentData.startDate || '',
+        endDate: investmentData.endDate || '',
+        status: investmentData.status || 'pending',
+        notes: investmentData.notes || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        monthlyRental: investmentData.monthlyRental || 0,
+        rentalPayments: [] as RentalPayment[]
+      };
 
-      // 如果有合約檔案，確保 URL 被正確處理
-      if (newInvestment.contract) {
-        const contract = newInvestment.contract;
-        localStorage.setItem(`contract_${contract.id}`, await fetch(contract.url).then(r => r.blob()).then(b => b.toString()));
-      }
+      // 根據類型創建具體的投資項目
+      const newInvestment: Investment = investmentData.type === 'movable'
+        ? {
+            ...baseInvestment,
+            type: 'movable',
+            assetType: (investmentData as Partial<MovableInvestment>).assetType || '',
+            serialNumber: (investmentData as Partial<MovableInvestment>).serialNumber,
+            manufacturer: (investmentData as Partial<MovableInvestment>).manufacturer,
+            purchaseDate: (investmentData as Partial<MovableInvestment>).purchaseDate
+          }
+        : {
+            ...baseInvestment,
+            type: 'immovable',
+            location: (investmentData as Partial<ImmovableInvestment>).location || '',
+            area: (investmentData as Partial<ImmovableInvestment>).area || 0,
+            propertyType: (investmentData as Partial<ImmovableInvestment>).propertyType || '',
+            registrationNumber: (investmentData as Partial<ImmovableInvestment>).registrationNumber
+          };
 
-      // 生成租金收款記錄
-      if (newInvestment.startDate && newInvestment.monthlyRental) {
+      // 如果有開始日期和結束日期，生成租金收款記錄
+      if (newInvestment.startDate && newInvestment.endDate && newInvestment.monthlyRental) {
         newInvestment.rentalPayments = this.generateRentalPayments(
-          newInvestment.startDate,
-          newInvestment.endDate,
+          new Date(newInvestment.startDate),
+          new Date(newInvestment.endDate),
           newInvestment.monthlyRental
         );
       }
 
       this.mockInvestments.push(newInvestment);
       this.saveInvestments();
+
       return newInvestment;
     } catch (error) {
       console.error('創建投資項目失敗:', error);
-      throw error;
+      throw new Error('創建投資項目失敗');
     }
   }
 
   private generateRentalPayments(
-    startDate: string | undefined,
-    endDate: string | undefined,
+    startDate: Date,
+    endDate: Date,
     monthlyRental: number
   ): RentalPayment[] {
-    if (!startDate) return [];
-
     const payments: RentalPayment[] = [];
-    const start = new Date(startDate);
-    const end = endDate ? new Date(endDate) : new Date(start.getFullYear() + 1, start.getMonth(), start.getDate());
+    const currentDate = new Date(startDate);
 
-    let currentDate = new Date(start.getFullYear(), start.getMonth(), 1);
-    while (currentDate <= end) {
+    while (currentDate <= endDate) {
       payments.push({
         id: `payment-${Date.now()}-${currentDate.getTime()}`,
-        dueDate: currentDate.toISOString(),
+        dueDate: dayjs(currentDate).format('YYYY-MM-DD'),
         amount: monthlyRental,
-        status: 'pending',
+        status: 'pending' as PaymentStatus,
       });
       currentDate.setMonth(currentDate.getMonth() + 1);
     }
+
     return payments;
   }
 
   async updateInvestment(id: string, investmentData: Partial<Investment>): Promise<Investment> {
     try {
+      console.log('API Service - 更新投資項目:', id, investmentData);
       await new Promise(resolve => setTimeout(resolve, 500));
 
       const index = this.mockInvestments.findIndex(i => i.id === id);
@@ -595,23 +604,49 @@ class ApiServiceClass {
         throw new Error('找不到投資項目');
       }
 
-      // 處理日期欄位
+      // 特別處理租金收款記錄的更新
+      let updatedRentalPayments = [...(this.mockInvestments[index].rentalPayments || [])];
+      if (investmentData.rentalPayments) {
+        updatedRentalPayments = investmentData.rentalPayments.map(newPayment => {
+          const existingPayment = updatedRentalPayments.find(p => p.id === newPayment.id);
+          return existingPayment ? { ...existingPayment, ...newPayment } : newPayment;
+        });
+      }
+
+      console.log('更新後的租金收款記錄:', updatedRentalPayments);
+
+      // 更新投資項目
       const updatedInvestment = {
         ...this.mockInvestments[index],
         ...investmentData,
-        startDate: investmentData.startDate || this.mockInvestments[index].startDate,
-        endDate: investmentData.endDate || this.mockInvestments[index].endDate,
-        updatedAt: '2024-01-01T00:00:00.000Z',
+        rentalPayments: updatedRentalPayments,
+        startDate: 'startDate' in investmentData ? investmentData.startDate : this.mockInvestments[index].startDate,
+        endDate: 'endDate' in investmentData ? investmentData.endDate : this.mockInvestments[index].endDate,
+        updatedAt: new Date().toISOString(),
       } as Investment;
 
-      // 處理合約檔案
-      if (updatedInvestment.contract?.url) {
-        const contract = updatedInvestment.contract;
-        localStorage.setItem(`contract_${contract.id}`, await fetch(contract.url).then(r => r.blob()).then(b => b.toString()));
+      // 根據投資類型處理 purchaseDate
+      if (updatedInvestment.type === 'movable' && 'purchaseDate' in investmentData) {
+        (updatedInvestment as MovableInvestment).purchaseDate = investmentData.purchaseDate as string | undefined;
       }
 
+      // 處理合約檔案
+      if (updatedInvestment.contract && updatedInvestment.contract.url) {
+        const contract = updatedInvestment.contract;
+        try {
+          const response = await fetch(contract.url);
+          const blob = await response.blob();
+          const blobString = await blob.text();
+          localStorage.setItem(`contract_${contract.id}`, blobString);
+        } catch (error) {
+          console.error('處理合約檔案時發生錯誤:', error);
+        }
+      }
+
+      console.log('API Service - 更新後的投資項目:', updatedInvestment);
       this.mockInvestments[index] = updatedInvestment;
       this.saveInvestments();
+
       return updatedInvestment;
     } catch (error) {
       console.error('更新投資項目失敗:', error);
@@ -653,7 +688,31 @@ class ApiServiceClass {
       investment.description.toLowerCase().includes(searchTerm)
     );
   };
+
+  // 根據 ID 獲取投資項目
+  async getInvestmentById(id: string): Promise<Investment | null> {
+    try {
+      console.log('API Service - 獲取投資項目:', id);
+
+      // 從 localStorage 獲取所有投資數據
+      const investments = await this.getInvestments();
+
+      // 查找指定 ID 的投資項目
+      const investment = investments.find(inv => inv.id === id);
+
+      if (!investment) {
+        console.log('找不到指定的投資項目:', id);
+        return null;
+      }
+
+      console.log('找到投資項目:', investment);
+      return investment;
+    } catch (error) {
+      console.error('獲取投資項目失敗:', error);
+      throw error;
+    }
+  }
 }
 
 const ApiService = new ApiServiceClass();
-export default ApiService; 
+export default ApiService;

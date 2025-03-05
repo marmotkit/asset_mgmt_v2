@@ -1,17 +1,19 @@
 import React from 'react';
-import { createRoot } from 'react-dom/client';
+import ReactDOM from 'react-dom/client';
 import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import App from './App';
+import './index.css';
+import 'antd/dist/reset.css';
 
-const container = document.getElementById('root');
-if (container) {
-  const root = createRoot(container);
-  root.render(
-    <React.StrictMode>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <App />
-      </LocalizationProvider>
-    </React.StrictMode>
-  );
-} 
+const root = ReactDOM.createRoot(
+  document.getElementById('root') as HTMLElement
+);
+
+root.render(
+  <React.StrictMode>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <App />
+    </LocalizationProvider>
+  </React.StrictMode>
+); 

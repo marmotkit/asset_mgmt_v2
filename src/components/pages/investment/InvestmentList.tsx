@@ -86,7 +86,7 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
 
     const calculateTotalRental = (investment: Investment): number => {
         return investment.rentalPayments
-            ?.filter(payment => payment.status === 'paid')
+            ?.filter(payment => payment.status === 'received')
             ?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
     };
 
@@ -105,7 +105,7 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
             case 'fixed':
                 // 固定金額乘以已收租金次數
                 const paidPaymentsCount = investment.rentalPayments
-                    ?.filter(payment => payment.status === 'paid')
+                    ?.filter(payment => payment.status === 'received')
                     ?.length || 0;
                 profitAmount = value * paidPaymentsCount;
                 break;
@@ -136,30 +136,35 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
             <Table>
                 <TableHead>
                     <TableRow>
-                        <TableCell>項目名稱</TableCell>
-                        <TableCell>公司名稱</TableCell>
-                        <TableCell align="right">投資金額</TableCell>
+                        <TableCell>名稱</TableCell>
+                        <TableCell>類型</TableCell>
+                        <TableCell>公司</TableCell>
+                        <TableCell>金額</TableCell>
+                        <TableCell>狀態</TableCell>
                         <TableCell>開始日期</TableCell>
                         <TableCell>結束日期</TableCell>
-                        <TableCell>狀態</TableCell>
-                        <TableCell>分潤設定</TableCell>
-                        <TableCell align="right">累積租金</TableCell>
-                        <TableCell align="right">累積分潤</TableCell>
-                        <TableCell>合約</TableCell>
                         <TableCell>操作</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
                     {investments.map((investment) => (
                         <TableRow key={investment.id}>
-                            <TableCell>{investment.name}</TableCell>
+                            <TableCell>
+                                <Typography variant="body1">
+                                    {investment.name}
+                                </Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                    {investment.description}
+                                </Typography>
+                            </TableCell>
+                            <TableCell>
+                                {investment.type === 'movable' ? '動產' : '不動產'}
+                            </TableCell>
                             <TableCell>
                                 {companies[investment.companyId]?.name || '-'}
                             </TableCell>
-                            <TableCell align="right">{formatCurrency(investment.amount)}</TableCell>
-                            <TableCell>{formatDate(investment.startDate)}</TableCell>
                             <TableCell>
-                                {investment.endDate ? formatDate(investment.endDate) : '-'}
+                                {formatCurrency(investment.amount)}
                             </TableCell>
                             <TableCell>
                                 <Chip
@@ -169,42 +174,36 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
                                 />
                             </TableCell>
                             <TableCell>
-                                <Typography variant="body2">
-                                    {renderProfitSharingInfo(investment)}
-                                </Typography>
-                            </TableCell>
-                            <TableCell align="right">
-                                <Typography variant="body2">
-                                    {formatCurrency(calculateTotalRental(investment))}
-                                </Typography>
-                            </TableCell>
-                            <TableCell align="right">
-                                <Typography variant="body2">
-                                    {formatCurrency(calculateTotalProfitSharing(investment))}
-                                </Typography>
+                                {investment.startDate ? format(new Date(investment.startDate), 'yyyy-MM-dd') : '-'}
                             </TableCell>
                             <TableCell>
-                                {investment.contract ? (
-                                    <Link href={investment.contract.url} target="_blank">
-                                        查看合約
-                                    </Link>
-                                ) : (
-                                    <Typography variant="caption" color="textSecondary">
-                                        未上傳
-                                    </Typography>
-                                )}
+                                {investment.endDate ? format(new Date(investment.endDate), 'yyyy-MM-dd') : '-'}
                             </TableCell>
                             <TableCell>
-                                <Tooltip title="編輯">
-                                    <IconButton size="small" onClick={() => onEdit(investment)}>
-                                        <EditIcon />
-                                    </IconButton>
-                                </Tooltip>
-                                <Tooltip title="刪除">
-                                    <IconButton size="small" onClick={() => onDelete(investment.id)}>
-                                        <DeleteIcon />
-                                    </IconButton>
-                                </Tooltip>
+                                <Box>
+                                    <Tooltip title="編輯">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => onEdit(investment)}
+                                            color="primary"
+                                        >
+                                            <EditIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="刪除">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                                if (window.confirm('確定要刪除此投資項目嗎？')) {
+                                                    onDelete(investment.id);
+                                                }
+                                            }}
+                                            color="error"
+                                        >
+                                            <DeleteIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
                             </TableCell>
                         </TableRow>
                     ))}
@@ -214,4 +213,4 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
     );
 };
 
-export default InvestmentList; 
+export default InvestmentList;
