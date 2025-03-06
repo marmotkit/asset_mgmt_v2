@@ -1,4 +1,64 @@
-# 資產管理系統
+# 資產管理系統 (Asset Management System)
+
+## 專案簡介
+這是一個現代化的資產管理系統，專門用於管理企業的動產和不動產投資。系統提供直觀的使用者介面，協助企業有效管理和追蹤各類資產。
+
+## 主要功能
+- 投資項目管理
+  - 動產投資管理（設備、機械等）
+  - 不動產投資管理（廠房、土地等）
+  - 支援多公司和會員關聯
+- 租賃與分潤管理
+- 歷史記錄追蹤
+- 發票管理
+- 投資報表生成
+
+## 技術特點
+- 前端框架：React + TypeScript
+- UI 框架：Material-UI (MUI)
+- 狀態管理：React Hooks
+- 資料持久化：LocalStorage + RESTful API
+- 開發工具：Vite
+
+## 系統需求
+- Node.js 16.x 或以上
+- npm 7.x 或以上
+- 現代瀏覽器支援（Chrome, Firefox, Safari, Edge）
+
+## 安裝說明
+1. 克隆專案
+```bash
+git clone [repository-url]
+cd asset_mgmt
+```
+
+2. 安裝依賴
+```bash
+npm install
+```
+
+3. 啟動開發服務器
+```bash
+npm run dev
+```
+
+4. 建置生產版本
+```bash
+npm run build
+```
+
+## 更新日誌
+### v3.4.7
+- 優化資料同步機制
+- 修復所屬公司和會員選擇問題
+- 改進本地資料持久化
+- 移除冗餘的日誌輸出
+
+## 授權
+MIT License
+
+## 貢獻指南
+歡迎提交 Issue 和 Pull Request 來協助改進專案。
 
 ## 專案概述
 
@@ -241,10 +301,6 @@ src/
 3. 提交變更 (`git commit -m 'Add some AmazingFeature'`)
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 發起合併請求
-
-## 授權
-
-MIT License
 
 ## 聯絡方式
 
