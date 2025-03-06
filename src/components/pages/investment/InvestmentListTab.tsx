@@ -5,21 +5,21 @@ import InvestmentList from './InvestmentList';
 
 interface InvestmentListTabProps {
     investments: Investment[];
-    onEditInvestment: (investment: Investment) => void;
-    onDeleteInvestment: (investment: Investment) => void;
+    onEdit: (investment: Investment) => void;
+    onRefresh: () => Promise<void>;
 }
 
 const InvestmentListTab: React.FC<InvestmentListTabProps> = ({
     investments,
-    onEditInvestment,
-    onDeleteInvestment
+    onEdit,
+    onRefresh
 }) => {
     return (
         <Box>
             <InvestmentList
                 investments={investments}
-                onEditInvestment={onEditInvestment}
-                onDeleteInvestment={onDeleteInvestment}
+                onEditInvestment={onEdit}
+                onDeleteInvestment={onRefresh}
             />
         </Box>
     );
