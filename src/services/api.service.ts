@@ -556,7 +556,10 @@ export class ApiService {
         if (ApiService.mockRentalPayments.length === 0) {
             ApiService.loadRentalPaymentsFromStorage();
         }
-        let payments = [...ApiService.mockRentalPayments];
+        let payments = [...ApiService.mockRentalPayments].map(payment => ({
+            ...payment,
+            amount: Number(payment.amount)
+        }));
         if (investmentId) {
             payments = payments.filter(p => p.investmentId === investmentId);
         }
@@ -689,7 +692,10 @@ export class ApiService {
         if (ApiService.mockMemberProfits.length === 0) {
             ApiService.loadMemberProfitsFromStorage();
         }
-        let profits = [...ApiService.mockMemberProfits];
+        let profits = [...ApiService.mockMemberProfits].map(profit => ({
+            ...profit,
+            amount: Number(profit.amount)
+        }));
         if (investmentId) {
             profits = profits.filter(p => p.investmentId === investmentId);
         }
