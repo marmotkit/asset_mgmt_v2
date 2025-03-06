@@ -11,16 +11,17 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormHelperText,
+  Typography,
 } from '@mui/material';
 import { ApiService } from '../../../services/api.service';
 import { User, UserRole, UserStatus } from '../../../types/user';
+import { Company } from '../../../types/company';
 
 interface UserDetailDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (user: User) => Promise<void>;
-  user?: User | null;
+  onSave: (user: Partial<User>) => Promise<void>;
+  user: User | null;
 }
 
 const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
@@ -34,10 +35,16 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
     name: '',
     email: '',
     role: 'normal',
-    status: 'active'
+    status: 'active',
+    companyId: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [companies, setCompanies] = useState<Company[]>([]);
+
+  useEffect(() => {
+    loadCompanies();
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -48,10 +55,21 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
         name: '',
         email: '',
         role: 'normal',
-        status: 'active'
+        status: 'active',
+        companyId: '',
       });
     }
+    setErrors({});
   }, [user]);
+
+  const loadCompanies = async () => {
+    try {
+      const data = await ApiService.getCompanies();
+      setCompanies(data);
+    } catch (error) {
+      console.error('載入公司資料失敗:', error);
+    }
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -97,17 +115,20 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
       email: formData.email!,
       role: formData.role as UserRole,
       status: formData.status as UserStatus,
+      companyId: formData.companyId,
       updatedAt: new Date().toISOString()
     };
 
-    await onSave(userData as User);
+    await onSave(userData as Partial<User>);
     onClose();
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        {user ? '編輯會員' : '新增會員'}
+        <Typography>
+          {user ? '編輯會員' : '新增會員'}
+        </Typography>
       </DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -175,6 +196,24 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
                 <MenuItem value="active">啟用</MenuItem>
                 <MenuItem value="inactive">停用</MenuItem>
                 <MenuItem value="suspended">暫停</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>所屬公司</InputLabel>
+              <Select
+                value={formData.companyId || ''}
+                onChange={(e) => handleFieldChange('companyId', e.target.value)}
+                label="所屬公司"
+              >
+                <MenuItem value="">無</MenuItem>
+                {companies.map((company) => (
+                  <MenuItem key={company.id} value={company.id}>
+                    {company.name}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Grid>

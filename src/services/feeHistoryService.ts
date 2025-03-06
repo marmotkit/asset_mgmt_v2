@@ -86,7 +86,6 @@ class FeeHistoryService {
             '到期日',
             '繳費日期',
             '繳費方式',
-            '收據號碼',
             '狀態',
             '備註'
         ];
@@ -100,7 +99,6 @@ class FeeHistoryService {
             h.dueDate,
             h.paymentDate || '',
             h.paymentMethod || '',
-            h.receiptNumber || '',
             h.status,
             h.note
         ]);
@@ -240,7 +238,6 @@ const exportToExcel = async (filter: FeeHistoryFilter): Promise<Blob> => {
         '到期日',
         '繳費日期',
         '繳費方式',
-        '收據號碼',
         '狀態',
         '備註'
     ];
@@ -254,7 +251,6 @@ const exportToExcel = async (filter: FeeHistoryFilter): Promise<Blob> => {
         h.dueDate,
         h.paymentDate || '',
         h.paymentMethod || '',
-        h.receiptNumber || '',
         h.status,
         h.note
     ]);

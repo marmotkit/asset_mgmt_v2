@@ -16,10 +16,11 @@ import {
     CircularProgress,
     Tooltip,
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { User, UserRole, UserStatus } from '../../../types/user';
 import { ApiService } from '../../../services/api.service';
 import UserDetailDialog from './UserDetailDialog';
+import { Company } from '../../../types/company';
 
 const UserManagement: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -30,6 +31,7 @@ const UserManagement: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRole, setSelectedRole] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
+    const [companies, setCompanies] = useState<Company[]>([]);
 
     const loadUsers = async () => {
         try {
@@ -45,8 +47,18 @@ const UserManagement: React.FC = () => {
         }
     };
 
+    const loadCompanies = async () => {
+        try {
+            const data = await ApiService.getCompanies();
+            setCompanies(data);
+        } catch (error) {
+            console.error('載入公司資料失敗:', error);
+        }
+    };
+
     useEffect(() => {
         loadUsers();
+        loadCompanies();
     }, []);
 
     const handleAddUser = () => {
@@ -59,20 +71,20 @@ const UserManagement: React.FC = () => {
         setIsDialogOpen(true);
     };
 
-    const handleSaveUser = async (user: User) => {
+    const handleSaveUser = async (userData: Partial<User>) => {
         try {
             setLoading(true);
             setError(null);
-            console.log('Saving user:', user);
+            console.log('Saving user:', userData);
 
             let savedUser: User;
-            if (user.id) {
+            if (userData.id) {
                 // 更新現有會員
-                savedUser = await ApiService.updateUser(user);
+                savedUser = await ApiService.updateUser(userData as User);
                 console.log('Updated user result:', savedUser);
             } else {
                 // 建立新會員
-                savedUser = await ApiService.createUser(user);
+                savedUser = await ApiService.createUser(userData as User);
                 console.log('Created user result:', savedUser);
             }
 
@@ -142,6 +154,12 @@ const UserManagement: React.FC = () => {
         }
     };
 
+    const getCompanyName = (companyId?: string) => {
+        if (!companyId) return '-';
+        const company = companies.find(c => c.id === companyId);
+        return company ? company.name : '-';
+    };
+
     // 更新角色選項
     const roleOptions = [
         { value: 'admin', label: '管理員' },
@@ -204,10 +222,11 @@ const UserManagement: React.FC = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>會員帳號</TableCell>
+                            <TableCell>會員編號</TableCell>
                             <TableCell>姓名</TableCell>
                             <TableCell>電子郵件</TableCell>
                             <TableCell>角色</TableCell>
+                            <TableCell>所屬公司</TableCell>
                             <TableCell>狀態</TableCell>
                             <TableCell>操作</TableCell>
                         </TableRow>
@@ -215,7 +234,7 @@ const UserManagement: React.FC = () => {
                     <TableBody>
                         {filteredUsers.map((user) => (
                             <TableRow key={user.id}>
-                                <TableCell>{user.username}</TableCell>
+                                <TableCell>{user.memberNo}</TableCell>
                                 <TableCell>{user.name}</TableCell>
                                 <TableCell>{user.email}</TableCell>
                                 <TableCell>
@@ -225,10 +244,11 @@ const UserManagement: React.FC = () => {
                                         size="small"
                                     />
                                 </TableCell>
+                                <TableCell>{getCompanyName(user.companyId)}</TableCell>
                                 <TableCell>
                                     <Chip
                                         label={getStatusLabel(user.status)}
-                                        color={getStatusColor(user.status)}
+                                        color={user.status === 'active' ? 'success' : 'error'}
                                         size="small"
                                     />
                                 </TableCell>

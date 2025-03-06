@@ -189,17 +189,38 @@ export class ApiService {
     }
 
     // Company related methods
+    private static loadCompaniesFromStorage() {
+        const storedCompanies = localStorage.getItem('companies');
+        if (storedCompanies) {
+            ApiService.mockCompanies = JSON.parse(storedCompanies);
+        }
+    }
+
+    private static saveCompaniesToStorage() {
+        localStorage.setItem('companies', JSON.stringify(ApiService.mockCompanies));
+    }
+
     static async getCompanies(): Promise<Company[]> {
-        return Promise.resolve([]);
+        if (ApiService.mockCompanies.length === 0) {
+            ApiService.loadCompaniesFromStorage();
+        }
+        return Promise.resolve([...ApiService.mockCompanies]);
     }
 
     static async getCompany(id: string): Promise<Company | null> {
-        return Promise.resolve(null);
+        if (ApiService.mockCompanies.length === 0) {
+            ApiService.loadCompaniesFromStorage();
+        }
+        const company = ApiService.mockCompanies.find(c => c.id === id);
+        return Promise.resolve(company || null);
     }
 
     static async createCompany(data: Partial<Company>): Promise<Company> {
+        if (ApiService.mockCompanies.length === 0) {
+            ApiService.loadCompaniesFromStorage();
+        }
         const company: Company = {
-            id: data.id || crypto.randomUUID(),
+            id: crypto.randomUUID(),
             name: data.name || '',
             nameEn: data.nameEn,
             companyNo: data.companyNo || '',
@@ -208,14 +229,39 @@ export class ApiService {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
+        ApiService.mockCompanies.push(company);
+        ApiService.saveCompaniesToStorage();
         return Promise.resolve(company);
     }
 
     static async updateCompany(id: string, data: Partial<Company>): Promise<Company> {
-        return this.createCompany({ ...data, id });
+        if (ApiService.mockCompanies.length === 0) {
+            ApiService.loadCompaniesFromStorage();
+        }
+        const index = ApiService.mockCompanies.findIndex(c => c.id === id);
+        if (index === -1) {
+            throw new Error('公司不存在');
+        }
+        const updatedCompany = {
+            ...ApiService.mockCompanies[index],
+            ...data,
+            updatedAt: new Date().toISOString()
+        };
+        ApiService.mockCompanies[index] = updatedCompany;
+        ApiService.saveCompaniesToStorage();
+        return Promise.resolve(updatedCompany);
     }
 
     static async deleteCompany(id: string): Promise<void> {
+        if (ApiService.mockCompanies.length === 0) {
+            ApiService.loadCompaniesFromStorage();
+        }
+        const index = ApiService.mockCompanies.findIndex(c => c.id === id);
+        if (index === -1) {
+            throw new Error('公司不存在');
+        }
+        ApiService.mockCompanies.splice(index, 1);
+        ApiService.saveCompaniesToStorage();
         return Promise.resolve();
     }
 

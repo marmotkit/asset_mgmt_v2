@@ -8,6 +8,7 @@ import {
     TextField,
     Grid,
     MenuItem,
+    Typography,
 } from '@mui/material';
 import { Company, IndustryType } from '../../../types/company';
 
@@ -114,7 +115,9 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle>
-                {companyData ? '編輯公司資料' : '新增公司'}
+                <Typography>
+                    {companyData ? '編輯公司資料' : '新增公司'}
+                </Typography>
             </DialogTitle>
 
             <DialogContent>
