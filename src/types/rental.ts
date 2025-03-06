@@ -12,9 +12,9 @@ export interface RentalStandard {
 
 // 分潤標準設定
 export enum ProfitSharingType {
-    PERCENTAGE = 'PERCENTAGE',    // 百分比
-    FIXED_AMOUNT = 'FIXED_AMOUNT', // 固定金額
-    OTHER = 'OTHER'               // 其他
+    PERCENTAGE = 'percentage',
+    FIXED_AMOUNT = 'fixed_amount',
+    OTHER = 'other'
 }
 
 export interface ProfitSharingStandard {
@@ -24,6 +24,8 @@ export interface ProfitSharingStandard {
     value: number;                // 分潤值（百分比或固定金額）
     startDate: string;            // 生效日期
     endDate?: string;            // 結束日期（可選）
+    minAmount?: number;
+    maxAmount?: number;
     note?: string;               // 備註
     createdAt: string;
     updatedAt: string;
@@ -31,16 +33,17 @@ export interface ProfitSharingStandard {
 
 // 租金收款項目
 export enum PaymentStatus {
-    PENDING = 'PENDING',         // 待收款
-    PAID = 'PAID',              // 已收款
-    OVERDUE = 'OVERDUE'         // 逾期
+    PENDING = 'pending',
+    PAID = 'paid',
+    OVERDUE = 'overdue'
 }
 
 export enum PaymentMethod {
-    CASH = 'CASH',              // 現金
-    BANK_TRANSFER = 'BANK_TRANSFER', // 銀行轉帳
-    CHECK = 'CHECK',            // 支票
-    OTHER = 'OTHER'             // 其他
+    CASH = 'cash',
+    BANK_TRANSFER = 'bank_transfer',
+    LINE_PAY = 'line_pay',
+    CHECK = 'check',
+    OTHER = 'other'
 }
 
 export interface RentalPayment {
@@ -49,6 +52,8 @@ export interface RentalPayment {
     year: number;               // 年度
     month: number;              // 月份
     amount: number;             // 租金金額
+    startDate: string;
+    endDate: string;
     status: PaymentStatus;      // 收款狀態
     paymentMethod?: PaymentMethod; // 收款方式
     paymentDate?: string;       // 收款日期

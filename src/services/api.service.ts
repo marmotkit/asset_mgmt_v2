@@ -18,50 +18,33 @@ import {
 // 模擬 API 服務
 export class ApiService {
     private static readonly API_BASE_URL = window.location.hostname === 'localhost'
-        ? 'http://localhost:3001/api'
-        : 'https://api.example.com/api'; // 請根據實際的生產環境 API 網址調整
+        ? '/api'  // 移除 http://localhost:3001 前綴
+        : 'https://api.example.com/api';
     private static readonly LOCAL_STORAGE_KEY = 'auth_token';
 
     private static instance: ApiService;
-    private static investments: Investment[] = [
-        {
-            id: '1',
-            companyId: '1',
-            type: 'movable',
-            name: '設備投資A',
-            description: '生產線設備',
-            amount: 1000000,
-            startDate: '2023-01-01',
-            status: 'active',
-            assetType: '機械設備',
-            serialNumber: 'EQ-001',
-            manufacturer: '台灣機械',
-            createdAt: '2023-01-01T00:00:00Z',
-            updatedAt: '2023-01-01T00:00:00Z'
-        } as MovableInvestment,
-        {
-            id: '2',
-            companyId: '1',
-            type: 'immovable',
-            name: '廠房B',
-            description: '工業區廠房',
-            amount: 50000000,
-            startDate: '2023-02-01',
-            status: 'active',
-            location: '新北市工業區',
-            area: 500,
-            propertyType: '工業用地',
-            registrationNumber: 'LD-002',
-            createdAt: '2023-02-01T00:00:00Z',
-            updatedAt: '2023-02-01T00:00:00Z'
-        } as ImmovableInvestment
-    ];
+    private static investments: Investment[] = [];  // 移除預設資料
     private static mockUsers: User[] = [];
     private static mockCompanies: Company[] = [];
     private static mockRentalStandards: RentalStandard[] = [];
     private static mockProfitSharingStandards: ProfitSharingStandard[] = [];
     private static mockRentalPayments: RentalPayment[] = [];
     private static mockMemberProfits: MemberProfit[] = [];
+    private static mockMembers: User[] = [
+        {
+            id: '6e74484c-af9c-4a4e-be82-c91d65000c29',
+            memberNo: 'C001',
+            username: 'test',
+            name: '測試會員',
+            email: 'test@example.com',
+            status: 'active',
+            role: 'normal',
+            preferences: [],
+            isFirstLogin: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        }
+    ];
 
     private constructor() { }
 
@@ -196,11 +179,64 @@ export class ApiService {
     }
 
     // Investment related methods
+    private static loadInvestmentsFromStorage() {
+        const storedInvestments = localStorage.getItem('investments');
+        if (storedInvestments) {
+            ApiService.investments = JSON.parse(storedInvestments);
+        } else {
+            // 初始化預設投資項目
+            ApiService.investments = [
+                {
+                    id: '1',
+                    companyId: '1',
+                    type: 'movable',
+                    name: '設備投資A',
+                    description: '生產線設備',
+                    amount: 1000000,
+                    startDate: '2023-01-01',
+                    status: 'active',
+                    assetType: '機械設備',
+                    serialNumber: 'EQ-001',
+                    manufacturer: '台灣機械',
+                    createdAt: '2023-01-01T00:00:00Z',
+                    updatedAt: '2023-01-01T00:00:00Z'
+                } as MovableInvestment,
+                {
+                    id: '2',
+                    companyId: '1',
+                    type: 'immovable',
+                    name: '廠房B',
+                    description: '工業區廠房',
+                    amount: 50000000,
+                    startDate: '2023-02-01',
+                    status: 'active',
+                    location: '新北市工業區',
+                    area: 500,
+                    propertyType: '工業用地',
+                    registrationNumber: 'LD-002',
+                    createdAt: '2023-02-01T00:00:00Z',
+                    updatedAt: '2023-02-01T00:00:00Z'
+                } as ImmovableInvestment
+            ];
+            localStorage.setItem('investments', JSON.stringify(ApiService.investments));
+        }
+    }
+
+    private static saveInvestmentsToStorage() {
+        localStorage.setItem('investments', JSON.stringify(ApiService.investments));
+    }
+
     static async getInvestments(): Promise<Investment[]> {
+        if (ApiService.investments.length === 0) {
+            ApiService.loadInvestmentsFromStorage();
+        }
         return Promise.resolve([...ApiService.investments]);
     }
 
     static async getInvestment(id: string): Promise<Investment | null> {
+        if (ApiService.investments.length === 0) {
+            ApiService.loadInvestmentsFromStorage();
+        }
         return Promise.resolve(ApiService.investments.find(i => i.id === id) || null);
     }
 
@@ -213,6 +249,7 @@ export class ApiService {
         } as Investment;
 
         ApiService.investments.push(newInvestment);
+        ApiService.saveInvestmentsToStorage();
         return Promise.resolve(newInvestment);
     }
 
@@ -228,6 +265,7 @@ export class ApiService {
         };
 
         ApiService.investments[index] = updatedInvestment;
+        ApiService.saveInvestmentsToStorage();
         return Promise.resolve(updatedInvestment);
     }
 
@@ -237,6 +275,7 @@ export class ApiService {
             throw new Error('Investment not found');
         }
         ApiService.investments.splice(index, 1);
+        ApiService.saveInvestmentsToStorage();
         return Promise.resolve();
     }
 
@@ -378,8 +417,33 @@ export class ApiService {
     }
 
     // 租賃標準設定相關方法
+    private static loadRentalStandardsFromStorage() {
+        const storedStandards = localStorage.getItem('rentalStandards');
+        if (storedStandards) {
+            ApiService.mockRentalStandards = JSON.parse(storedStandards);
+        }
+    }
+
+    private static saveRentalStandardsToStorage() {
+        localStorage.setItem('rentalStandards', JSON.stringify(ApiService.mockRentalStandards));
+    }
+
+    private static loadProfitSharingStandardsFromStorage() {
+        const storedStandards = localStorage.getItem('profitSharingStandards');
+        if (storedStandards) {
+            ApiService.mockProfitSharingStandards = JSON.parse(storedStandards);
+        }
+    }
+
+    private static saveProfitSharingStandardsToStorage() {
+        localStorage.setItem('profitSharingStandards', JSON.stringify(ApiService.mockProfitSharingStandards));
+    }
+
     public static async getRentalStandards(investmentId?: string): Promise<RentalStandard[]> {
-        let standards = [...this.mockRentalStandards];
+        if (ApiService.mockRentalStandards.length === 0) {
+            ApiService.loadRentalStandardsFromStorage();
+        }
+        let standards = [...ApiService.mockRentalStandards];
         if (investmentId) {
             standards = standards.filter(s => s.investmentId === investmentId);
         }
@@ -397,33 +461,39 @@ export class ApiService {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
-        this.mockRentalStandards.push(newStandard);
+        ApiService.mockRentalStandards.push(newStandard);
+        ApiService.saveRentalStandardsToStorage();
         return Promise.resolve(newStandard);
     }
 
     public static async updateRentalStandard(id: string, data: Partial<RentalStandard>): Promise<RentalStandard> {
-        const index = this.mockRentalStandards.findIndex(s => s.id === id);
+        const index = ApiService.mockRentalStandards.findIndex(s => s.id === id);
         if (index === -1) throw new Error('租賃標準不存在');
 
         const updatedStandard = {
-            ...this.mockRentalStandards[index],
+            ...ApiService.mockRentalStandards[index],
             ...data,
             updatedAt: new Date().toISOString()
         };
-        this.mockRentalStandards[index] = updatedStandard;
+        ApiService.mockRentalStandards[index] = updatedStandard;
+        ApiService.saveRentalStandardsToStorage();
         return Promise.resolve(updatedStandard);
     }
 
     public static async deleteRentalStandard(id: string): Promise<void> {
-        const index = this.mockRentalStandards.findIndex(s => s.id === id);
+        const index = ApiService.mockRentalStandards.findIndex(s => s.id === id);
         if (index === -1) throw new Error('租賃標準不存在');
-        this.mockRentalStandards.splice(index, 1);
+        ApiService.mockRentalStandards.splice(index, 1);
+        ApiService.saveRentalStandardsToStorage();
         return Promise.resolve();
     }
 
     // 分潤標準設定相關方法
     public static async getProfitSharingStandards(investmentId?: string): Promise<ProfitSharingStandard[]> {
-        let standards = [...this.mockProfitSharingStandards];
+        if (ApiService.mockProfitSharingStandards.length === 0) {
+            ApiService.loadProfitSharingStandardsFromStorage();
+        }
+        let standards = [...ApiService.mockProfitSharingStandards];
         if (investmentId) {
             standards = standards.filter(s => s.investmentId === investmentId);
         }
@@ -439,6 +509,7 @@ export class ApiService {
         } as ProfitSharingStandard;
 
         ApiService.mockProfitSharingStandards.push(newStandard);
+        ApiService.saveProfitSharingStandardsToStorage();
         return Promise.resolve(newStandard);
     }
 
@@ -455,6 +526,7 @@ export class ApiService {
         } as ProfitSharingStandard;
 
         ApiService.mockProfitSharingStandards[index] = updatedStandard;
+        ApiService.saveProfitSharingStandardsToStorage();
         return Promise.resolve(updatedStandard);
     }
 
@@ -464,12 +536,27 @@ export class ApiService {
             throw new Error('分潤標準不存在');
         }
         ApiService.mockProfitSharingStandards.splice(index, 1);
+        ApiService.saveProfitSharingStandardsToStorage();
         return Promise.resolve();
     }
 
     // 租金收款項目相關方法
+    private static loadRentalPaymentsFromStorage() {
+        const storedPayments = localStorage.getItem('rentalPayments');
+        if (storedPayments) {
+            ApiService.mockRentalPayments = JSON.parse(storedPayments);
+        }
+    }
+
+    private static saveRentalPaymentsToStorage() {
+        localStorage.setItem('rentalPayments', JSON.stringify(ApiService.mockRentalPayments));
+    }
+
     public static async getRentalPayments(investmentId?: string, year?: number, month?: number): Promise<RentalPayment[]> {
-        let payments = [...this.mockRentalPayments];
+        if (ApiService.mockRentalPayments.length === 0) {
+            ApiService.loadRentalPaymentsFromStorage();
+        }
+        let payments = [...ApiService.mockRentalPayments];
         if (investmentId) {
             payments = payments.filter(p => p.investmentId === investmentId);
         }
@@ -482,40 +569,127 @@ export class ApiService {
         return Promise.resolve(payments);
     }
 
-    public static async createRentalPayment(data: Partial<RentalPayment>): Promise<RentalPayment> {
-        const newPayment: RentalPayment = {
-            id: crypto.randomUUID(),
-            investmentId: data.investmentId || '',
-            year: data.year || new Date().getFullYear(),
-            month: data.month || new Date().getMonth() + 1,
-            amount: data.amount || 0,
-            status: data.status || PaymentStatus.PENDING,
-            paymentMethod: data.paymentMethod,
-            paymentDate: data.paymentDate,
-            note: data.note,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        this.mockRentalPayments.push(newPayment);
-        return Promise.resolve(newPayment);
+    public static async generateRentalPayments(investmentId: string, year: number): Promise<void> {
+        // 載入現有的租金收款和租賃標準
+        await ApiService.loadRentalPaymentsFromStorage();
+        await ApiService.loadRentalStandardsFromStorage();
+
+        // 檢查是否已存在該年度的租金收款項目
+        const existingPayments = ApiService.mockRentalPayments.filter(p =>
+            p.investmentId === investmentId && p.year === year
+        );
+        if (existingPayments.length > 0) {
+            throw new Error('該年度的租金收款項目已經存在，請勿重複生成');
+        }
+
+        // 找到對應的租賃標準
+        const rentalStandards = ApiService.mockRentalStandards.filter(s =>
+            s.investmentId === investmentId && s.startDate && s.endDate // 確保有開始和結束日期
+        );
+        if (!rentalStandards || rentalStandards.length === 0) {
+            throw new Error('尚未設定租賃標準');
+        }
+
+        // 找到適用於該年度的租賃標準
+        const applicableStandard = rentalStandards.find(s => {
+            if (!s.startDate || !s.endDate) return false;
+            const startDate = new Date(s.startDate);
+            const endDate = new Date(s.endDate);
+            const yearStart = new Date(year, 0, 1);
+            const yearEnd = new Date(year, 11, 31);
+            return startDate <= yearEnd && endDate >= yearStart;
+        });
+
+        if (!applicableStandard || !applicableStandard.startDate || !applicableStandard.endDate) {
+            throw new Error('找不到適用於該年度的租賃標準');
+        }
+
+        const standardStartDate = new Date(applicableStandard.startDate);
+        const standardEndDate = new Date(applicableStandard.endDate);
+
+        // 計算該年度需要生成的月份範圍
+        let startMonth = 0;  // 預設從1月開始
+        let endMonth = 11;   // 預設到12月結束
+
+        // 如果是合約開始年份，從合約開始月份開始
+        if (year === standardStartDate.getFullYear()) {
+            startMonth = standardStartDate.getMonth();
+        }
+
+        // 如果是合約結束年份，要包含到結束日期所在月份
+        if (year === standardEndDate.getFullYear()) {
+            // 如果結束日期不是月底，也要算一整個月
+            endMonth = standardEndDate.getMonth();
+        }
+
+        // 生成租金收款項目
+        const newPayments: RentalPayment[] = [];
+        for (let month = startMonth; month <= endMonth; month++) {
+            const paymentStartDate = new Date(year, month, 1);
+            const paymentEndDate = new Date(year, month + 1, 0);
+
+            const payment: RentalPayment = {
+                id: crypto.randomUUID(),
+                investmentId,
+                year,
+                month: month + 1,
+                amount: applicableStandard.monthlyRent,
+                startDate: paymentStartDate.toISOString(),
+                endDate: paymentEndDate.toISOString(),
+                status: PaymentStatus.PENDING,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            newPayments.push(payment);
+        }
+
+        // 儲存新生成的租金收款項目
+        ApiService.mockRentalPayments = [
+            ...ApiService.mockRentalPayments,
+            ...newPayments
+        ];
+        await ApiService.saveRentalPaymentsToStorage();
     }
 
     public static async updateRentalPayment(id: string, data: Partial<RentalPayment>): Promise<RentalPayment> {
-        const index = this.mockRentalPayments.findIndex(p => p.id === id);
+        const index = ApiService.mockRentalPayments.findIndex(p => p.id === id);
         if (index === -1) throw new Error('租金收款項目不存在');
 
         const updatedPayment = {
-            ...this.mockRentalPayments[index],
+            ...ApiService.mockRentalPayments[index],
             ...data,
             updatedAt: new Date().toISOString()
         };
-        this.mockRentalPayments[index] = updatedPayment;
+        ApiService.mockRentalPayments[index] = updatedPayment;
+        ApiService.saveRentalPaymentsToStorage();
         return Promise.resolve(updatedPayment);
     }
 
+    public static async deleteRentalPayment(id: string): Promise<void> {
+        const index = ApiService.mockRentalPayments.findIndex(p => p.id === id);
+        if (index === -1) throw new Error('租金收款項目不存在');
+        ApiService.mockRentalPayments.splice(index, 1);
+        ApiService.saveRentalPaymentsToStorage();
+        return Promise.resolve();
+    }
+
     // 會員分潤項目相關方法
+    private static loadMemberProfitsFromStorage() {
+        const storedProfits = localStorage.getItem('memberProfits');
+        if (storedProfits) {
+            ApiService.mockMemberProfits = JSON.parse(storedProfits);
+        }
+    }
+
+    private static saveMemberProfitsToStorage() {
+        localStorage.setItem('memberProfits', JSON.stringify(ApiService.mockMemberProfits));
+    }
+
     public static async getMemberProfits(investmentId?: string, memberId?: string, year?: number, month?: number): Promise<MemberProfit[]> {
-        let profits = [...this.mockMemberProfits];
+        if (ApiService.mockMemberProfits.length === 0) {
+            ApiService.loadMemberProfitsFromStorage();
+        }
+        let profits = [...ApiService.mockMemberProfits];
         if (investmentId) {
             profits = profits.filter(p => p.investmentId === investmentId);
         }
@@ -531,75 +705,152 @@ export class ApiService {
         return Promise.resolve(profits);
     }
 
-    public static async createMemberProfit(data: Partial<MemberProfit>): Promise<MemberProfit> {
-        const newProfit: MemberProfit = {
-            id: crypto.randomUUID(),
-            investmentId: data.investmentId || '',
-            memberId: data.memberId || '',
-            year: data.year || new Date().getFullYear(),
-            month: data.month || new Date().getMonth() + 1,
-            amount: data.amount || 0,
-            status: data.status || PaymentStatus.PENDING,
-            paymentMethod: data.paymentMethod,
-            paymentDate: data.paymentDate,
-            note: data.note,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        this.mockMemberProfits.push(newProfit);
-        return Promise.resolve(newProfit);
+    public static async generateMemberProfits(investmentId: string, year: number): Promise<MemberProfit[]> {
+        try {
+            // 載入所需資料
+            ApiService.loadRentalStandardsFromStorage();
+            ApiService.loadRentalPaymentsFromStorage();
+            ApiService.loadMemberProfitsFromStorage();
+
+            // 檢查是否已經存在該年度的分潤項目
+            const existingProfits = ApiService.mockMemberProfits.filter(p =>
+                p.investmentId === investmentId && p.year === year
+            );
+            if (existingProfits.length > 0) {
+                throw new Error('該年度的分潤項目已經存在，請勿重複生成');
+            }
+
+            // 獲取分潤標準
+            const standards = await this.getProfitSharingStandards(investmentId);
+            if (standards.length === 0) {
+                throw new Error('尚未設定分潤標準');
+            }
+
+            // 獲取該投資項目的所有會員
+            const members = await this.getMembers();
+            if (members.length === 0) {
+                throw new Error('尚無會員資料');
+            }
+
+            // 獲取租金收款項目作為分潤基準
+            const rentalPayments = ApiService.mockRentalPayments.filter(p =>
+                p.investmentId === investmentId && p.year === year
+            );
+            if (rentalPayments.length === 0) {
+                throw new Error('尚未生成該年度的租金收款項目');
+            }
+
+            const newProfits: MemberProfit[] = [];
+            for (const standard of standards) {
+                const startDate = new Date(standard.startDate);
+                const endDate = standard.endDate ? new Date(standard.endDate) : new Date(year, 11, 31);
+
+                // 只處理指定年度的分潤
+                if (startDate.getFullYear() > year || endDate.getFullYear() < year) {
+                    continue;
+                }
+
+                // 計算該年度的起始月和結束月
+                const startMonth = startDate.getFullYear() === year ? startDate.getMonth() + 1 : 1;
+                const endMonth = endDate.getFullYear() === year ? endDate.getMonth() + 1 : 12;
+
+                // 為每個會員生成分潤項目
+                for (const member of members) {
+                    for (let month = startMonth; month <= endMonth; month++) {
+                        // 找到對應月份的租金收款項目
+                        const rentalPayment = rentalPayments.find(p => p.month === month);
+                        if (!rentalPayment) {
+                            continue;
+                        }
+
+                        // 計算分潤金額
+                        let amount = 0;
+                        if (standard.type === ProfitSharingType.FIXED_AMOUNT) {
+                            amount = standard.value;
+                        } else if (standard.type === ProfitSharingType.PERCENTAGE) {
+                            // 使用租金金額作為基準來計算分潤
+                            amount = rentalPayment.amount * (standard.value / 100);
+                        }
+
+                        // 檢查最小和最大金額限制
+                        if (standard.minAmount !== undefined) {
+                            amount = Math.max(amount, standard.minAmount);
+                        }
+                        if (standard.maxAmount !== undefined) {
+                            amount = Math.min(amount, standard.maxAmount);
+                        }
+
+                        const profit: MemberProfit = {
+                            id: crypto.randomUUID(),
+                            investmentId,
+                            memberId: member.id,
+                            year,
+                            month,
+                            amount,
+                            status: PaymentStatus.PENDING,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+                        newProfits.push(profit);
+                    }
+                }
+            }
+
+            if (newProfits.length === 0) {
+                throw new Error('無法生成分潤項目，請檢查分潤標準的生效日期');
+            }
+
+            // 添加新生成的分潤項目
+            ApiService.mockMemberProfits.push(...newProfits);
+            ApiService.saveMemberProfitsToStorage();
+            return Promise.resolve(newProfits);
+        } catch (error) {
+            return Promise.reject(error);
+        }
     }
 
     public static async updateMemberProfit(id: string, data: Partial<MemberProfit>): Promise<MemberProfit> {
-        const index = this.mockMemberProfits.findIndex(p => p.id === id);
+        const index = ApiService.mockMemberProfits.findIndex(p => p.id === id);
         if (index === -1) throw new Error('會員分潤項目不存在');
 
         const updatedProfit = {
-            ...this.mockMemberProfits[index],
+            ...ApiService.mockMemberProfits[index],
             ...data,
             updatedAt: new Date().toISOString()
         };
-        this.mockMemberProfits[index] = updatedProfit;
+        ApiService.mockMemberProfits[index] = updatedProfit;
+        ApiService.saveMemberProfitsToStorage();
         return Promise.resolve(updatedProfit);
     }
 
     public static async deleteMemberProfit(id: string): Promise<void> {
-        const index = this.mockMemberProfits.findIndex(p => p.id === id);
+        const index = ApiService.mockMemberProfits.findIndex(p => p.id === id);
         if (index === -1) throw new Error('會員分潤項目不存在');
-        this.mockMemberProfits.splice(index, 1);
+        ApiService.mockMemberProfits.splice(index, 1);
+        ApiService.saveMemberProfitsToStorage();
         return Promise.resolve();
     }
 
-    // 批量生成租金收款項目
-    public static async generateRentalPayments(investmentId: string, year: number): Promise<RentalPayment[]> {
-        const response = await this.post<RentalPayment[]>('/rental-payments/generate', { investmentId, year });
-        return response.data;
-    }
-
-    // 批量生成會員分潤項目
-    public static async generateMemberProfits(investmentId: string, year: number): Promise<MemberProfit[]> {
-        const response = await this.post<MemberProfit[]>('/member-profits/generate', { investmentId, year });
-        return response.data;
-    }
-
     // 會員相關方法
-    public static async getMembers(): Promise<Member[]> {
-        const response = await this.get<Member[]>('/members');
+    public static async getMembers(): Promise<User[]> {
+        return Promise.resolve(ApiService.mockMembers);
+    }
+
+    public static async getMember(id: string): Promise<User> {
+        const member = ApiService.mockMembers.find(m => m.id === id);
+        if (!member) {
+            throw new Error('會員不存在');
+        }
+        return Promise.resolve(member);
+    }
+
+    public static async createMember(data: Partial<User>): Promise<User> {
+        const response = await this.post<User>('/members', data);
         return response.data;
     }
 
-    public static async getMember(id: string): Promise<Member> {
-        const response = await this.get<Member>(`/members/${id}`);
-        return response.data;
-    }
-
-    public static async createMember(data: Partial<Member>): Promise<Member> {
-        const response = await this.post<Member>('/members', data);
-        return response.data;
-    }
-
-    public static async updateMember(id: string, data: Partial<Member>): Promise<Member> {
-        const response = await this.put<Member>(`/members/${id}`, data);
+    public static async updateMember(id: string, data: Partial<User>): Promise<User> {
+        const response = await this.put<User>(`/members/${id}`, data);
         return response.data;
     }
 

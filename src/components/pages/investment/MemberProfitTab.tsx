@@ -23,25 +23,43 @@ import {
     Select,
     SelectChangeEvent,
     Chip,
+    FormControlLabel,
+    Checkbox,
+    Alert,
 } from '@mui/material';
 import {
     Edit as EditIcon,
     Refresh as RefreshIcon,
+    Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { Investment } from '../../../types/investment';
-import { Member } from '../../../types/member';
+import { User } from '../../../types/user';
 import { MemberProfit, PaymentStatus, PaymentMethod } from '../../../types/rental';
-import { ApiService } from '../../../services';
+import { ApiService } from '../../../services/api.service';
 import { formatCurrency, formatDate } from '../../../utils/format';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import zhTW from 'date-fns/locale/zh-TW';
+import { useParams } from 'react-router-dom';
+import { useSnackbar } from 'notistack';
 
 interface MemberProfitTabProps {
     investments: Investment[];
 }
 
+interface InvestmentSelection {
+    id: string;
+    name: string;
+    selected: boolean;
+    hasExistingProfits: boolean;
+}
+
 const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
-    const [members, setMembers] = useState<Member[]>([]);
+    const { id: investmentId } = useParams<{ id: string }>();
+    const [members, setMembers] = useState<User[]>([]);
     const [memberProfits, setMemberProfits] = useState<MemberProfit[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -60,6 +78,13 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
         paymentDate: '',
         note: '',
     });
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [profitToDelete, setProfitToDelete] = useState<MemberProfit | null>(null);
+    const { enqueueSnackbar } = useSnackbar();
+
+    // 新增投資項目選擇相關狀態
+    const [selectionDialogOpen, setSelectionDialogOpen] = useState(false);
+    const [investmentSelections, setInvestmentSelections] = useState<InvestmentSelection[]>([]);
 
     useEffect(() => {
         loadData();
@@ -81,17 +106,61 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
         }
     };
 
-    const handleGenerateProfits = async () => {
-        if (!window.confirm(`確定要生成 ${yearFilter} 年度的會員分潤項目？`)) return;
+    const handleGenerateClick = async () => {
+        // 檢查是否有選擇年度
+        if (!yearFilter) {
+            enqueueSnackbar('請選擇要生成的年度', { variant: 'error' });
+            return;
+        }
 
-        setLoading(true);
         try {
-            await Promise.all(investments.map(investment =>
-                ApiService.generateMemberProfits(investment.id, yearFilter)
-            ));
+            // 載入最新的分潤資料以檢查重複
+            const existingProfits = await ApiService.getMemberProfits(undefined, undefined, yearFilter);
+
+            // 準備投資項目選擇清單
+            const selections: InvestmentSelection[] = investments.map(inv => ({
+                id: inv.id,
+                name: inv.name,
+                selected: false,
+                hasExistingProfits: existingProfits.some(p => p.investmentId === inv.id)
+            }));
+
+            setInvestmentSelections(selections);
+            setSelectionDialogOpen(true);
+        } catch (error) {
+            enqueueSnackbar('準備生成資料時發生錯誤', { variant: 'error' });
+        }
+    };
+
+    const handleGenerateConfirm = async () => {
+        setSelectionDialogOpen(false);
+        setLoading(true);
+        let hasError = false;
+        let errorMessage = '';
+
+        try {
+            // 取得選擇的投資項目
+            const selectedInvestments = investmentSelections.filter(inv => inv.selected);
+
+            // 依序處理每個選擇的投資項目
+            for (const inv of selectedInvestments) {
+                try {
+                    await ApiService.generateMemberProfits(inv.id, yearFilter);
+                } catch (error) {
+                    hasError = true;
+                    errorMessage += `${inv.name}: ${error instanceof Error ? error.message : '生成失敗'}\n`;
+                }
+            }
+
+            if (hasError) {
+                enqueueSnackbar(errorMessage, { variant: 'warning' });
+            } else {
+                enqueueSnackbar('會員分潤項目生成完成', { variant: 'success' });
+            }
+
             await loadData();
-        } catch (err) {
-            setError('生成會員分潤項目失敗');
+        } catch (error) {
+            enqueueSnackbar('生成會員分潤項目時發生錯誤', { variant: 'error' });
         } finally {
             setLoading(false);
         }
@@ -177,6 +246,41 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
         }
     };
 
+    const handleDeleteClick = (profit: MemberProfit) => {
+        setProfitToDelete(profit);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!profitToDelete) return;
+
+        try {
+            await ApiService.deleteMemberProfit(profitToDelete.id);
+            enqueueSnackbar('分潤項目已刪除', { variant: 'success' });
+            await loadData();
+        } catch (error) {
+            enqueueSnackbar('刪除分潤項目失敗', { variant: 'error' });
+        } finally {
+            setDeleteDialogOpen(false);
+            setProfitToDelete(null);
+        }
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteDialogOpen(false);
+        setProfitToDelete(null);
+    };
+
+    const handleSelectionChange = (investmentId: string) => {
+        setInvestmentSelections(prev =>
+            prev.map(inv =>
+                inv.id === investmentId
+                    ? { ...inv, selected: !inv.selected }
+                    : inv
+            )
+        );
+    };
+
     if (loading) return <LoadingSpinner />;
     if (error) return <ErrorAlert message={error} />;
 
@@ -216,8 +320,9 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
                     <Button
                         variant="contained"
                         startIcon={<RefreshIcon />}
-                        onClick={handleGenerateProfits}
+                        onClick={handleGenerateClick}
                         sx={{ mr: 1 }}
+                        disabled={loading}
                     >
                         生成分潤項目
                     </Button>
@@ -277,6 +382,12 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
                                             onClick={() => handleEditProfit(profit)}
                                         >
                                             <EditIcon />
+                                        </IconButton>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => handleDeleteClick(profit)}
+                                        >
+                                            <DeleteIcon />
                                         </IconButton>
                                     </TableCell>
                                 </TableRow>
@@ -414,6 +525,60 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
                     <Button onClick={() => setDialogOpen(false)}>取消</Button>
                     <Button onClick={handleSave} variant="contained">
                         儲存
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
+                <DialogTitle>確認刪除</DialogTitle>
+                <DialogContent>
+                    確定要刪除這個分潤項目嗎？此操作無法復原。
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDeleteCancel}>取消</Button>
+                    <Button onClick={handleDeleteConfirm} color="error">
+                        刪除
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* 投資項目選擇對話框 */}
+            <Dialog
+                open={selectionDialogOpen}
+                onClose={() => setSelectionDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>選擇要生成分潤項目的投資項目</DialogTitle>
+                <DialogContent>
+                    {investmentSelections.map((inv) => (
+                        <Box key={inv.id} sx={{ mb: 1 }}>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={inv.selected}
+                                        onChange={() => handleSelectionChange(inv.id)}
+                                        disabled={inv.hasExistingProfits}
+                                    />
+                                }
+                                label={inv.name}
+                            />
+                            {inv.hasExistingProfits && (
+                                <Typography variant="caption" color="error">
+                                    （已存在分潤項目）
+                                </Typography>
+                            )}
+                        </Box>
+                    ))}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setSelectionDialogOpen(false)}>取消</Button>
+                    <Button
+                        onClick={handleGenerateConfirm}
+                        variant="contained"
+                        disabled={!investmentSelections.some(inv => inv.selected)}
+                    >
+                        生成
                     </Button>
                 </DialogActions>
             </Dialog>

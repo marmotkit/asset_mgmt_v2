@@ -23,6 +23,9 @@ import {
     Select,
     SelectChangeEvent,
     Chip,
+    FormControlLabel,
+    Checkbox,
+    Alert,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -36,9 +39,17 @@ import { ApiService } from '../../../services';
 import { formatCurrency, formatDate } from '../../../utils/format';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
+import { useSnackbar } from 'notistack';
 
 interface RentalPaymentTabProps {
     investments: Investment[];
+}
+
+interface InvestmentSelection {
+    id: string;
+    name: string;
+    selected: boolean;
+    hasExistingPayments: boolean;
 }
 
 const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
@@ -49,6 +60,7 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
     const [selectedPayment, setSelectedPayment] = useState<RentalPayment | null>(null);
     const [yearFilter, setYearFilter] = useState<number>(new Date().getFullYear());
     const [monthFilter, setMonthFilter] = useState<number>(new Date().getMonth() + 1);
+    const { enqueueSnackbar } = useSnackbar();
     const [formData, setFormData] = useState<Partial<RentalPayment>>({
         investmentId: '',
         year: new Date().getFullYear(),
@@ -59,6 +71,10 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
         paymentDate: '',
         note: '',
     });
+
+    // 新增投資項目選擇相關狀態
+    const [selectionDialogOpen, setSelectionDialogOpen] = useState(false);
+    const [investmentSelections, setInvestmentSelections] = useState<InvestmentSelection[]>([]);
 
     useEffect(() => {
         loadData();
@@ -80,16 +96,60 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
     };
 
     const handleGeneratePayments = async () => {
-        if (!window.confirm(`確定要生成 ${yearFilter} 年度的租金收款項目？`)) return;
+        // 檢查是否有選擇年度
+        if (!yearFilter) {
+            enqueueSnackbar('請選擇要生成的年度', { variant: 'error' });
+            return;
+        }
 
-        setLoading(true);
         try {
-            await Promise.all(investments.map(investment =>
-                ApiService.generateRentalPayments(investment.id, yearFilter)
-            ));
-            await loadData();
+            // 載入最新的收款資料以檢查重複
+            const existingPayments = await ApiService.getRentalPayments(undefined, yearFilter);
+
+            // 準備投資項目選擇清單
+            const selections: InvestmentSelection[] = investments.map(inv => ({
+                id: inv.id,
+                name: inv.name,
+                selected: false,
+                hasExistingPayments: existingPayments.some(p => p.investmentId === inv.id)
+            }));
+
+            setInvestmentSelections(selections);
+            setSelectionDialogOpen(true);
         } catch (err) {
-            setError('生成租金收款項目失敗');
+            enqueueSnackbar('生成租金收款項目失敗', { variant: 'error' });
+        }
+    };
+
+    const handleGenerateConfirm = async () => {
+        setSelectionDialogOpen(false);
+        setLoading(true);
+        let hasError = false;
+        let errorMessage = '';
+
+        try {
+            // 取得選擇的投資項目
+            const selectedInvestments = investmentSelections.filter(inv => inv.selected);
+
+            // 依序處理每個選擇的投資項目
+            for (const inv of selectedInvestments) {
+                try {
+                    await ApiService.generateRentalPayments(inv.id, yearFilter);
+                } catch (error) {
+                    hasError = true;
+                    errorMessage += `${inv.name}: ${error instanceof Error ? error.message : '生成失敗'}\n`;
+                }
+            }
+
+            if (hasError) {
+                enqueueSnackbar(errorMessage, { variant: 'warning' });
+            } else {
+                enqueueSnackbar('租金收款項目生成完成', { variant: 'success' });
+            }
+
+            await loadData();
+        } catch (error) {
+            enqueueSnackbar('生成租金收款項目時發生錯誤', { variant: 'error' });
         } finally {
             setLoading(false);
         }
@@ -172,6 +232,30 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
             default:
                 return '未知';
         }
+    };
+
+    const handleDeletePayment = async (payment: RentalPayment) => {
+        if (!window.confirm('確定要刪除此筆租金收款項目？')) return;
+
+        setLoading(true);
+        try {
+            await ApiService.deleteRentalPayment(payment.id);
+            await loadData();
+        } catch (err) {
+            setError('刪除租金收款項目失敗');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSelectionChange = (investmentId: string) => {
+        setInvestmentSelections(prev =>
+            prev.map(inv =>
+                inv.id === investmentId
+                    ? { ...inv, selected: !inv.selected }
+                    : inv
+            )
+        );
     };
 
     if (loading) return <LoadingSpinner />;
@@ -269,6 +353,13 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
                                             onClick={() => handleEditPayment(payment)}
                                         >
                                             <EditIcon />
+                                        </IconButton>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => handleDeletePayment(payment)}
+                                            color="error"
+                                        >
+                                            <DeleteIcon />
                                         </IconButton>
                                     </TableCell>
                                 </TableRow>
@@ -389,6 +480,47 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
                     <Button onClick={() => setDialogOpen(false)}>取消</Button>
                     <Button onClick={handleSave} variant="contained">
                         儲存
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* 投資項目選擇對話框 */}
+            <Dialog
+                open={selectionDialogOpen}
+                onClose={() => setSelectionDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>選擇要生成收款項目的投資項目</DialogTitle>
+                <DialogContent>
+                    {investmentSelections.map((inv) => (
+                        <Box key={inv.id} sx={{ mb: 1 }}>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={inv.selected}
+                                        onChange={() => handleSelectionChange(inv.id)}
+                                        disabled={inv.hasExistingPayments}
+                                    />
+                                }
+                                label={inv.name}
+                            />
+                            {inv.hasExistingPayments && (
+                                <Typography variant="caption" color="error">
+                                    （已存在收款項目）
+                                </Typography>
+                            )}
+                        </Box>
+                    ))}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setSelectionDialogOpen(false)}>取消</Button>
+                    <Button
+                        onClick={handleGenerateConfirm}
+                        variant="contained"
+                        disabled={!investmentSelections.some(inv => inv.selected)}
+                    >
+                        生成
                     </Button>
                 </DialogActions>
             </Dialog>
