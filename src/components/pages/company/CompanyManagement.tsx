@@ -102,8 +102,12 @@ const CompanyManagement: React.FC = () => {
             company.companyNo.toLowerCase().includes(searchLower) ||
             company.name.toLowerCase().includes(searchLower) ||
             company.nameEn?.toLowerCase().includes(searchLower) ||
+            company.taxId.toLowerCase().includes(searchLower) ||
+            company.address.toLowerCase().includes(searchLower) ||
+            company.fax?.toLowerCase().includes(searchLower) ||
             company.contact.name.toLowerCase().includes(searchLower) ||
-            company.contact.email.toLowerCase().includes(searchLower)
+            company.contact.email.toLowerCase().includes(searchLower) ||
+            company.contact.phone.toLowerCase().includes(searchLower)
         );
     });
 
@@ -153,12 +157,15 @@ const CompanyManagement: React.FC = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell>公司編號</TableCell>
+                            <TableCell>統一編號</TableCell>
                             <TableCell>公司名稱</TableCell>
                             <TableCell>英文簡稱</TableCell>
                             <TableCell>產業類別</TableCell>
                             <TableCell>聯絡人</TableCell>
                             <TableCell>聯絡電話</TableCell>
+                            <TableCell>傳真</TableCell>
                             <TableCell>電子郵件</TableCell>
+                            <TableCell>備註</TableCell>
                             <TableCell>操作</TableCell>
                         </TableRow>
                     </TableHead>
@@ -166,6 +173,7 @@ const CompanyManagement: React.FC = () => {
                         {filteredCompanies.map((company) => (
                             <TableRow key={company.id}>
                                 <TableCell>{company.companyNo}</TableCell>
+                                <TableCell>{company.taxId}</TableCell>
                                 <TableCell>{company.name}</TableCell>
                                 <TableCell>{company.nameEn}</TableCell>
                                 <TableCell>
@@ -175,7 +183,9 @@ const CompanyManagement: React.FC = () => {
                                 </TableCell>
                                 <TableCell>{company.contact.name}</TableCell>
                                 <TableCell>{company.contact.phone}</TableCell>
+                                <TableCell>{company.fax || '-'}</TableCell>
                                 <TableCell>{company.contact.email}</TableCell>
+                                <TableCell>{company.note || '-'}</TableCell>
                                 <TableCell>
                                     <IconButton
                                         size="small"

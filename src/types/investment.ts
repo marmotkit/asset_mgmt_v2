@@ -1,30 +1,27 @@
-import { LeaseItem, LeaseStatus, TenantInfo, ProfitSharing, ProfitSharingType } from './lease';
-import { RentalPayment, PaymentStatus, PaymentMethod } from './payment';
-
 // 投資類型
 export type InvestmentType = 'movable' | 'immovable';  // 動產 | 不動產
 
 // 投資狀態
-export type InvestmentStatus = 'active' | 'sold' | 'pending' | 'completed' | 'terminated';
+export type InvestmentStatus = 'active' | 'pending' | 'completed' | 'terminated';
 
 // 基本投資項目介面
-export interface Investment {
+export interface BaseInvestment {
     id: string;
     companyId: string;
+    userId?: string;
+    type: 'movable' | 'immovable';
     name: string;
-    type: InvestmentType;
     description?: string;
     amount: number;
     startDate: string;
     endDate?: string;
     status: InvestmentStatus;
-    leaseItems: LeaseItem[];
     createdAt: string;
     updatedAt: string;
 }
 
 // 動產投資
-export interface MovableInvestment extends Investment {
+export interface MovableInvestment extends BaseInvestment {
     type: 'movable';
     assetType: string;
     serialNumber: string;
@@ -32,7 +29,7 @@ export interface MovableInvestment extends Investment {
 }
 
 // 不動產投資
-export interface ImmovableInvestment extends Investment {
+export interface ImmovableInvestment extends BaseInvestment {
     type: 'immovable';
     location: string;
     area: number;
@@ -41,19 +38,20 @@ export interface ImmovableInvestment extends Investment {
 }
 
 // 通用投資型別
-export type CommonInvestment = MovableInvestment | ImmovableInvestment;
+export type Investment = MovableInvestment | ImmovableInvestment;
 
 // 投資表單資料
 export interface InvestmentFormData {
     id?: string;
-    companyId?: string;
-    type?: InvestmentType;
-    name?: string;
+    companyId: string;
+    userId?: string;
+    type: 'movable' | 'immovable';
+    name: string;
     description?: string;
-    amount?: number;
-    startDate?: string;
+    amount: number;
+    startDate: string;
     endDate?: string;
-    status?: InvestmentStatus;
+    status: InvestmentStatus;
     // 動產特有欄位
     assetType?: string;
     serialNumber?: string;
@@ -63,10 +61,6 @@ export interface InvestmentFormData {
     area?: number;
     propertyType?: string;
     registrationNumber?: string;
-    // 其他欄位
-    leaseItems?: LeaseItem[];
-    createdAt?: string;
-    updatedAt?: string;
 }
 
 // 合約檔案
@@ -79,6 +73,3 @@ export interface ContractFile {
     uploadDate: string;
     url: string;
 }
-
-export type { LeaseItem, RentalPayment };
-export type { LeaseStatus, TenantInfo, ProfitSharing, ProfitSharingType, PaymentStatus, PaymentMethod };

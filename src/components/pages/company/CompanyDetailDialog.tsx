@@ -11,6 +11,7 @@ import {
     Typography,
 } from '@mui/material';
 import { Company, IndustryType } from '../../../types/company';
+import { ApiService } from '../../../services/api.service';
 
 interface CompanyDetailDialogProps {
     open: boolean;
@@ -35,36 +36,56 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
     onSave,
 }) => {
     const [formData, setFormData] = useState<Partial<Company>>({
+        companyNo: '',
+        taxId: '',
         name: '',
         nameEn: '',
-        companyNo: '',
         industry: 'other',
+        address: '',
         contact: {
             name: '',
             phone: '',
             email: '',
         },
+        fax: '',
+        note: '',
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
-        if (companyData) {
-            setFormData(companyData);
-        } else {
-            setFormData({
-                name: '',
-                nameEn: '',
-                companyNo: '',
-                industry: 'other',
-                contact: {
-                    name: '',
-                    phone: '',
-                    email: '',
-                },
-            });
+        const initializeForm = async () => {
+            if (companyData) {
+                setFormData(companyData);
+            } else {
+                // 如果是新增公司，先取得新的公司編號
+                try {
+                    const newCompanyNo = await ApiService.getNewCompanyNo();
+                    setFormData({
+                        companyNo: newCompanyNo,
+                        taxId: '',
+                        name: '',
+                        nameEn: '',
+                        industry: 'other',
+                        address: '',
+                        contact: {
+                            name: '',
+                            phone: '',
+                            email: '',
+                        },
+                        fax: '',
+                        note: '',
+                    });
+                } catch (error) {
+                    console.error('生成公司編號失敗:', error);
+                }
+            }
+            setErrors({});
+        };
+
+        if (open) {
+            initializeForm();
         }
-        setErrors({});
-    }, [companyData]);
+    }, [companyData, open]);
 
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
@@ -73,10 +94,17 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
         if (!formData.contact?.name) newErrors['contact.name'] = '聯絡人為必填';
         if (!formData.contact?.phone) newErrors['contact.phone'] = '聯絡電話為必填';
         if (!formData.contact?.email) newErrors['contact.email'] = '電子郵件為必填';
+        if (!formData.address) newErrors.address = '公司地址為必填';
+        if (!formData.taxId) newErrors.taxId = '統一編號為必填';
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (formData.contact?.email && !emailRegex.test(formData.contact.email)) {
             newErrors['contact.email'] = '電子郵件格式不正確';
+        }
+
+        const taxIdRegex = /^\d{8}$/;
+        if (formData.taxId && !taxIdRegex.test(formData.taxId)) {
+            newErrors.taxId = '統一編號必須為8位數字';
         }
 
         setErrors(newErrors);
@@ -125,6 +153,30 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
                     <Grid item xs={12} sm={6}>
                         <TextField
                             fullWidth
+                            label="公司編號"
+                            value={formData.companyNo || ''}
+                            InputProps={{
+                                readOnly: true,
+                            }}
+                            helperText="系統自動產生"
+                        />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
+                            label="統一編號"
+                            value={formData.taxId || ''}
+                            onChange={(e) => handleChange('taxId', e.target.value)}
+                            error={!!errors.taxId}
+                            helperText={errors.taxId}
+                            required
+                        />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
                             label="公司名稱"
                             value={formData.name || ''}
                             onChange={(e) => handleChange('name', e.target.value)}
@@ -143,12 +195,15 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
                         />
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12}>
                         <TextField
                             fullWidth
-                            label="公司編號"
-                            value={formData.companyNo || ''}
-                            onChange={(e) => handleChange('companyNo', e.target.value)}
+                            label="公司地址"
+                            value={formData.address || ''}
+                            onChange={(e) => handleChange('address', e.target.value)}
+                            error={!!errors.address}
+                            helperText={errors.address}
+                            required
                         />
                     </Grid>
 
@@ -166,6 +221,15 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
                                 </MenuItem>
                             ))}
                         </TextField>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
+                            label="公司傳真"
+                            value={formData.fax || ''}
+                            onChange={(e) => handleChange('fax', e.target.value)}
+                        />
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
@@ -192,7 +256,7 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
                         />
                     </Grid>
 
-                    <Grid item xs={12}>
+                    <Grid item xs={12} sm={6}>
                         <TextField
                             fullWidth
                             label="電子郵件"
@@ -201,6 +265,17 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
                             error={!!errors['contact.email']}
                             helperText={errors['contact.email']}
                             required
+                        />
+                    </Grid>
+
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            label="備註"
+                            value={formData.note || ''}
+                            onChange={(e) => handleChange('note', e.target.value)}
+                            multiline
+                            rows={3}
                         />
                     </Grid>
                 </Grid>

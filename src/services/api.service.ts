@@ -1,8 +1,6 @@
 import { Investment, MovableInvestment, ImmovableInvestment, InvestmentStatus } from '../types/investment';
 import { User, UserRole, UserStatus, UserPreference } from '../types/user';
 import { Company, IndustryType } from '../types/company';
-import { LeaseItem } from '../types/lease';
-import { RentalPayment } from '../types/payment';
 import { USER_ROLE_PREFIX } from '../utils/memberNoGenerator';
 
 // 模擬 API 服務
@@ -21,7 +19,6 @@ export class ApiService {
             assetType: '機械設備',
             serialNumber: 'EQ-001',
             manufacturer: '台灣機械',
-            leaseItems: [],
             createdAt: '2023-01-01T00:00:00Z',
             updatedAt: '2023-01-01T00:00:00Z'
         } as MovableInvestment,
@@ -38,7 +35,6 @@ export class ApiService {
             area: 500,
             propertyType: '工業用地',
             registrationNumber: 'LD-002',
-            leaseItems: [],
             createdAt: '2023-02-01T00:00:00Z',
             updatedAt: '2023-02-01T00:00:00Z'
         } as ImmovableInvestment
@@ -155,32 +151,67 @@ export class ApiService {
         return `${prefix}${paddedCount}`;
     }
 
+    // 生成公司編號
+    private static async generateCompanyNo(): Promise<string> {
+        const companies = await this.getCompanies();
+        const count = companies.length;
+        const paddedCount = String(count + 1).padStart(3, '0');
+        return `A${paddedCount}`;
+    }
+
+    // 公開方法：取得新的公司編號
+    static async getNewCompanyNo(): Promise<string> {
+        return this.generateCompanyNo();
+    }
+
+    // 通用資料存取方法
+    private async getData<T>(key: string): Promise<T | null> {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : null;
+    }
+
+    private async setData<T>(key: string, data: T): Promise<void> {
+        localStorage.setItem(key, JSON.stringify(data));
+    }
+
     // Investment related methods
     static async getInvestments(): Promise<Investment[]> {
         return Promise.resolve([...ApiService.investments]);
     }
 
-    static async getInvestment(id: string): Promise<Investment | undefined> {
-        const investment = ApiService.investments.find(inv => inv.id === id);
-        return Promise.resolve(investment);
+    static async getInvestment(id: string): Promise<Investment | null> {
+        return Promise.resolve(ApiService.investments.find(i => i.id === id) || null);
     }
 
-    static async createInvestment(investment: Investment): Promise<Investment> {
-        ApiService.investments.push(investment);
-        return Promise.resolve(investment);
+    static async createInvestment(investment: Partial<Investment>): Promise<Investment> {
+        const newInvestment: Investment = {
+            ...investment,
+            id: investment.id || crypto.randomUUID(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        } as Investment;
+
+        ApiService.investments.push(newInvestment);
+        return Promise.resolve(newInvestment);
     }
 
     static async updateInvestment(investment: Investment): Promise<Investment> {
-        const index = ApiService.investments.findIndex(inv => inv.id === investment.id);
+        const index = ApiService.investments.findIndex(i => i.id === investment.id);
         if (index === -1) {
             throw new Error('Investment not found');
         }
-        ApiService.investments[index] = investment;
-        return Promise.resolve(investment);
+
+        const updatedInvestment: Investment = {
+            ...investment,
+            updatedAt: new Date().toISOString()
+        };
+
+        ApiService.investments[index] = updatedInvestment;
+        return Promise.resolve(updatedInvestment);
     }
 
     static async deleteInvestment(id: string): Promise<void> {
-        const index = ApiService.investments.findIndex(inv => inv.id === id);
+        const index = ApiService.investments.findIndex(i => i.id === id);
         if (index === -1) {
             throw new Error('Investment not found');
         }
@@ -221,11 +252,15 @@ export class ApiService {
         }
         const company: Company = {
             id: crypto.randomUUID(),
+            companyNo: await this.generateCompanyNo(),
+            taxId: data.taxId || '',
             name: data.name || '',
             nameEn: data.nameEn,
-            companyNo: data.companyNo || '',
             industry: data.industry || 'other',
+            address: data.address || '',
             contact: data.contact || { name: '', phone: '', email: '' },
+            fax: data.fax || '',
+            note: data.note || '',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -265,116 +300,6 @@ export class ApiService {
         return Promise.resolve();
     }
 
-    // Lease related methods
-    static async getLeaseItems(investmentId: string): Promise<LeaseItem[]> {
-        const investment = await this.getInvestment(investmentId);
-        return Promise.resolve(investment?.leaseItems || []);
-    }
-
-    static async createLeaseItem(investmentId: string, leaseItem: LeaseItem): Promise<LeaseItem> {
-        const investment = await this.getInvestment(investmentId);
-        if (!investment) {
-            throw new Error('Investment not found');
-        }
-        investment.leaseItems.push(leaseItem);
-        return Promise.resolve(leaseItem);
-    }
-
-    static async updateLeaseItem(investmentId: string, leaseItem: LeaseItem): Promise<LeaseItem> {
-        const investment = await this.getInvestment(investmentId);
-        if (!investment) {
-            throw new Error('Investment not found');
-        }
-        const index = investment.leaseItems.findIndex(item => item.id === leaseItem.id);
-        if (index === -1) {
-            throw new Error('Lease item not found');
-        }
-        investment.leaseItems[index] = leaseItem;
-        return Promise.resolve(leaseItem);
-    }
-
-    static async deleteLeaseItem(investmentId: string, leaseItemId: string): Promise<void> {
-        const investment = await this.getInvestment(investmentId);
-        if (!investment) {
-            throw new Error('Investment not found');
-        }
-        const index = investment.leaseItems.findIndex(item => item.id === leaseItemId);
-        if (index === -1) {
-            throw new Error('Lease item not found');
-        }
-        investment.leaseItems.splice(index, 1);
-        return Promise.resolve();
-    }
-
-    // Rental payment related methods
-    static async getRentalPayments(investmentId: string, leaseItemId: string): Promise<RentalPayment[]> {
-        const investment = await this.getInvestment(investmentId);
-        if (!investment) {
-            throw new Error('Investment not found');
-        }
-        const leaseItem = investment.leaseItems.find(item => item.id === leaseItemId);
-        return Promise.resolve(leaseItem?.rentalPayments || []);
-    }
-
-    static async createRentalPayment(
-        investmentId: string,
-        leaseItemId: string,
-        payment: RentalPayment
-    ): Promise<RentalPayment> {
-        const investment = await this.getInvestment(investmentId);
-        if (!investment) {
-            throw new Error('Investment not found');
-        }
-        const leaseItem = investment.leaseItems.find(item => item.id === leaseItemId);
-        if (!leaseItem) {
-            throw new Error('Lease item not found');
-        }
-        leaseItem.rentalPayments.push(payment);
-        return Promise.resolve(payment);
-    }
-
-    static async updateRentalPayment(
-        investmentId: string,
-        leaseItemId: string,
-        payment: RentalPayment
-    ): Promise<RentalPayment> {
-        const investment = await this.getInvestment(investmentId);
-        if (!investment) {
-            throw new Error('Investment not found');
-        }
-        const leaseItem = investment.leaseItems.find(item => item.id === leaseItemId);
-        if (!leaseItem) {
-            throw new Error('Lease item not found');
-        }
-        const index = leaseItem.rentalPayments.findIndex(p => p.id === payment.id);
-        if (index === -1) {
-            throw new Error('Payment not found');
-        }
-        leaseItem.rentalPayments[index] = payment;
-        return Promise.resolve(payment);
-    }
-
-    static async deleteRentalPayment(
-        investmentId: string,
-        leaseItemId: string,
-        paymentId: string
-    ): Promise<void> {
-        const investment = await this.getInvestment(investmentId);
-        if (!investment) {
-            throw new Error('Investment not found');
-        }
-        const leaseItem = investment.leaseItems.find(item => item.id === leaseItemId);
-        if (!leaseItem) {
-            throw new Error('Lease item not found');
-        }
-        const index = leaseItem.rentalPayments.findIndex(p => p.id === paymentId);
-        if (index === -1) {
-            throw new Error('Payment not found');
-        }
-        leaseItem.rentalPayments.splice(index, 1);
-        return Promise.resolve();
-    }
-
     static async createMovableInvestment(data: Partial<MovableInvestment>): Promise<MovableInvestment> {
         const investment: MovableInvestment = {
             id: data.id || crypto.randomUUID(),
@@ -389,7 +314,6 @@ export class ApiService {
             assetType: data.assetType || '',
             serialNumber: data.serialNumber || '',
             manufacturer: data.manufacturer || '',
-            leaseItems: [],
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -411,7 +335,6 @@ export class ApiService {
             area: data.area || 0,
             propertyType: data.propertyType || '',
             registrationNumber: data.registrationNumber || '',
-            leaseItems: [],
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };

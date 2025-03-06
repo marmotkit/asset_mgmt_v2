@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
+    Box,
+    Typography,
     Table,
     TableBody,
     TableCell,
@@ -7,60 +9,90 @@ import {
     TableHead,
     TableRow,
     Paper,
-    Button,
-    Typography,
+    IconButton,
+    Chip,
+    Tooltip,
 } from '@mui/material';
-import { Investment, LeaseItem, RentalPayment, ProfitSharingType } from '../../../types/investment';
+import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Investment, InvestmentStatus } from '../../../types/investment';
 import { formatCurrency } from '../../../utils/format';
+import { ApiService } from '../../../services/api.service';
+import { Company } from '../../../types/company';
+import { User } from '../../../types/user';
 
 interface InvestmentListProps {
     investments: Investment[];
-    onManagePayment: (investment: Investment) => void;
-    onEdit: (investment: Investment) => void;
-    onDelete: (investment: Investment) => void;
+    onEditInvestment: (investment: Investment) => void;
+    onDeleteInvestment: (investment: Investment) => void;
 }
 
 const InvestmentList: React.FC<InvestmentListProps> = ({
     investments,
-    onManagePayment,
-    onEdit,
-    onDelete,
+    onEditInvestment,
+    onDeleteInvestment
 }) => {
-    const calculateTotalRental = (leaseItems: LeaseItem[]): number => {
-        return leaseItems.reduce((total, item) => {
-            const itemTotal = item.rentalPayments.reduce(
-                (sum, payment) => sum + payment.amount,
-                0
-            );
-            return total + itemTotal;
-        }, 0);
-    };
+    const [companies, setCompanies] = useState<Record<string, Company>>({});
+    const [users, setUsers] = useState<Record<string, User>>({});
 
-    const calculateProfitSharing = (leaseItem: LeaseItem, totalRental: number): number => {
-        if (!leaseItem.profitSharing) return 0;
+    useEffect(() => {
+        const loadCompanies = async () => {
+            try {
+                const data = await ApiService.getCompanies();
+                const companyMap = data.reduce((acc: Record<string, Company>, company: Company) => {
+                    acc[company.id] = company;
+                    return acc;
+                }, {});
+                setCompanies(companyMap);
+            } catch (error) {
+                console.error('載入公司資料失敗:', error);
+            }
+        };
 
-        const { type, value } = leaseItem.profitSharing;
-        switch (type) {
-            case 'percentage':
-                return (totalRental * value) / 100;
-            case 'monthly_fixed':
-                return value * leaseItem.rentalPayments.length;
-            case 'yearly_fixed':
-                const months = leaseItem.rentalPayments.length;
-                return (value / 12) * months;
+        const loadUsers = async () => {
+            try {
+                const data = await ApiService.getUsers();
+                const userMap = data.reduce((acc: Record<string, User>, user: User) => {
+                    acc[user.id] = user;
+                    return acc;
+                }, {});
+                setUsers(userMap);
+            } catch (error) {
+                console.error('載入會員資料失敗:', error);
+            }
+        };
+
+        loadCompanies();
+        loadUsers();
+    }, []);
+
+    const getStatusColor = (status: InvestmentStatus): "success" | "error" | "warning" | "default" => {
+        switch (status) {
+            case 'active':
+                return 'success';
+            case 'completed':
+                return 'success';
+            case 'terminated':
+                return 'error';
+            case 'pending':
+                return 'warning';
             default:
-                return 0;
+                return 'default';
         }
     };
 
-    const calculateTotalProfitSharing = (leaseItems: LeaseItem[]): number => {
-        return leaseItems.reduce((total, item) => {
-            const itemRentalTotal = item.rentalPayments.reduce(
-                (sum, payment) => sum + payment.amount,
-                0
-            );
-            return total + calculateProfitSharing(item, itemRentalTotal);
-        }, 0);
+    const getStatusLabel = (status: InvestmentStatus): string => {
+        switch (status) {
+            case 'active':
+                return '進行中';
+            case 'completed':
+                return '已完成';
+            case 'terminated':
+                return '已終止';
+            case 'pending':
+                return '審核中';
+            default:
+                return status;
+        }
     };
 
     return (
@@ -68,62 +100,81 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
             <Table>
                 <TableHead>
                     <TableRow>
-                        <TableCell>項目名稱</TableCell>
-                        <TableCell>租賃項目數</TableCell>
-                        <TableCell>累計租金</TableCell>
-                        <TableCell>累計分潤</TableCell>
+                        <TableCell>投資項目</TableCell>
+                        <TableCell>類型</TableCell>
+                        <TableCell>投資金額</TableCell>
+                        <TableCell>起訖日期</TableCell>
+                        <TableCell>所屬公司</TableCell>
+                        <TableCell>所屬會員</TableCell>
+                        <TableCell>狀態</TableCell>
                         <TableCell>操作</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {investments.map((investment) => {
-                        const totalRental = calculateTotalRental(investment.leaseItems || []);
-                        const totalProfitSharing = calculateTotalProfitSharing(investment.leaseItems || []);
-
-                        return (
-                            <TableRow key={investment.id}>
-                                <TableCell>
-                                    <Typography variant="body1">
-                                        {investment.name}
-                                    </Typography>
+                    {investments.map((investment) => (
+                        <TableRow key={investment.id}>
+                            <TableCell>
+                                <Typography variant="body1">
+                                    {investment.name}
+                                </Typography>
+                                {investment.description && (
                                     <Typography variant="body2" color="textSecondary">
                                         {investment.description}
                                     </Typography>
-                                </TableCell>
-                                <TableCell>
-                                    {investment.leaseItems?.length || 0} 個
-                                </TableCell>
-                                <TableCell>{formatCurrency(totalRental)}</TableCell>
-                                <TableCell>{formatCurrency(totalProfitSharing)}</TableCell>
-                                <TableCell>
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        onClick={() => onManagePayment(investment)}
-                                        sx={{ mr: 1 }}
-                                    >
-                                        管理租金/分潤
-                                    </Button>
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        onClick={() => onEdit(investment)}
-                                        sx={{ mr: 1 }}
-                                    >
-                                        編輯
-                                    </Button>
-                                    <Button
-                                        variant="outlined"
-                                        color="error"
-                                        size="small"
-                                        onClick={() => onDelete(investment)}
-                                    >
-                                        刪除
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        );
-                    })}
+                                )}
+                            </TableCell>
+                            <TableCell>
+                                {investment.type === 'movable' ? '動產' : '不動產'}
+                            </TableCell>
+                            <TableCell>
+                                {formatCurrency(investment.amount)}
+                            </TableCell>
+                            <TableCell>
+                                {investment.startDate} {investment.endDate ? `~ ${investment.endDate}` : ''}
+                            </TableCell>
+                            <TableCell>
+                                {investment.companyId && companies[investment.companyId]?.name || ''}
+                            </TableCell>
+                            <TableCell>
+                                {investment.userId && users[investment.userId]?.name || ''}
+                            </TableCell>
+                            <TableCell>
+                                <Chip
+                                    label={getStatusLabel(investment.status)}
+                                    color={getStatusColor(investment.status)}
+                                    size="small"
+                                />
+                            </TableCell>
+                            <TableCell>
+                                <Box display="flex" gap={1}>
+                                    <Tooltip title="編輯">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => onEditInvestment(investment)}
+                                        >
+                                            <EditIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="刪除">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => onDeleteInvestment(investment)}
+                                            color="error"
+                                        >
+                                            <DeleteIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                    {investments.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={8} align="center">
+                                尚無投資項目
+                            </TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
             </Table>
         </TableContainer>
