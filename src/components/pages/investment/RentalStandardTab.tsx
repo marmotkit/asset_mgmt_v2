@@ -46,6 +46,8 @@ const RentalStandardTab: React.FC<RentalStandardTabProps> = ({ investments }) =>
         monthlyRent: 0,
         startDate: '',
         endDate: '',
+        renterName: '',
+        renterTaxId: '',
         note: '',
     });
 
@@ -75,6 +77,8 @@ const RentalStandardTab: React.FC<RentalStandardTabProps> = ({ investments }) =>
             monthlyRent: 0,
             startDate: '',
             endDate: '',
+            renterName: '',
+            renterTaxId: '',
             note: '',
         });
         setDialogOpen(true);
@@ -87,6 +91,8 @@ const RentalStandardTab: React.FC<RentalStandardTabProps> = ({ investments }) =>
             monthlyRent: standard.monthlyRent,
             startDate: standard.startDate,
             endDate: standard.endDate || '',
+            renterName: standard.renterName || '',
+            renterTaxId: standard.renterTaxId || '',
             note: standard.note || '',
         });
         setDialogOpen(true);
@@ -161,6 +167,7 @@ const RentalStandardTab: React.FC<RentalStandardTabProps> = ({ investments }) =>
                             <TableCell align="right">月租金</TableCell>
                             <TableCell>生效日期</TableCell>
                             <TableCell>結束日期</TableCell>
+                            <TableCell>承租人</TableCell>
                             <TableCell>備註</TableCell>
                             <TableCell>操作</TableCell>
                         </TableRow>
@@ -180,6 +187,7 @@ const RentalStandardTab: React.FC<RentalStandardTabProps> = ({ investments }) =>
                                     <TableCell>
                                         {standard.endDate ? formatDate(standard.endDate) : '-'}
                                     </TableCell>
+                                    <TableCell>{standard.renterName}</TableCell>
                                     <TableCell>{standard.note || '-'}</TableCell>
                                     <TableCell>
                                         <IconButton
@@ -261,6 +269,23 @@ const RentalStandardTab: React.FC<RentalStandardTabProps> = ({ investments }) =>
                                 value={formData.endDate}
                                 onChange={handleInputChange('endDate')}
                                 InputLabelProps={{ shrink: true }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="承租人姓名"
+                                value={formData.renterName}
+                                onChange={handleInputChange('renterName')}
+                                required
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="統一編號"
+                                value={formData.renterTaxId}
+                                onChange={handleInputChange('renterTaxId')}
                             />
                         </Grid>
                         <Grid item xs={12}>

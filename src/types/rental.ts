@@ -5,6 +5,8 @@ export interface RentalStandard {
     monthlyRent: number;   // 月租金
     startDate: string;     // 生效日期
     endDate?: string;      // 結束日期（可選）
+    renterName: string;    // 承租人姓名
+    renterTaxId?: string;  // 承租人統一編號（可選）
     note?: string;         // 備註
     createdAt: string;
     updatedAt: string;
@@ -54,10 +56,15 @@ export interface RentalPayment {
     amount: number;             // 租金金額
     startDate: string;
     endDate: string;
+    renterName: string;         // 承租人姓名
+    renterTaxId?: string;       // 承租人統一編號（可選）
+    payerName?: string;         // 繳款人姓名（可選，預設同承租人）
     status: PaymentStatus;      // 收款狀態
     paymentMethod?: PaymentMethod; // 收款方式
     paymentDate?: string;       // 收款日期
+    hasInvoice?: boolean;       // 是否已開立發票
     note?: string;              // 備註
+    invoices?: any[];
     createdAt: string;
     updatedAt: string;
 }

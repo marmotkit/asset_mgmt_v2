@@ -45,6 +45,7 @@ export class ApiService {
             updatedAt: new Date().toISOString()
         }
     ];
+    private static mockInvoices: any[] = [];
 
     private constructor() { }
 
@@ -421,6 +422,8 @@ export class ApiService {
         const storedStandards = localStorage.getItem('rentalStandards');
         if (storedStandards) {
             ApiService.mockRentalStandards = JSON.parse(storedStandards);
+        } else {
+            ApiService.mockRentalStandards = [];
         }
     }
 
@@ -457,6 +460,8 @@ export class ApiService {
             monthlyRent: data.monthlyRent || 0,
             startDate: data.startDate || new Date().toISOString(),
             endDate: data.endDate,
+            renterName: data.renterName || '',
+            renterTaxId: data.renterTaxId,
             note: data.note,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
@@ -573,85 +578,96 @@ export class ApiService {
     }
 
     public static async generateRentalPayments(investmentId: string, year: number): Promise<void> {
-        // 載入現有的租金收款和租賃標準
-        await ApiService.loadRentalPaymentsFromStorage();
-        await ApiService.loadRentalStandardsFromStorage();
+        try {
+            // 載入現有的租金收款和租賃標準
+            await ApiService.loadRentalPaymentsFromStorage();
+            await ApiService.loadRentalStandardsFromStorage();
 
-        // 檢查是否已存在該年度的租金收款項目
-        const existingPayments = ApiService.mockRentalPayments.filter(p =>
-            p.investmentId === investmentId && p.year === year
-        );
-        if (existingPayments.length > 0) {
-            throw new Error('該年度的租金收款項目已經存在，請勿重複生成');
+            // 檢查是否已存在該年度的租金收款項目
+            const existingPayments = ApiService.mockRentalPayments.filter(p =>
+                p.investmentId === investmentId && p.year === year
+            );
+            if (existingPayments.length > 0) {
+                throw new Error('該年度的租金收款項目已經存在，請勿重複生成');
+            }
+
+            // 找到對應的租賃標準
+            const rentalStandards = ApiService.mockRentalStandards.filter(s =>
+                s.investmentId === investmentId && s.startDate && s.endDate // 確保有開始和結束日期
+            );
+            if (!rentalStandards || rentalStandards.length === 0) {
+                throw new Error('尚未設定租賃標準');
+            }
+
+            // 找到適用於該年度的租賃標準
+            const applicableStandard = rentalStandards.find(s => {
+                if (!s.startDate || !s.endDate) return false;
+                const startDate = new Date(s.startDate);
+                const endDate = new Date(s.endDate);
+                const yearStart = new Date(year, 0, 1);
+                const yearEnd = new Date(year, 11, 31);
+                return startDate <= yearEnd && endDate >= yearStart;
+            });
+
+            if (!applicableStandard || !applicableStandard.startDate || !applicableStandard.endDate) {
+                throw new Error('找不到適用於該年度的租賃標準');
+            }
+
+            if (!applicableStandard.renterName) {
+                throw new Error('租賃標準中未設定承租人資訊');
+            }
+
+            const standardStartDate = new Date(applicableStandard.startDate);
+            const standardEndDate = new Date(applicableStandard.endDate);
+
+            // 計算該年度需要生成的月份範圍
+            let startMonth = 0;  // 預設從1月開始
+            let endMonth = 11;   // 預設到12月結束
+
+            // 如果是合約開始年份，從合約開始月份開始
+            if (year === standardStartDate.getFullYear()) {
+                startMonth = standardStartDate.getMonth();
+            }
+
+            // 如果是合約結束年份，要包含到結束日期所在月份
+            if (year === standardEndDate.getFullYear()) {
+                endMonth = standardEndDate.getMonth();
+            }
+
+            // 生成租金收款項目
+            const newPayments: RentalPayment[] = [];
+            for (let month = startMonth; month <= endMonth; month++) {
+                const paymentStartDate = new Date(year, month, 1);
+                const paymentEndDate = new Date(year, month + 1, 0);
+
+                const payment: RentalPayment = {
+                    id: crypto.randomUUID(),
+                    investmentId,
+                    year,
+                    month: month + 1,
+                    amount: applicableStandard.monthlyRent,
+                    startDate: paymentStartDate.toISOString(),
+                    endDate: paymentEndDate.toISOString(),
+                    renterName: applicableStandard.renterName,
+                    renterTaxId: applicableStandard.renterTaxId,
+                    payerName: applicableStandard.renterName,  // 預設繳款人同承租人
+                    status: PaymentStatus.PENDING,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                newPayments.push(payment);
+            }
+
+            // 儲存新生成的租金收款項目
+            ApiService.mockRentalPayments = [
+                ...ApiService.mockRentalPayments,
+                ...newPayments
+            ];
+            await ApiService.saveRentalPaymentsToStorage();
+        } catch (error) {
+            console.error('生成租金收款項目時發生錯誤:', error);
+            throw error;
         }
-
-        // 找到對應的租賃標準
-        const rentalStandards = ApiService.mockRentalStandards.filter(s =>
-            s.investmentId === investmentId && s.startDate && s.endDate // 確保有開始和結束日期
-        );
-        if (!rentalStandards || rentalStandards.length === 0) {
-            throw new Error('尚未設定租賃標準');
-        }
-
-        // 找到適用於該年度的租賃標準
-        const applicableStandard = rentalStandards.find(s => {
-            if (!s.startDate || !s.endDate) return false;
-            const startDate = new Date(s.startDate);
-            const endDate = new Date(s.endDate);
-            const yearStart = new Date(year, 0, 1);
-            const yearEnd = new Date(year, 11, 31);
-            return startDate <= yearEnd && endDate >= yearStart;
-        });
-
-        if (!applicableStandard || !applicableStandard.startDate || !applicableStandard.endDate) {
-            throw new Error('找不到適用於該年度的租賃標準');
-        }
-
-        const standardStartDate = new Date(applicableStandard.startDate);
-        const standardEndDate = new Date(applicableStandard.endDate);
-
-        // 計算該年度需要生成的月份範圍
-        let startMonth = 0;  // 預設從1月開始
-        let endMonth = 11;   // 預設到12月結束
-
-        // 如果是合約開始年份，從合約開始月份開始
-        if (year === standardStartDate.getFullYear()) {
-            startMonth = standardStartDate.getMonth();
-        }
-
-        // 如果是合約結束年份，要包含到結束日期所在月份
-        if (year === standardEndDate.getFullYear()) {
-            // 如果結束日期不是月底，也要算一整個月
-            endMonth = standardEndDate.getMonth();
-        }
-
-        // 生成租金收款項目
-        const newPayments: RentalPayment[] = [];
-        for (let month = startMonth; month <= endMonth; month++) {
-            const paymentStartDate = new Date(year, month, 1);
-            const paymentEndDate = new Date(year, month + 1, 0);
-
-            const payment: RentalPayment = {
-                id: crypto.randomUUID(),
-                investmentId,
-                year,
-                month: month + 1,
-                amount: applicableStandard.monthlyRent,
-                startDate: paymentStartDate.toISOString(),
-                endDate: paymentEndDate.toISOString(),
-                status: PaymentStatus.PENDING,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-            newPayments.push(payment);
-        }
-
-        // 儲存新生成的租金收款項目
-        ApiService.mockRentalPayments = [
-            ...ApiService.mockRentalPayments,
-            ...newPayments
-        ];
-        await ApiService.saveRentalPaymentsToStorage();
     }
 
     public static async updateRentalPayment(id: string, data: Partial<RentalPayment>): Promise<RentalPayment> {
@@ -902,6 +918,126 @@ export class ApiService {
         return axios.delete(`${this.API_BASE_URL}${url}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
+    }
+
+    private static loadInvoicesFromStorage() {
+        const storedInvoices = localStorage.getItem('invoices');
+        if (storedInvoices) {
+            ApiService.mockInvoices = JSON.parse(storedInvoices);
+        }
+    }
+
+    private static saveInvoicesToStorage() {
+        localStorage.setItem('invoices', JSON.stringify(ApiService.mockInvoices));
+    }
+
+    public static async createInvoice(data: {
+        type: 'invoice2' | 'invoice3' | 'receipt';
+        paymentId: string;
+        investmentId: string;
+        buyerName: string;
+        buyerTaxId?: string;
+        amount: number;
+        itemName: string;
+        note?: string;
+        date: string;
+    }) {
+        // 載入發票資料
+        ApiService.loadInvoicesFromStorage();
+
+        // 檢查是否已經開立過相同類型的發票
+        const existingInvoice = ApiService.mockInvoices.find(
+            inv => inv.paymentId === data.paymentId && inv.type === data.type
+        );
+        if (existingInvoice) {
+            throw new Error(`此筆租金已開立過${data.type === 'receipt' ? '收據' : '發票'}`);
+        }
+
+        // 建立新發票
+        const newInvoice = {
+            id: crypto.randomUUID(),
+            ...data,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        // 儲存發票
+        ApiService.mockInvoices.push(newInvoice);
+        ApiService.saveInvoicesToStorage();
+
+        // 更新租金收款狀態
+        const paymentIndex = ApiService.mockRentalPayments.findIndex(
+            p => p.id === data.paymentId
+        );
+        if (paymentIndex !== -1) {
+            ApiService.mockRentalPayments[paymentIndex] = {
+                ...ApiService.mockRentalPayments[paymentIndex],
+                hasInvoice: true,
+                updatedAt: new Date().toISOString()
+            };
+            ApiService.saveRentalPaymentsToStorage();
+        }
+
+        return Promise.resolve(newInvoice);
+    }
+
+    public static async getInvoice(paymentId: string, type?: 'invoice2' | 'invoice3' | 'receipt') {
+        ApiService.loadInvoicesFromStorage();
+        let invoice;
+        if (type) {
+            invoice = ApiService.mockInvoices.find(
+                inv => inv.paymentId === paymentId && inv.type === type
+            );
+        } else {
+            invoice = ApiService.mockInvoices.find(
+                inv => inv.paymentId === paymentId
+            );
+        }
+        return Promise.resolve(invoice || null);
+    }
+
+    public static async getInvoices(investmentId?: string, paymentId?: string) {
+        ApiService.loadInvoicesFromStorage();
+        let invoices = [...ApiService.mockInvoices];
+        if (investmentId) {
+            invoices = invoices.filter(inv => inv.investmentId === investmentId);
+        }
+        if (paymentId) {
+            invoices = invoices.filter(inv => inv.paymentId === paymentId);
+        }
+        return Promise.resolve(invoices);
+    }
+
+    public static async deleteInvoice(id: string) {
+        ApiService.loadInvoicesFromStorage();
+        const index = ApiService.mockInvoices.findIndex(inv => inv.id === id);
+        if (index === -1) {
+            throw new Error('發票不存在');
+        }
+
+        const invoice = ApiService.mockInvoices[index];
+        ApiService.mockInvoices.splice(index, 1);
+        ApiService.saveInvoicesToStorage();
+
+        // 檢查是否還有其他相同 paymentId 的發票
+        const hasOtherInvoices = ApiService.mockInvoices.some(inv => inv.paymentId === invoice.paymentId);
+
+        // 如果沒有其他發票，更新租金收款狀態
+        if (!hasOtherInvoices) {
+            const paymentIndex = ApiService.mockRentalPayments.findIndex(
+                p => p.id === invoice.paymentId
+            );
+            if (paymentIndex !== -1) {
+                ApiService.mockRentalPayments[paymentIndex] = {
+                    ...ApiService.mockRentalPayments[paymentIndex],
+                    hasInvoice: false,
+                    updatedAt: new Date().toISOString()
+                };
+                ApiService.saveRentalPaymentsToStorage();
+            }
+        }
+
+        return Promise.resolve();
     }
 }
 
