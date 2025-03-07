@@ -281,6 +281,21 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
         );
     };
 
+    const handleClearProfits = async () => {
+        if (window.confirm('確定要清除所有會員分潤項目嗎？這將刪除所有已生成的分潤項目。')) {
+            setLoading(true);
+            try {
+                await ApiService.clearMemberProfits();
+                enqueueSnackbar('已清除所有會員分潤項目', { variant: 'success' });
+                await loadData();
+            } catch (error) {
+                enqueueSnackbar('清除會員分潤項目失敗', { variant: 'error' });
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
     if (loading) return <LoadingSpinner />;
     if (error) return <ErrorAlert message={error} />;
 
@@ -322,9 +337,16 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
                         startIcon={<RefreshIcon />}
                         onClick={handleGenerateClick}
                         sx={{ mr: 1 }}
-                        disabled={loading}
                     >
                         生成分潤項目
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={handleClearProfits}
+                        sx={{ mr: 1 }}
+                    >
+                        清除分潤項目
                     </Button>
                 </Box>
             </Box>

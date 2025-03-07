@@ -45,7 +45,7 @@ export class ApiService {
             updatedAt: new Date().toISOString()
         },
         {
-            id: 'lkt-member-id',
+            id: 'ad9bfa89-6ea5-43fa-92e8-9ecbfb5d69c5',
             memberNo: 'C002',
             username: 'lkt',
             name: 'LKT',
@@ -203,7 +203,7 @@ export class ApiService {
                 {
                     id: '1',
                     companyId: '1',
-                    userId: 'lkt-member-id',  // LKT 會員的 ID
+                    userId: 'ad9bfa89-6ea5-43fa-92e8-9ecbfb5d69c5',  // LKT 會員的 ID
                     type: 'movable',
                     name: '設備投資A',
                     description: '生產線設備',
@@ -219,7 +219,7 @@ export class ApiService {
                 {
                     id: '2',
                     companyId: '1',
-                    userId: 'lkt-member-id',  // LKT 會員的 ID
+                    userId: 'ad9bfa89-6ea5-43fa-92e8-9ecbfb5d69c5',  // LKT 會員的 ID
                     type: 'immovable',
                     name: '廠房B',
                     description: '工業區廠房',
@@ -438,7 +438,22 @@ export class ApiService {
         if (storedStandards) {
             ApiService.mockRentalStandards = JSON.parse(storedStandards);
         } else {
-            ApiService.mockRentalStandards = [];
+            // 初始化預設租賃標準
+            ApiService.mockRentalStandards = [
+                {
+                    id: '1',
+                    investmentId: '1',
+                    monthlyRent: 10000,
+                    startDate: '2023-01-01',
+                    endDate: '2026-12-31',
+                    renterName: 'LKT',
+                    renterTaxId: '123456789',
+                    note: 'Standard rental agreement',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }
+            ];
+            localStorage.setItem('rentalStandards', JSON.stringify(ApiService.mockRentalStandards));
         }
     }
 
@@ -450,6 +465,21 @@ export class ApiService {
         const storedStandards = localStorage.getItem('profitSharingStandards');
         if (storedStandards) {
             ApiService.mockProfitSharingStandards = JSON.parse(storedStandards);
+        } else {
+            // 初始化預設分潤標準
+            ApiService.mockProfitSharingStandards = [
+                {
+                    id: '1',
+                    investmentId: '1',
+                    type: ProfitSharingType.PERCENTAGE,
+                    value: 10,
+                    startDate: '2023-01-01',
+                    endDate: '2026-12-31',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }
+            ];
+            localStorage.setItem('profitSharingStandards', JSON.stringify(ApiService.mockProfitSharingStandards));
         }
     }
 
@@ -565,6 +595,29 @@ export class ApiService {
         const storedPayments = localStorage.getItem('rentalPayments');
         if (storedPayments) {
             ApiService.mockRentalPayments = JSON.parse(storedPayments);
+        } else {
+            // 初始化預設租金收款項目
+            ApiService.mockRentalPayments = [];
+
+            // 為 2025 年的 1-12 月添加租金收款項目
+            for (let month = 1; month <= 12; month++) {
+                ApiService.mockRentalPayments.push({
+                    id: crypto.randomUUID(),
+                    investmentId: '1',
+                    year: 2025,
+                    month: month,
+                    amount: 5000,
+                    status: PaymentStatus.PAID,
+                    startDate: `2025-${month.toString().padStart(2, '0')}-01`,
+                    endDate: `2025-${month.toString().padStart(2, '0')}-${new Date(2025, month, 0).getDate()}`,
+                    renterName: 'LKT',
+                    renterTaxId: '123456789',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                });
+            }
+
+            localStorage.setItem('rentalPayments', JSON.stringify(ApiService.mockRentalPayments));
         }
     }
 
@@ -750,6 +803,8 @@ export class ApiService {
             ApiService.loadMemberProfitsFromStorage();
             ApiService.loadInvestmentsFromStorage();
 
+            console.log('生成會員分潤項目 - 開始', { investmentId, year });
+
             // 檢查是否已存在該投資項目的分潤項目
             const existingProfits = ApiService.mockMemberProfits.filter(p =>
                 p.investmentId === investmentId && p.year === year
@@ -758,14 +813,10 @@ export class ApiService {
                 throw new Error('該投資項目的分潤項目已存在，請勿重複生成');
             }
 
-            // 載入分潤標準
-            const standards = await this.getProfitSharingStandards(investmentId);
-            if (standards.length === 0) {
-                throw new Error('未設定分潤標準');
-            }
-
             // 獲取投資項目
             const investment = ApiService.investments.find(inv => inv.id === investmentId);
+            console.log('投資項目', investment);
+
             if (!investment) {
                 throw new Error('找不到投資項目');
             }
@@ -775,9 +826,15 @@ export class ApiService {
                 throw new Error('投資項目未指定所屬會員');
             }
 
+            console.log('投資項目所屬會員 ID', investment.userId);
+
             // 載入會員資料
             const members = await this.getMembers();
+            console.log('所有會員', members);
+
             const member = members.find(m => m.id === investment.userId);
+            console.log('找到的會員', member);
+
             if (!member) {
                 throw new Error('找不到所屬會員');
             }
@@ -786,8 +843,18 @@ export class ApiService {
             const rentalPayments = ApiService.mockRentalPayments.filter(p =>
                 p.investmentId === investmentId && p.year === year
             );
+            console.log('租金收款項目', rentalPayments);
+
             if (rentalPayments.length === 0) {
                 throw new Error('未找到該投資項目的租金收款項目');
+            }
+
+            // 載入分潤標準
+            const standards = await this.getProfitSharingStandards(investmentId);
+            console.log('分潤標準', standards);
+
+            if (standards.length === 0) {
+                throw new Error('未設定分潤標準');
             }
 
             const newProfits: MemberProfit[] = [];
@@ -795,8 +862,21 @@ export class ApiService {
                 const startDate = new Date(standard.startDate);
                 const endDate = standard.endDate ? new Date(standard.endDate) : new Date(year, 11, 31);
 
+                console.log('處理分潤標準', {
+                    標準ID: standard.id,
+                    標準開始日期: startDate,
+                    標準結束日期: endDate,
+                    年度: year
+                });
+
                 // 跳過不適用的分潤標準
                 if (startDate.getFullYear() > year || endDate.getFullYear() < year) {
+                    console.log('跳過不適用的分潤標準', {
+                        標準ID: standard.id,
+                        標準開始年度: startDate.getFullYear(),
+                        標準結束年度: endDate.getFullYear(),
+                        目標年度: year
+                    });
                     continue;
                 }
 
@@ -804,13 +884,27 @@ export class ApiService {
                 const startMonth = startDate.getFullYear() === year ? startDate.getMonth() + 1 : 1;
                 const endMonth = endDate.getFullYear() === year ? endDate.getMonth() + 1 : 12;
 
+                console.log('適用的月份範圍', {
+                    標準ID: standard.id,
+                    開始月份: startMonth,
+                    結束月份: endMonth
+                });
+
                 // 只為指定的會員生成分潤項目
                 for (let month = startMonth; month <= endMonth; month++) {
                     // 查找對應月份的租金收款項目
                     const rentalPayment = rentalPayments.find(p => p.month === month);
                     if (!rentalPayment) {
+                        console.log('找不到對應月份的租金收款項目', {
+                            月份: month
+                        });
                         continue;
                     }
+
+                    console.log('找到對應月份的租金收款項目', {
+                        月份: month,
+                        租金收款項目: rentalPayment
+                    });
 
                     // 計算分潤金額
                     let amount = 0;
@@ -821,6 +915,13 @@ export class ApiService {
                         amount = rentalPayment.amount * (standard.value / 100);
                     }
 
+                    console.log('計算分潤金額', {
+                        標準類型: standard.type,
+                        標準值: standard.value,
+                        租金金額: rentalPayment.amount,
+                        分潤金額: amount
+                    });
+
                     // 應用最小/最大金額限制
                     if (standard.minAmount !== undefined) {
                         amount = Math.max(amount, standard.minAmount);
@@ -828,6 +929,10 @@ export class ApiService {
                     if (standard.maxAmount !== undefined) {
                         amount = Math.min(amount, standard.maxAmount);
                     }
+
+                    console.log('最終分潤金額', {
+                        分潤金額: amount
+                    });
 
                     const profit: MemberProfit = {
                         id: crypto.randomUUID(),
@@ -843,6 +948,8 @@ export class ApiService {
                     newProfits.push(profit);
                 }
             }
+
+            console.log('生成的會員分潤項目', newProfits);
 
             if (newProfits.length === 0) {
                 throw new Error('無法生成分潤項目，請檢查分潤標準的生效日期');
@@ -875,6 +982,12 @@ export class ApiService {
         const index = ApiService.mockMemberProfits.findIndex(p => p.id === id);
         if (index === -1) throw new Error('會員分潤項目不存在');
         ApiService.mockMemberProfits.splice(index, 1);
+        ApiService.saveMemberProfitsToStorage();
+        return Promise.resolve();
+    }
+
+    public static async clearMemberProfits(): Promise<void> {
+        ApiService.mockMemberProfits = [];
         ApiService.saveMemberProfitsToStorage();
         return Promise.resolve();
     }
