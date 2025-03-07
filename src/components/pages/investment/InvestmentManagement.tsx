@@ -103,15 +103,12 @@ const InvestmentManagement: React.FC = () => {
                     } as ImmovableInvestment);
                 }
             } else {
-                if (formData.type === 'movable') {
-                    await ApiService.createMovableInvestment(formData as Partial<MovableInvestment>);
-                } else {
-                    await ApiService.createImmovableInvestment(formData as Partial<ImmovableInvestment>);
-                }
+                await ApiService.createInvestment(formData);
             }
             await loadInvestments();
             setIsDialogOpen(false);
         } catch (err) {
+            console.error('儲存投資項目失敗:', err);
             setError('儲存投資項目失敗');
         }
     };

@@ -143,6 +143,32 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
         if (!formData.startDate) {
             newErrors.startDate = '請選擇開始日期';
         }
+        if (!formData.companyId) {
+            newErrors.companyId = '請選擇所屬公司';
+        }
+        if (!formData.userId) {
+            newErrors.userId = '請選擇所屬會員';
+        }
+
+        // 根據投資類型驗證特定欄位
+        if (formData.type === 'movable') {
+            if (!formData.assetType) {
+                newErrors.assetType = '請輸入資產類型';
+            }
+            if (!formData.serialNumber) {
+                newErrors.serialNumber = '請輸入序號';
+            }
+        } else if (formData.type === 'immovable') {
+            if (!formData.location) {
+                newErrors.location = '請輸入位置';
+            }
+            if (!formData.propertyType) {
+                newErrors.propertyType = '請輸入物業類型';
+            }
+            if (!formData.registrationNumber) {
+                newErrors.registrationNumber = '請輸入登記號碼';
+            }
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -375,7 +401,7 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
                     )}
 
                     <Grid item xs={12} sm={6}>
-                        <FormControl fullWidth>
+                        <FormControl fullWidth error={!!errors.companyId}>
                             <InputLabel>所屬公司</InputLabel>
                             <Select
                                 value={formData.companyId || ''}
@@ -389,11 +415,12 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
                                     </MenuItem>
                                 ))}
                             </Select>
+                            {errors.companyId && <FormHelperText>{errors.companyId}</FormHelperText>}
                         </FormControl>
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                        <FormControl fullWidth>
+                        <FormControl fullWidth error={!!errors.userId}>
                             <InputLabel>所屬會員</InputLabel>
                             <Select
                                 value={formData.userId || ''}
@@ -407,6 +434,7 @@ const InvestmentDetailDialog: React.FC<InvestmentDetailDialogProps> = ({
                                     </MenuItem>
                                 ))}
                             </Select>
+                            {errors.userId && <FormHelperText>{errors.userId}</FormHelperText>}
                         </FormControl>
                     </Grid>
                 </Grid>
