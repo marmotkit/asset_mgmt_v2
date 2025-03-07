@@ -26,6 +26,7 @@ import {
     FormControlLabel,
     Checkbox,
     Alert,
+    DialogContentText,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -77,6 +78,9 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
     // 新增投資項目選擇相關狀態
     const [selectionDialogOpen, setSelectionDialogOpen] = useState(false);
     const [investmentSelections, setInvestmentSelections] = useState<InvestmentSelection[]>([]);
+
+    // 添加清除對話框狀態
+    const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -145,6 +149,24 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
             setSelectionDialogOpen(true);
         } catch (err) {
             enqueueSnackbar('生成租金收款項目失敗', { variant: 'error' });
+        }
+    };
+
+    // 添加清除租金項目的處理函數
+    const handleClearPayments = () => {
+        setClearDialogOpen(true);
+    };
+
+    // 確認清除租金項目
+    const handleClearConfirm = async () => {
+        try {
+            await ApiService.clearRentalPayments(yearFilter, monthFilter);
+            enqueueSnackbar(`已清除 ${yearFilter}年${monthFilter ? monthFilter + '月' : ''}的租金項目`, { variant: 'success' });
+            await loadData();
+        } catch (err) {
+            enqueueSnackbar('清除租金項目失敗', { variant: 'error' });
+        } finally {
+            setClearDialogOpen(false);
         }
     };
 
@@ -369,7 +391,7 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
                                 'aria-labelledby': 'year-filter-label'
                             }}
                         >
-                            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((year) => (
+                            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map((year) => (
                                 <MenuItem
                                     key={year}
                                     value={year}
@@ -412,6 +434,14 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
                         aria-label="生成收款項目"
                     >
                         生成收款項目
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={handleClearPayments}
+                    >
+                        清除租金項目
                     </Button>
                 </Box>
             </Box>
@@ -689,6 +719,22 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
                         tabIndex={0}
                     >
                         儲存
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* 清除租金項目確認對話框 */}
+            <Dialog open={clearDialogOpen} onClose={() => setClearDialogOpen(false)}>
+                <DialogTitle>確認清除</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        確定要清除 {yearFilter}年{monthFilter ? monthFilter + '月' : ''}的所有租金項目嗎？此操作無法復原。
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setClearDialogOpen(false)}>取消</Button>
+                    <Button onClick={handleClearConfirm} color="error">
+                        確認清除
                     </Button>
                 </DialogActions>
             </Dialog>

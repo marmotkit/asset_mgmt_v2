@@ -754,8 +754,32 @@ export class ApiService {
 
     public static async deleteRentalPayment(id: string): Promise<void> {
         const index = ApiService.mockRentalPayments.findIndex(p => p.id === id);
-        if (index === -1) throw new Error('租金收款項目不存在');
+        if (index === -1) {
+            throw new Error('Rental payment not found');
+        }
         ApiService.mockRentalPayments.splice(index, 1);
+        ApiService.saveRentalPaymentsToStorage();
+        return Promise.resolve();
+    }
+
+    static async clearRentalPayments(year?: number, month?: number): Promise<void> {
+        if (!year) {
+            // 如果沒有指定年份，則不執行任何操作
+            return Promise.resolve();
+        }
+
+        if (month) {
+            // 如果指定了月份，則只清除該年份和月份的租金項目
+            ApiService.mockRentalPayments = ApiService.mockRentalPayments.filter(
+                payment => payment.year !== year || payment.month !== month
+            );
+        } else {
+            // 如果只指定了年份，則清除該年份的所有租金項目
+            ApiService.mockRentalPayments = ApiService.mockRentalPayments.filter(
+                payment => payment.year !== year
+            );
+        }
+
         ApiService.saveRentalPaymentsToStorage();
         return Promise.resolve();
     }
