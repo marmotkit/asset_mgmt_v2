@@ -56,6 +56,19 @@ export class ApiService {
             isFirstLogin: false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
+        },
+        {
+            id: '68aa110c-3b7e-42f8-9a4f-ab63a5c152a6',
+            memberNo: 'C003',
+            username: 'bmw',
+            name: 'BMW',
+            email: 'bmw@example.com',
+            status: 'active',
+            role: 'normal',
+            preferences: [],
+            isFirstLogin: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         }
     ];
     private static mockInvoices: any[] = [];
@@ -215,27 +228,27 @@ export class ApiService {
                     manufacturer: '台灣機械',
                     createdAt: '2023-01-01T00:00:00Z',
                     updatedAt: '2023-01-01T00:00:00Z'
-                } as MovableInvestment,
+                },
                 {
                     id: '2',
-                    companyId: '1',
+                    companyId: '2',
                     userId: 'ad9bfa89-6ea5-43fa-92e8-9ecbfb5d69c5',  // LKT 會員的 ID
                     type: 'immovable',
-                    name: '廠房B',
-                    description: '工業區廠房',
-                    amount: 50000000,
+                    name: '不動產投資B',
+                    description: '商業辦公室',
+                    amount: 5000000,
                     startDate: '2023-02-01',
                     status: 'active',
-                    location: '新北市工業區',
-                    area: 500,
-                    propertyType: '工業用地',
+                    location: '台北市信義區',
+                    area: 150,
+                    propertyType: '商業辦公室',
                     registrationNumber: 'LD-002',
                     createdAt: '2023-02-01T00:00:00Z',
                     updatedAt: '2023-02-01T00:00:00Z'
-                } as ImmovableInvestment
+                }
             ];
-            localStorage.setItem('investments', JSON.stringify(ApiService.investments));
         }
+        localStorage.setItem('investments', JSON.stringify(ApiService.investments));
     }
 
     private static saveInvestmentsToStorage() {
@@ -257,12 +270,19 @@ export class ApiService {
     }
 
     static async createInvestment(investment: Partial<Investment>): Promise<Investment> {
-        const newInvestment: Investment = {
-            ...investment,
-            id: investment.id || crypto.randomUUID(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        } as Investment;
+        let newInvestment: Investment;
+
+        if (investment.type === 'movable') {
+            newInvestment = await ApiService.createMovableInvestment(investment as Partial<MovableInvestment>);
+        } else if (investment.type === 'immovable') {
+            newInvestment = await ApiService.createImmovableInvestment(investment as Partial<ImmovableInvestment>);
+        } else {
+            // 默認為動產投資
+            newInvestment = await ApiService.createMovableInvestment({
+                ...investment,
+                type: 'movable'
+            } as Partial<MovableInvestment>);
+        }
 
         ApiService.investments.push(newInvestment);
         ApiService.saveInvestmentsToStorage();
@@ -380,6 +400,7 @@ export class ApiService {
         const investment: MovableInvestment = {
             id: data.id || crypto.randomUUID(),
             companyId: data.companyId || '',
+            userId: data.userId || '',
             type: 'movable',
             name: data.name || '',
             description: data.description || '',
@@ -400,6 +421,7 @@ export class ApiService {
         const investment: ImmovableInvestment = {
             id: data.id || crypto.randomUUID(),
             companyId: data.companyId || '',
+            userId: data.userId || '',
             type: 'immovable',
             name: data.name || '',
             description: data.description || '',
