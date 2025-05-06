@@ -1,0 +1,87 @@
+const fs = require('fs');
+const path = require('path');
+
+// 創建數據目錄
+const dataDir = path.join(__dirname, '../data');
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir);
+}
+
+// 創建一個HTML文件來導出localStorage數據
+const exportHtml = `
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>資產管理系統 - 數據導出工具</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        h1 { color: #333; }
+        button { padding: 10px 15px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        #log { margin-top: 20px; padding: 10px; background: #f5f5f5; border: 1px solid #ddd; min-height: 200px; }
+    </style>
+</head>
+<body>
+    <h1>資產管理系統 - 數據導出工具</h1>
+    <p>點擊下面的按鈕從 localStorage 導出數據。</p>
+    <button id="exportBtn">導出數據</button>
+    <div id="log"></div>
+
+    <script>
+        function appendLog(message) {
+            const logEl = document.getElementById('log');
+            logEl.innerHTML += message + '<br>';
+        }
+
+        function exportData() {
+            const keys = [
+                'users', 'companies', 'investments', 
+                'rentalStandards', 'profitSharingStandards', 
+                'rentalPayments', 'memberProfits', 'invoices'
+            ];
+            
+            const data = {};
+            let downloaded = 0;
+
+            keys.forEach(key => {
+                try {
+                    const value = localStorage.getItem(key);
+                    if (value) {
+                        data[key] = JSON.parse(value);
+                        
+                        // 下載數據文件
+                        const blob = new Blob([JSON.stringify(data[key], null, 2)], { type: 'application/json' });
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = \`\${key}.json\`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        
+                        appendLog(\`✓ 已導出 \${key}.json\`);
+                        downloaded++;
+                    } else {
+                        appendLog(\`- 跳過 \${key}：localStorage 中不存在\`);
+                    }
+                } catch (error) {
+                    appendLog(\`× 導出 \${key} 時出錯：\${error.message}\`);
+                }
+            });
+
+            appendLog(\`---------------\`);
+            appendLog(\`完成！共導出 \${downloaded} 個文件。\`);
+            appendLog(\`請將這些 JSON 文件保存到 'data' 目錄中。\`);
+        }
+
+        document.getElementById('exportBtn').addEventListener('click', exportData);
+    </script>
+</body>
+</html>
+`;
+
+// 寫入HTML文件
+fs.writeFileSync(path.join(__dirname, '../export-data.html'), exportHtml);
+
+console.log('導出工具已生成！請在瀏覽器中打開 export-data.html 文件。');
+console.log(`導出的數據應該保存到 ${dataDir} 目錄。`); 
