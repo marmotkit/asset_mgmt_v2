@@ -5,7 +5,8 @@ const webpack = require('webpack');
 // 確保可選依賴項安全加載
 let CleanWebpackPlugin, TerserPlugin, CopyWebpackPlugin;
 try {
-    CleanWebpackPlugin = require('clean-webpack-plugin').CleanWebpackPlugin;
+    const cleanWebpack = require('clean-webpack-plugin');
+    CleanWebpackPlugin = cleanWebpack.CleanWebpackPlugin;
 } catch (e) {
     console.warn('clean-webpack-plugin 未安裝，跳過清理功能');
     CleanWebpackPlugin = class CleanWebpackPlugin {
@@ -39,7 +40,7 @@ const plugins = [
     }),
     new webpack.ProvidePlugin({
         Buffer: ['buffer', 'Buffer'],
-        process: 'process/browser'
+        process: 'process'
     }),
     new webpack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify('production'),
@@ -49,13 +50,17 @@ const plugins = [
 
 // 有條件添加 CopyWebpackPlugin
 if (CopyWebpackPlugin !== null) {
-    plugins.push(
-        new CopyWebpackPlugin({
-            patterns: [
-                { from: 'public', to: '.', globOptions: { ignore: ['**/index.html', '**/favicon.ico'] } }
-            ]
-        })
-    );
+    try {
+        plugins.push(
+            new CopyWebpackPlugin({
+                patterns: [
+                    { from: 'public', to: '.', globOptions: { ignore: ['**/index.html', '**/favicon.ico'] } }
+                ]
+            })
+        );
+    } catch (e) {
+        console.warn('CopyWebpackPlugin 配置錯誤，跳過文件複製:', e.message);
+    }
 }
 
 const optimization = {
@@ -73,7 +78,7 @@ if (TerserPlugin !== null) {
 module.exports = {
     mode: 'production',
     entry: {
-        main: ['buffer', './src/index.tsx']
+        main: ['buffer', 'process', './src/index.tsx']
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
@@ -81,7 +86,7 @@ module.exports = {
         publicPath: '/'
     },
     resolve: {
-        extensions: ['.tsx', '.ts', '.js', '.jsx'],
+        extensions: ['.tsx', '.ts', '.js', '.jsx', '.mjs'],
         fallback: {
             "buffer": require.resolve("buffer/"),
             "stream": false,
@@ -89,7 +94,12 @@ module.exports = {
             "fs": false,
             "os": false,
             "util": false,
-            "crypto": false
+            "crypto": false,
+            "process": require.resolve("process/browser"),
+            "process/browser": require.resolve("process/browser")
+        },
+        alias: {
+            "process/browser": require.resolve("process/browser")
         }
     },
     module: {
@@ -106,6 +116,11 @@ module.exports = {
             {
                 test: /\.(png|svg|jpg|jpeg|gif)$/i,
                 type: 'asset/resource',
+            },
+            {
+                test: /\.mjs$/,
+                include: /node_modules/,
+                type: 'javascript/auto'
             }
         ]
     },

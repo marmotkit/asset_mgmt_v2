@@ -23,6 +23,25 @@ try {
     console.log('安裝所有必要的依賴項...');
     execSync('npm install buffer process --save', { stdio: 'inherit' });
     execSync('npm install webpack webpack-cli clean-webpack-plugin copy-webpack-plugin terser-webpack-plugin html-webpack-plugin --save-dev', { stdio: 'inherit' });
+
+    // 確保 process/browser 可用
+    console.log('確保 process/browser 可用...');
+    const processBrowserPath = path.join(__dirname, 'node_modules', 'process', 'browser.js');
+    if (!fs.existsSync(processBrowserPath)) {
+        console.log('找不到 process/browser.js，嘗試建立連結...');
+        const processDir = path.join(__dirname, 'node_modules', 'process');
+        if (fs.existsSync(path.join(processDir, 'index.js'))) {
+            if (!fs.existsSync(path.join(processDir, 'browser'))) {
+                fs.mkdirSync(path.join(processDir, 'browser'), { recursive: true });
+            }
+            fs.copyFileSync(
+                path.join(processDir, 'index.js'),
+                path.join(processDir, 'browser', 'index.js')
+            );
+            console.log('✅ 已建立 process/browser 備用模塊');
+        }
+    }
+
     console.log('✅ 依賴項安裝完成');
 
     // 創建或更新 webpack 配置文件
@@ -74,7 +93,7 @@ const plugins = [
     }),
     new webpack.ProvidePlugin({
         Buffer: ['buffer', 'Buffer'],
-        process: 'process/browser'
+        process: 'process'
     }),
     new webpack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify('production'),
@@ -112,7 +131,7 @@ if (TerserPlugin !== null) {
 module.exports = {
     mode: 'production',
     entry: {
-        main: ['buffer', './src/index.tsx']
+        main: ['buffer', 'process', './src/index.tsx']
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
@@ -120,7 +139,7 @@ module.exports = {
         publicPath: '/'
     },
     resolve: {
-        extensions: ['.tsx', '.ts', '.js', '.jsx'],
+        extensions: ['.tsx', '.ts', '.js', '.jsx', '.mjs'],
         fallback: {
             "buffer": require.resolve("buffer/"),
             "stream": false,
@@ -128,7 +147,12 @@ module.exports = {
             "fs": false,
             "os": false,
             "util": false,
-            "crypto": false
+            "crypto": false,
+            "process": require.resolve("process/browser"),
+            "process/browser": require.resolve("process/browser")
+        },
+        alias: {
+            "process/browser": require.resolve("process/browser")
         }
     },
     module: {
@@ -145,6 +169,11 @@ module.exports = {
             {
                 test: /\\.(png|svg|jpg|jpeg|gif)$/i,
                 type: 'asset/resource',
+            },
+            {
+                test: /\\.mjs$/,
+                include: /node_modules/,
+                type: 'javascript/auto'
             }
         ]
     },
@@ -176,6 +205,20 @@ module.exports = {
 
         fs.writeFileSync(apiServicePath, content);
         console.log('✅ api.service.ts 文件修復完成');
+    }
+
+    // 修復 FeeReport 組件中使用 xlsx 的問題
+    console.log('檢查前端組件中使用 xlsx 的問題...');
+    const feeReportPath = path.join(__dirname, 'src', 'components', 'pages', 'fees', 'FeeReport.tsx');
+    if (fs.existsSync(feeReportPath)) {
+        let content = fs.readFileSync(feeReportPath, 'utf8');
+
+        // 修改 xlsx 引入方式，防止 .mjs 模塊問題
+        if (content.includes("import * as XLSX from 'xlsx'")) {
+            content = content.replace("import * as XLSX from 'xlsx'", "import XLSX from 'xlsx/dist/xlsx.full.min.js'");
+            fs.writeFileSync(feeReportPath, content);
+            console.log('✅ 修復了 FeeReport.tsx 中的 xlsx 引入方式');
+        }
     }
 
     // 確保 package.json 中有所有必要的依賴
@@ -229,6 +272,56 @@ module.exports = {
         console.log('✅ package.json 已包含所有必要依賴');
     }
 
+    // 嘗試創建修復的 xlsx 入口點
+    console.log('嘗試修復 xlsx 模塊問題...');
+    const xlsxDir = path.join(__dirname, 'node_modules', 'xlsx');
+    if (fs.existsSync(xlsxDir)) {
+        const browserShimPath = path.join(xlsxDir, 'browser-process-shim.js');
+        fs.writeFileSync(browserShimPath, `
+module.exports = {};
+module.exports.nextTick = function nextTick(fn) {
+  setTimeout(fn, 0);
+};
+module.exports.title = 'browser';
+module.exports.browser = true;
+module.exports.env = {};
+module.exports.argv = [];
+module.exports.version = '';
+module.exports.versions = {};
+module.exports.on = function() {};
+module.exports.addListener = function() {};
+module.exports.once = function() {};
+module.exports.off = function() {};
+module.exports.removeListener = function() {};
+module.exports.removeAllListeners = function() {};
+module.exports.emit = function() {};
+module.exports.binding = function() { throw new Error('process.binding is not supported'); };
+module.exports.cwd = function() { return '/'; };
+module.exports.chdir = function() { throw new Error('process.chdir is not supported'); };
+module.exports.umask = function() { return 0; };
+`);
+        console.log('✅ 已創建 xlsx 的 process 模擬檔案');
+
+        // 修改 webpack 配置，添加對 xlsx 模塊的特殊處理
+        const extraConfig = `
+// 特殊處理 xlsx 模塊
+plugins.push(new webpack.NormalModuleReplacementPlugin(
+  /xlsx[\/\\\\]xlsx.mjs$/,
+  function(resource) {
+    resource.request = resource.request.replace(/xlsx.mjs$/, 'xlsx.js');
+  }
+));
+`;
+
+        let currentConfig = fs.readFileSync(webpackConfigPath, 'utf8');
+        const insertPosition = currentConfig.indexOf('// 有條件添加 CopyWebpackPlugin');
+        if (insertPosition > 0) {
+            currentConfig = currentConfig.slice(0, insertPosition) + extraConfig + currentConfig.slice(insertPosition);
+            fs.writeFileSync(webpackConfigPath, currentConfig);
+            console.log('✅ 已更新 webpack 配置以特殊處理 xlsx 模塊');
+        }
+    }
+
     // 執行構建
     console.log('開始構建前端應用...');
 
@@ -241,14 +334,41 @@ module.exports = {
 
         // 如果第一次構建失敗，嘗試直接運行 webpack
         try {
-            execSync('npm install clean-webpack-plugin copy-webpack-plugin terser-webpack-plugin style-loader css-loader --save-dev', { stdio: 'inherit' });
-            execSync('node ./node_modules/webpack/bin/webpack.js --config webpack.prod.js', { stdio: 'inherit' });
-            console.log('✅ 前端應用構建完成 (使用本地 webpack)');
-        } catch (error) {
-            console.error('⚠️ 第二次構建失敗，嘗試簡化配置後再次構建...');
+            execSync('npm install clean-webpack-plugin copy-webpack-plugin terser-webpack-plugin style-loader css-loader process buffer --save-dev', { stdio: 'inherit' });
 
-            // 如果第二次構建仍然失敗，嘗試使用更簡單的配置
-            const simpleWebpackConfig = `
+            // 創建 process/browser 文件
+            const processBrowserDir = path.join(__dirname, 'node_modules', 'process', 'browser');
+            if (!fs.existsSync(processBrowserDir)) {
+                fs.mkdirSync(processBrowserDir, { recursive: true });
+                fs.writeFileSync(path.join(processBrowserDir, 'index.js'), `
+// process/browser polyfill
+module.exports = {};
+module.exports.nextTick = function nextTick(fn) {
+  setTimeout(fn, 0);
+};
+module.exports.title = 'browser';
+module.exports.browser = true;
+module.exports.env = {};
+module.exports.argv = [];
+module.exports.version = '';
+module.exports.versions = {};
+module.exports.on = function() {};
+module.exports.addListener = function() {};
+module.exports.once = function() {};
+module.exports.off = function() {};
+module.exports.removeListener = function() {};
+module.exports.removeAllListeners = function() {};
+module.exports.emit = function() {};
+module.exports.binding = function() { throw new Error('process.binding is not supported'); };
+module.exports.cwd = function() { return '/'; };
+module.exports.chdir = function() { throw new Error('process.chdir is not supported'); };
+module.exports.umask = function() { return 0; };
+`);
+                console.log('✅ 已創建 process/browser 模塊');
+            }
+
+            // 嘗試使用簡化配置
+            const simpleConfig = `
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
@@ -265,12 +385,16 @@ module.exports = {
         extensions: ['.tsx', '.ts', '.js', '.jsx'],
         fallback: {
             buffer: false,
+            process: false,
             stream: false,
             path: false,
             fs: false,
             os: false,
             util: false,
             crypto: false
+        },
+        alias: {
+            xlsx: path.resolve(__dirname, 'node_modules/xlsx/dist/xlsx.full.min.js')
         }
     },
     module: {
@@ -283,6 +407,12 @@ module.exports = {
             {
                 test: /\\.css$/,
                 use: ['style-loader', 'css-loader'],
+            },
+            {
+                test: /\\.m?js$/,
+                resolve: {
+                  fullySpecified: false
+                }
             }
         ]
     },
@@ -297,11 +427,15 @@ module.exports = {
     ]
 };`;
 
-            fs.writeFileSync(webpackConfigPath, simpleWebpackConfig);
-            console.log('⚠️ 已切換到簡化版 webpack 配置');
+            fs.writeFileSync(webpackConfigPath, simpleConfig);
+            console.log('⚠️ 已切換到更簡化的 webpack 配置');
 
             execSync('node ./node_modules/webpack/bin/webpack.js --config webpack.prod.js', { stdio: 'inherit' });
-            console.log('✅ 前端應用構建完成 (使用簡化配置)');
+            console.log('✅ 前端應用構建完成 (使用本地 webpack 和簡化配置)');
+
+        } catch (error) {
+            console.error('⚠️ 所有構建嘗試都失敗，顯示完整錯誤：', error);
+            process.exit(1);
         }
     }
 
