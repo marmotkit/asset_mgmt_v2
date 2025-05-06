@@ -812,30 +812,44 @@ export class ApiService {
 
     static async clearRentalPayments(year?: number, month?: number): Promise<void> {
         console.log(`開始清除租金收款記錄 - 年度: ${year}, 月份: ${month}`);
-        if (!year) {
-            // 如果沒有指定年份，則不執行任何操作
+        try {
+            if (!year) {
+                // 如果沒有指定年份，則不執行任何操作
+                return Promise.resolve();
+            }
+
+            // 確保先載入數據
+            if (ApiService.mockRentalPayments.length === 0) {
+                ApiService.loadRentalPaymentsFromStorage();
+            }
+
+            const beforeCount = ApiService.mockRentalPayments.length;
+
+            if (month) {
+                // 如果指定了月份，則只清除該年份和月份的租金項目
+                ApiService.mockRentalPayments = ApiService.mockRentalPayments.filter(
+                    payment => payment.year !== year || payment.month !== month
+                );
+            } else {
+                // 如果只指定了年份，則清除該年份的所有租金項目
+                ApiService.mockRentalPayments = ApiService.mockRentalPayments.filter(
+                    payment => payment.year !== year
+                );
+            }
+
+            const afterCount = ApiService.mockRentalPayments.length;
+            const deletedCount = beforeCount - afterCount;
+            console.log(`租金收款記錄清除完成：刪除 ${deletedCount} 筆記錄`);
+
+            // 保存到本地存儲
+            ApiService.saveRentalPaymentsToStorage();
+
+            // 返回成功訊息
             return Promise.resolve();
+        } catch (error) {
+            console.error('清除租金收款記錄時發生錯誤:', error);
+            return Promise.reject(error);
         }
-
-        const beforeCount = ApiService.mockRentalPayments.length;
-
-        if (month) {
-            // 如果指定了月份，則只清除該年份和月份的租金項目
-            ApiService.mockRentalPayments = ApiService.mockRentalPayments.filter(
-                payment => payment.year !== year || payment.month !== month
-            );
-        } else {
-            // 如果只指定了年份，則清除該年份的所有租金項目
-            ApiService.mockRentalPayments = ApiService.mockRentalPayments.filter(
-                payment => payment.year !== year
-            );
-        }
-
-        const afterCount = ApiService.mockRentalPayments.length;
-        console.log(`租金收款記錄清除完成：刪除 ${beforeCount - afterCount} 筆記錄`);
-
-        ApiService.saveRentalPaymentsToStorage();
-        return Promise.resolve();
     }
 
     // 會員分潤項目相關方法
@@ -1090,26 +1104,39 @@ export class ApiService {
 
     public static async clearMemberProfits(year?: number): Promise<void> {
         console.log(`開始清除會員分潤記錄 - 年度: ${year}`);
-        if (year) {
-            const beforeCount = ApiService.mockMemberProfits.length;
+        try {
+            // 確保先載入數據
+            if (ApiService.mockMemberProfits.length === 0) {
+                ApiService.loadMemberProfitsFromStorage();
+            }
 
-            // 如果指定了年份，只清除該年度的分潤項目
-            ApiService.mockMemberProfits = ApiService.mockMemberProfits.filter(
-                profit => profit.year !== year
-            );
+            if (year) {
+                const beforeCount = ApiService.mockMemberProfits.length;
 
-            const afterCount = ApiService.mockMemberProfits.length;
-            console.log(`會員分潤記錄清除完成：刪除 ${beforeCount - afterCount} 筆記錄`);
-        } else {
-            // 如果沒有指定年份，清除所有分潤項目
-            const beforeCount = ApiService.mockMemberProfits.length;
-            ApiService.mockMemberProfits = [];
-            console.log(`會員分潤記錄清除完成：刪除所有 ${beforeCount} 筆記錄`);
+                // 如果指定了年份，只清除該年度的分潤項目
+                ApiService.mockMemberProfits = ApiService.mockMemberProfits.filter(
+                    profit => profit.year !== year
+                );
+
+                const afterCount = ApiService.mockMemberProfits.length;
+                const deletedCount = beforeCount - afterCount;
+                console.log(`會員分潤記錄清除完成：刪除 ${deletedCount} 筆記錄`);
+            } else {
+                // 如果沒有指定年份，清除所有分潤項目
+                const beforeCount = ApiService.mockMemberProfits.length;
+                ApiService.mockMemberProfits = [];
+                console.log(`會員分潤記錄清除完成：刪除所有 ${beforeCount} 筆記錄`);
+            }
+
+            // 確保更新 localStorage
+            ApiService.saveMemberProfitsToStorage();
+
+            // 返回成功訊息
+            return Promise.resolve();
+        } catch (error) {
+            console.error('清除會員分潤記錄時發生錯誤:', error);
+            return Promise.reject(error);
         }
-
-        // 確保更新 localStorage
-        ApiService.saveMemberProfitsToStorage();
-        return Promise.resolve();
     }
 
     // 會員相關方法
@@ -1297,6 +1324,51 @@ export class ApiService {
         }
 
         return Promise.resolve();
+    }
+
+    // 添加直接清除本地存儲的方法
+    public static async purgeLocalStorage(year: number): Promise<void> {
+        console.log(`直接清除本地存儲中的 ${year} 年度數據`);
+
+        try {
+            // 清除租金收款記錄
+            let rentalPayments = [];
+            const storedPayments = localStorage.getItem('rentalPayments');
+            if (storedPayments) {
+                try {
+                    const allPayments = JSON.parse(storedPayments);
+                    rentalPayments = allPayments.filter((payment: any) => payment.year !== year);
+                    console.log(`租金收款：從 ${allPayments.length} 筆過濾到 ${rentalPayments.length} 筆`);
+                    localStorage.setItem('rentalPayments', JSON.stringify(rentalPayments));
+                } catch (e) {
+                    console.error('解析租金收款數據時出錯:', e);
+                }
+            }
+
+            // 清除會員分潤記錄
+            let memberProfits = [];
+            const storedProfits = localStorage.getItem('memberProfits');
+            if (storedProfits) {
+                try {
+                    const allProfits = JSON.parse(storedProfits);
+                    memberProfits = allProfits.filter((profit: any) => profit.year !== year);
+                    console.log(`會員分潤：從 ${allProfits.length} 筆過濾到 ${memberProfits.length} 筆`);
+                    localStorage.setItem('memberProfits', JSON.stringify(memberProfits));
+                } catch (e) {
+                    console.error('解析會員分潤數據時出錯:', e);
+                }
+            }
+
+            // 同步更新內存中的數據
+            ApiService.mockRentalPayments = rentalPayments;
+            ApiService.mockMemberProfits = memberProfits;
+
+            console.log(`${year} 年度數據已從本地存儲中清除`);
+            return Promise.resolve();
+        } catch (error) {
+            console.error('清除本地存儲數據時出錯:', error);
+            return Promise.reject(error);
+        }
     }
 }
 

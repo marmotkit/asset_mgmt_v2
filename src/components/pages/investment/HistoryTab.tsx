@@ -168,15 +168,18 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
         if (!yearToClear) return;
 
         setLoading(true);
-        try {
-            // 清除租金收款記錄
-            await ApiService.clearRentalPayments(yearToClear);
+        console.log(`開始清除 ${yearToClear} 年度的歷史資料`);
 
-            // 清除分潤記錄，傳入年份參數
-            await ApiService.clearMemberProfits(yearToClear);
+        try {
+            // 使用直接清除本地存儲的方法
+            console.log(`使用 purgeLocalStorage 清除 ${yearToClear} 年度的資料...`);
+            await ApiService.purgeLocalStorage(yearToClear);
+            console.log(`${yearToClear} 年度的數據已從本地存儲中清除`);
 
             // 重新載入資料
+            console.log('重新載入資料...');
             await loadData();
+            console.log('資料重新載入完成');
 
             // 清除選擇的年份和關閉對話框
             setYearToClear(null);
@@ -184,11 +187,18 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
 
             // 顯示成功通知
             enqueueSnackbar(`${yearToClear}年度的歷史記錄已清除`, { variant: 'success' });
+
+            // 強制刷新頁面 (可以解決部分緩存問題)
+            setTimeout(() => {
+                console.log('強制刷新頁面...');
+                window.location.reload();
+            }, 500);
         } catch (error) {
-            enqueueSnackbar('清除資料失敗', { variant: 'error' });
             console.error('清除資料失敗:', error);
+            enqueueSnackbar('清除資料失敗', { variant: 'error' });
         } finally {
             setLoading(false);
+            console.log(`${yearToClear} 年度的歷史記錄清除操作完成`);
         }
     };
 
