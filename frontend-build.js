@@ -7,33 +7,42 @@ const path = require('path');
 
 console.log('=== 資產管理系統前端部署構建 ===');
 
+// 優先確保 webpack-cli 已安裝（在非交互式環境中）
+console.log('確保 webpack-cli 已安裝...');
+try {
+  execSync('npm install --save-dev webpack-cli --no-progress', { stdio: 'inherit' });
+  console.log('✅ webpack-cli 安裝/確認完成');
+} catch (error) {
+  console.error('❌ webpack-cli 安裝失敗:', error.message);
+  process.exit(1);
+}
+
 // 確保所有必要的依賴項都安裝了
 console.log('檢查並安裝所有必要的依賴項...');
 const requiredDeps = [
-    'webpack-cli',
-    'webpack',
-    'webpack-dev-server',
-    'style-loader',
-    'css-loader',
-    'ts-loader',
-    'html-webpack-plugin'
+  'webpack',
+  'webpack-dev-server',
+  'style-loader',
+  'css-loader',
+  'ts-loader',
+  'html-webpack-plugin'
 ];
 
 // 檢查 package.json 是否存在
 if (!fs.existsSync('package.json')) {
-    console.error('未找到 package.json 文件！');
-    process.exit(1);
+  console.error('未找到 package.json 文件！');
+  process.exit(1);
 }
 
 // 讀取 package.json
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
 
-// 安裝缺失的依賴項
+// 安裝缺失的依賴項（使用 --no-progress 參數減少輸出，使用 --no-fund 避免顯示資金支持消息）
 const missingDeps = requiredDeps.filter(dep => !deps[dep]);
 if (missingDeps.length > 0) {
-    console.log('正在安裝缺失的依賴項:', missingDeps.join(', '));
-    execSync(`npm install --save-dev ${missingDeps.join(' ')}`, { stdio: 'inherit' });
+  console.log('正在安裝缺失的依賴項:', missingDeps.join(', '));
+  execSync(`npm install --save-dev ${missingDeps.join(' ')} --no-progress --no-fund`, { stdio: 'inherit' });
 }
 
 // 創建生產環境配置文件
@@ -79,12 +88,12 @@ fs.writeFileSync('webpack.prod.js', webpackProdConfig);
 
 // 創建或更新 public/index.html 如果不存在
 if (!fs.existsSync('public/index.html')) {
-    console.log('創建 index.html 模板...');
-    if (!fs.existsSync('public')) {
-        fs.mkdirSync('public', { recursive: true });
-    }
+  console.log('創建 index.html 模板...');
+  if (!fs.existsSync('public')) {
+    fs.mkdirSync('public', { recursive: true });
+  }
 
-    const htmlTemplate = `
+  const htmlTemplate = `
 <!DOCTYPE html>
 <html lang="zh-TW">
   <head>
@@ -102,24 +111,29 @@ if (!fs.existsSync('public/index.html')) {
 </html>
 `;
 
-    fs.writeFileSync('public/index.html', htmlTemplate);
+  fs.writeFileSync('public/index.html', htmlTemplate);
 
-    // 創建一個基本的 favicon.ico 文件
-    if (!fs.existsSync('public/favicon.ico')) {
-        // 複製一個示例文件或創建一個空文件
-        fs.copyFileSync(
-            path.resolve(__dirname, 'node_modules/webpack/favicon.ico'),
-            'public/favicon.ico'
-        );
+  // 創建一個基本的 favicon.ico 文件
+  if (!fs.existsSync('public/favicon.ico')) {
+    // 複製一個示例文件或創建一個空文件
+    try {
+      fs.copyFileSync(
+        path.resolve(__dirname, 'node_modules/webpack/favicon.ico'),
+        'public/favicon.ico'
+      );
+    } catch (error) {
+      console.log('注意: 未找到 webpack favicon.ico，創建空文件');
+      fs.writeFileSync('public/favicon.ico', '');
     }
+  }
 }
 
-// 執行構建
+// 執行構建（使用本地安裝的 webpack，避免 npx 的交互提示）
 console.log('開始構建前端應用...');
 try {
-    execSync('npx webpack --config webpack.prod.js', { stdio: 'inherit' });
-    console.log('✅ 前端構建成功！');
+  execSync('node ./node_modules/webpack/bin/webpack.js --config webpack.prod.js', { stdio: 'inherit' });
+  console.log('✅ 前端構建成功！');
 } catch (error) {
-    console.error('❌ 構建失敗:', error.message);
-    process.exit(1);
+  console.error('❌ 構建失敗:', error.message);
+  process.exit(1);
 } 

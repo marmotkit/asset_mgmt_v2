@@ -71,11 +71,12 @@ Render 的數據庫服務和 Web 服務之間需要正確連接：
 3. 填寫以下資訊：
    - **Name**: `asset-mgmt-frontend`
    - **Branch**: `main` (或您的主分支)
-   - **Build Command**: `npm install --save-dev webpack-cli && npm run build:frontend`
+   - **Build Command**: `npm run build:frontend`
    - **Publish Directory**: `build`（或您的前端構建輸出目錄）
 4. 設置環境變數：
    - `REACT_APP_API_URL`: 指向您的後端 API 服務的 URL（例如：`https://asset-mgmt-api.onrender.com`）
    - `NODE_VERSION`: `16`（如果遇到構建問題，嘗試指定較低的 Node.js 版本）
+   - `CI`: `true`（避免在構建流程中出現互動式提示）
 5. 點擊 **Create Static Site**
 
 ### 5. 數據導入和遷移
@@ -116,9 +117,10 @@ Render 的數據庫服務和 Web 服務之間需要正確連接：
 
 3. **前端構建失敗**:
    - 檢查構建日誌中的具體錯誤
-   - 使用 `npm run build:frontend` 腳本，它會自動安裝所需依賴
+   - 使用 `npm run build:frontend` 腳本，它會自動安裝所需依賴並避免互動式提示
+   - 設置環境變數 `CI=true` 以避免互動式提示問題
    - 嘗試指定較低的 Node.js 版本 (如 14 或 16)
-   - 考慮在本地構建並將構建文件夾上傳到 Render
+   - 如果持續失敗，可以在本地構建並將構建文件夾手動上傳到 Render
 
 4. **前端無法連接到後端**:
    - 確認 CORS 設置正確
