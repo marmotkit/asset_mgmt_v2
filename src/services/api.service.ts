@@ -17,9 +17,11 @@ import {
 
 // 模擬 API 服務
 export class ApiService {
-    private static readonly API_BASE_URL = window.location.hostname === 'localhost'
-        ? '/api'  // 移除 http://localhost:3001 前綴
-        : 'https://api.example.com/api';
+    private static readonly API_BASE_URL = window.location.hostname.includes('render.com')
+        ? 'https://asset-mgmt-api.onrender.com/api'  // 雲端後端 API 地址
+        : (window.location.hostname === 'localhost'
+            ? '/api'  // 本地開發環境
+            : 'https://api.example.com/api'); // 其他環境
     private static readonly LOCAL_STORAGE_KEY = 'auth_token';
 
     private static instance: ApiService;
@@ -1032,8 +1034,16 @@ export class ApiService {
         return Promise.resolve();
     }
 
-    public static async clearMemberProfits(): Promise<void> {
-        ApiService.mockMemberProfits = [];
+    public static async clearMemberProfits(year?: number): Promise<void> {
+        if (year) {
+            // 如果指定了年份，只清除該年度的分潤項目
+            ApiService.mockMemberProfits = ApiService.mockMemberProfits.filter(
+                profit => profit.year !== year
+            );
+        } else {
+            // 如果沒有指定年份，清除所有分潤項目
+            ApiService.mockMemberProfits = [];
+        }
         ApiService.saveMemberProfitsToStorage();
         return Promise.resolve();
     }
