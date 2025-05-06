@@ -24,20 +24,22 @@ interface UserDetailDialogProps {
   user: User | null;
 }
 
+const defaultFormData = {
+  username: '',
+  name: '',
+  email: '',
+  role: 'normal' as UserRole,
+  status: 'active' as UserStatus,
+  companyId: '',
+};
+
 const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
   open,
   onClose,
   onSave,
   user
 }) => {
-  const [formData, setFormData] = useState<Partial<User>>({
-    username: '',
-    name: '',
-    email: '',
-    role: 'normal',
-    status: 'active',
-    companyId: '',
-  });
+  const [formData, setFormData] = useState<Partial<User>>(defaultFormData);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -46,21 +48,22 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
     loadCompanies();
   }, []);
 
-  useEffect(() => {
+  const resetForm = () => {
     if (user) {
       setFormData(user);
     } else {
-      setFormData({
-        username: '',
-        name: '',
-        email: '',
-        role: 'normal',
-        status: 'active',
-        companyId: '',
-      });
+      // 清空表單資料
+      setFormData({ ...defaultFormData });
     }
     setErrors({});
-  }, [user]);
+  };
+
+  // 當對話框開啟或傳入的使用者變更時，重設表單資料
+  useEffect(() => {
+    if (open) {
+      resetForm();
+    }
+  }, [user, open]);
 
   const loadCompanies = async () => {
     try {
@@ -123,8 +126,15 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
     onClose();
   };
 
+  // 處理關閉對話框
+  const handleClose = () => {
+    // 清空表單數據
+    setFormData({ ...defaultFormData });
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>
         <Typography>
           {user ? '編輯會員' : '新增會員'}
@@ -220,7 +230,7 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>取消</Button>
+        <Button onClick={handleClose}>取消</Button>
         <Button onClick={handleSave} variant="contained" color="primary">
           保存
         </Button>

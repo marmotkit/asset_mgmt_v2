@@ -71,6 +71,11 @@ const UserManagement: React.FC = () => {
         setIsDialogOpen(true);
     };
 
+    const handleCloseDialog = () => {
+        setIsDialogOpen(false);
+        setSelectedUser(null);
+    };
+
     const handleSaveUser = async (userData: Partial<User>) => {
         try {
             setLoading(true);
@@ -90,6 +95,7 @@ const UserManagement: React.FC = () => {
 
             await loadUsers();
             setIsDialogOpen(false);
+            setSelectedUser(null);
         } catch (err) {
             console.error('保存會員資料失敗:', err);
             setError(err instanceof Error ? err.message : '保存會員資料失敗');
@@ -277,7 +283,7 @@ const UserManagement: React.FC = () => {
 
             <UserDetailDialog
                 open={isDialogOpen}
-                onClose={() => setIsDialogOpen(false)}
+                onClose={handleCloseDialog}
                 onSave={handleSaveUser}
                 user={selectedUser}
             />

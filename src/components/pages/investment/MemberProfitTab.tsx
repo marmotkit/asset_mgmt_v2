@@ -137,32 +137,50 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
         setLoading(true);
         let hasError = false;
         let errorMessage = '';
+        console.log('開始生成會員分潤項目...');
 
         try {
             // 取得選擇的投資項目
             const selectedInvestments = investmentSelections.filter(inv => inv.selected);
+            console.log(`選擇了 ${selectedInvestments.length} 個投資項目進行分潤生成`);
 
             // 依序處理每個選擇的投資項目
             for (const inv of selectedInvestments) {
                 try {
+                    console.log(`正在為投資項目 ${inv.name}(${inv.id}) 生成分潤...`);
                     await ApiService.generateMemberProfits(inv.id, yearFilter);
+                    console.log(`投資項目 ${inv.name} 分潤生成成功`);
                 } catch (error) {
                     hasError = true;
-                    errorMessage += `${inv.name}: ${error instanceof Error ? error.message : '生成失敗'}\n`;
+                    const errMsg = error instanceof Error ? error.message : '生成失敗';
+                    errorMessage += `${inv.name}: ${errMsg}\n`;
+                    console.error(`投資項目 ${inv.name} 分潤生成失敗:`, error);
                 }
             }
 
             if (hasError) {
+                console.warn('部分投資項目生成失敗:', errorMessage);
                 enqueueSnackbar(errorMessage, { variant: 'warning' });
             } else {
+                console.log('所有投資項目分潤生成完成');
                 enqueueSnackbar('會員分潤項目生成完成', { variant: 'success' });
             }
 
+            console.log('重新載入分潤資料...');
             await loadData();
+            console.log('資料重新載入完成');
+
+            // 強制刷新頁面以確保所有資料正確顯示
+            setTimeout(() => {
+                console.log('強制刷新頁面...');
+                window.location.reload();
+            }, 500);
         } catch (error) {
+            console.error('生成會員分潤項目時發生錯誤:', error);
             enqueueSnackbar('生成會員分潤項目時發生錯誤', { variant: 'error' });
         } finally {
             setLoading(false);
+            console.log('分潤生成過程完成');
         }
     };
 

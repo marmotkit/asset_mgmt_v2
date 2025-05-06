@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2018",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noImplicitAny": false
+  },
+  "include": [
+    "src/db/**/*",
+    "src/middlewares/**/*",
+    "src/models/**/*",
+    "src/routes/**/*",
+    "src/controllers/**/*",
+    "src/index.ts"
+  ],
+  "exclude": [
+    "src/components/**/*",
+    "src/pages/**/*",
+    "src/services/**/*",
+    "src/contexts/**/*",
+    "src/layouts/**/*"
+  ]
+}

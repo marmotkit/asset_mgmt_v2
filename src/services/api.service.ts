@@ -926,19 +926,22 @@ export class ApiService {
                 p.investmentId === investmentId && p.year === year
             );
             if (existingProfits.length > 0) {
+                console.warn('該投資項目已存在分潤項目:', existingProfits.length, '筆');
                 throw new Error('該投資項目的分潤項目已存在，請勿重複生成');
             }
 
             // 獲取投資項目
             const investment = ApiService.investments.find(inv => inv.id === investmentId);
-            console.log('投資項目', investment);
+            console.log('投資項目', investment?.name || investment?.id || '未找到');
 
             if (!investment) {
+                console.error('找不到投資項目:', investmentId);
                 throw new Error('找不到投資項目');
             }
 
             // 檢查投資項目是否有指定會員
             if (!investment.userId) {
+                console.error('投資項目未指定所屬會員:', investment.id, investment.name);
                 throw new Error('投資項目未指定所屬會員');
             }
 
@@ -946,12 +949,13 @@ export class ApiService {
 
             // 載入會員資料
             const members = await this.getMembers();
-            console.log('所有會員', members);
+            console.log('載入會員資料, 共', members.length, '位會員');
 
             const member = members.find(m => m.id === investment.userId);
-            console.log('找到的會員', member);
+            console.log('投資項目所屬會員:', member?.name || '未找到');
 
             if (!member) {
+                console.error('找不到會員:', investment.userId);
                 throw new Error('找不到所屬會員');
             }
 
@@ -959,17 +963,19 @@ export class ApiService {
             const rentalPayments = ApiService.mockRentalPayments.filter(p =>
                 p.investmentId === investmentId && p.year === year
             );
-            console.log('租金收款項目', rentalPayments);
+            console.log('找到租金收款項目:', rentalPayments.length, '筆');
 
             if (rentalPayments.length === 0) {
+                console.error('未找到租金收款項目:', { investmentId, year });
                 throw new Error('未找到該投資項目的租金收款項目');
             }
 
             // 載入分潤標準
             const standards = await this.getProfitSharingStandards(investmentId);
-            console.log('分潤標準', standards);
+            console.log('載入分潤標準:', standards.length, '筆');
 
             if (standards.length === 0) {
+                console.error('未設定分潤標準:', { investmentId });
                 throw new Error('未設定分潤標準');
             }
 
@@ -980,8 +986,8 @@ export class ApiService {
 
                 console.log('處理分潤標準', {
                     標準ID: standard.id,
-                    標準開始日期: startDate,
-                    標準結束日期: endDate,
+                    標準開始日期: startDate.toISOString().split('T')[0],
+                    標準結束日期: endDate.toISOString().split('T')[0],
                     年度: year
                 });
 
@@ -1000,18 +1006,19 @@ export class ApiService {
                 const startMonth = startDate.getFullYear() === year ? startDate.getMonth() + 1 : 1;
                 const endMonth = endDate.getFullYear() === year ? endDate.getMonth() + 1 : 12;
 
-                console.log('適用的月份範圍', {
+                console.log('計算適用的月份範圍', {
                     標準ID: standard.id,
                     開始月份: startMonth,
                     結束月份: endMonth
                 });
 
                 // 只為指定的會員生成分潤項目
+                let generatedCount = 0;
                 for (let month = startMonth; month <= endMonth; month++) {
                     // 查找對應月份的租金收款項目
                     const rentalPayment = rentalPayments.find(p => p.month === month);
                     if (!rentalPayment) {
-                        console.log('找不到對應月份的租金收款項目', {
+                        console.warn('找不到對應月份的租金收款項目', {
                             月份: month
                         });
                         continue;
@@ -1019,36 +1026,52 @@ export class ApiService {
 
                     console.log('找到對應月份的租金收款項目', {
                         月份: month,
-                        租金收款項目: rentalPayment
+                        租金ID: rentalPayment.id,
+                        金額: rentalPayment.amount
                     });
 
                     // 計算分潤金額
                     let amount = 0;
                     if (standard.type === ProfitSharingType.FIXED_AMOUNT) {
                         amount = standard.value;
+                        console.log('使用固定金額分潤:', standard.value);
                     } else if (standard.type === ProfitSharingType.PERCENTAGE) {
                         // 使用租金收款金額計算分潤
                         amount = rentalPayment.amount * (standard.value / 100);
+                        console.log('使用百分比計算分潤:', {
+                            百分比: standard.value,
+                            計算結果: amount
+                        });
                     }
-
-                    console.log('計算分潤金額', {
-                        標準類型: standard.type,
-                        標準值: standard.value,
-                        租金金額: rentalPayment.amount,
-                        分潤金額: amount
-                    });
 
                     // 應用最小/最大金額限制
+                    let originalAmount = amount;
                     if (standard.minAmount !== undefined) {
                         amount = Math.max(amount, standard.minAmount);
-                    }
-                    if (standard.maxAmount !== undefined) {
-                        amount = Math.min(amount, standard.maxAmount);
+                        if (amount !== originalAmount) {
+                            console.log('應用最小金額限制:', {
+                                原始金額: originalAmount,
+                                最小限制: standard.minAmount,
+                                調整後: amount
+                            });
+                        }
                     }
 
-                    console.log('最終分潤金額', {
-                        分潤金額: amount
-                    });
+                    originalAmount = amount;
+                    if (standard.maxAmount !== undefined) {
+                        amount = Math.min(amount, standard.maxAmount);
+                        if (amount !== originalAmount) {
+                            console.log('應用最大金額限制:', {
+                                原始金額: originalAmount,
+                                最大限制: standard.maxAmount,
+                                調整後: amount
+                            });
+                        }
+                    }
+
+                    // 這裡進行四捨五入，避免小數點問題
+                    amount = Math.round(amount);
+                    console.log(`${month}月份最終分潤金額:`, amount);
 
                     const profit: MemberProfit = {
                         id: crypto.randomUUID(),
@@ -1062,20 +1085,27 @@ export class ApiService {
                         updatedAt: new Date().toISOString()
                     };
                     newProfits.push(profit);
+                    generatedCount++;
                 }
+
+                console.log(`依照分潤標準 ${standard.id} 生成了 ${generatedCount} 筆分潤記錄`);
             }
 
-            console.log('生成的會員分潤項目', newProfits);
+            console.log(`總共生成 ${newProfits.length} 筆會員分潤項目`);
 
             if (newProfits.length === 0) {
+                console.error('無法生成分潤項目:', { investmentId, year });
                 throw new Error('無法生成分潤項目，請檢查分潤標準的生效日期');
             }
 
             // 添加新生成的分潤項目
             ApiService.mockMemberProfits.push(...newProfits);
             ApiService.saveMemberProfitsToStorage();
+            console.log('分潤項目已保存到本地存儲');
+
             return Promise.resolve(newProfits);
         } catch (error) {
+            console.error('生成會員分潤項目失敗:', error);
             return Promise.reject(error);
         }
     }
