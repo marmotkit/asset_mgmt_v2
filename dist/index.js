@@ -28,7 +28,12 @@ app.get('/', (req, res) => {
     res.send('資產管理系統 API 服務運行中');
 });
 
-// 數據庫連接與服務器啟動
+// 啟動服務器
+app.listen(PORT, () => {
+    console.log(`服務器運行在 http://localhost:${PORT}`);
+});
+
+// 數據庫連接 (獨立於服務器啟動)
 sequelize
     .authenticate()
     .then(() => {
@@ -38,11 +43,8 @@ sequelize
     })
     .then(() => {
         console.log('資料庫模型同步完成');
-        // 啟動服務器
-        app.listen(PORT, () => {
-            console.log(`服務器運行在 http://localhost:${PORT}`);
-        });
     })
     .catch((error) => {
         console.error('資料庫連接錯誤:', error);
+        console.log('服務將繼續運行，但數據庫功能可能不可用');
     });

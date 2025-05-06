@@ -38,7 +38,7 @@
    - **Build Command**: `cd dist && npm install`
    - **Start Command**: `node dist/index.js`
 4. 設置環境變數：
-   - `DATABASE_URL`: 使用步驟 1 中的 Internal Database URL
+   - `DATABASE_URL`: 使用步驟 1 中的 **Internal Database URL**
    - `JWT_SECRET`: 一個隨機的安全字符串，例如 `asset_mgmt_jwt_secret_key_2025`
    - `JWT_EXPIRES_IN`: `24h`
    - `NODE_ENV`: `production`
@@ -46,7 +46,16 @@
 5. 點擊 **Advanced** > **Auto-Deploy**: 選擇 **Yes**
 6. 點擊 **Create Web Service**
 
-### 3. 部署前端靜態站點
+### 3. 確保數據庫連接
+
+Render 的數據庫服務和 Web 服務之間需要連接：
+
+1. 確保後端服務的 **DATABASE_URL** 環境變數完全匹配 PostgreSQL 服務提供的 **Internal Database URL**
+2. 如果遇到 SSL 問題，確保 `dialectOptions.ssl.rejectUnauthorized` 設置為 `false`
+3. 在 Render 儀表板中，確保兩個服務在同一網絡組中（相同區域）
+4. 注意：在初次部署時，PostgreSQL 服務可能需要幾分鐘才能完全啟動並接受連接
+
+### 4. 部署前端靜態站點
 
 1. 在 Render 儀表板點擊 **New +** > **Static Site**
 2. 連接您的 GitHub 存儲庫
@@ -55,37 +64,53 @@
    - **Branch**: `main` (或您的主分支)
    - **Build Command**: `npm install && npm run build`
    - **Publish Directory**: `build`（或您的前端構建輸出目錄）
-4. 設置環境變數（如需要）
+4. 設置環境變數：
+   - `REACT_APP_API_URL`: 指向您的後端 API 服務的 URL（例如：`https://asset-mgmt-api.onrender.com`）
 5. 點擊 **Create Static Site**
 
-### 4. 數據導入和遷移
+### 5. 數據導入和遷移
 
 完成後端 API 部署後，連接到 Render 的數據庫並導入初始數據：
 
-1. 使用 `.env` 文件配置 Render 的數據庫連接
-2. 運行 `npm run migrate` 命令進行數據遷移
-3. 通過 API 接口添加初始管理員用戶
+1. 確保數據庫服務已完全啟動並運行
+2. 通過 API 接口添加初始管理員用戶（使用註冊端點）
+3. 如果需要批量導入數據，可以通過 API 進行或直接連接到數據庫
 
-### 5. 測試部署
+### 6. 測試部署
 
 1. 訪問前端應用 URL（例如：`https://asset-mgmt-frontend.onrender.com`）
 2. 測試登入功能和其他關鍵功能
 3. 確保 API 調用正常工作
 
-### 6. 注意事項
+### 7. 注意事項
 
 1. Render 免費計劃在 15 分鐘不活動後會自動休眠服務，首次訪問可能需要等待片刻
 2. 確保在生產環境中使用強密碼和安全的 JWT 密鑰
 3. 定期備份數據庫數據
+4. 從免費計劃升級到付費計劃可以獲得更好的性能和更多功能
 
 ## 故障排除
 
 如果您在部署過程中遇到問題：
 
-1. 檢查 Render 日誌中的錯誤信息
-2. 確保環境變數正確設置
-3. 驗證數據庫連接字符串
-4. 檢查前端 API 配置是否正確指向後端服務
+1. **無法連接到數據庫**:
+   - 檢查 DATABASE_URL 是否正確
+   - 確保 PostgreSQL 服務已完全啟動
+   - 確認 SSL 設置正確
+   - 嘗試重新部署 Web 服務
+
+2. **找不到模塊**:
+   - 確保構建命令正確安裝所有依賴
+   - 檢查 package.json 中是否包含所有必要的依賴
+
+3. **前端無法連接到後端**:
+   - 確認 CORS 設置正確
+   - 確認前端 API URL 配置正確指向後端服務
+
+4. **其他常見問題**:
+   - 檢查 Render 日誌中的錯誤信息
+   - 確保環境變數正確設置
+   - 嘗試重新部署服務
 
 ## 更新應用
 
