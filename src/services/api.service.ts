@@ -159,9 +159,9 @@ export class ApiService {
             throw new Error(`會員不存在 (ID: ${user.id})`);
         }
 
-        const updatedUser = {
-            ...ApiService.mockUsers[index],
-            ...user,
+        const updatedUser: User = {
+            ...(ApiService.mockUsers[index] as any),
+            ...(user as any),
             updatedAt: new Date().toISOString()
         };
 
@@ -322,7 +322,7 @@ export class ApiService {
         }
 
         const updatedInvestment: Investment = {
-            ...investment,
+            ...(investment as any),
             updatedAt: new Date().toISOString()
         };
 
@@ -399,9 +399,9 @@ export class ApiService {
         if (index === -1) {
             throw new Error('公司不存在');
         }
-        const updatedCompany = {
-            ...ApiService.mockCompanies[index],
-            ...data,
+        const updatedCompany: Company = {
+            ...(ApiService.mockCompanies[index] as any),
+            ...(data as any),
             updatedAt: new Date().toISOString()
         };
         ApiService.mockCompanies[index] = updatedCompany;
@@ -568,9 +568,9 @@ export class ApiService {
         const index = ApiService.mockRentalStandards.findIndex(s => s.id === id);
         if (index === -1) throw new Error('租賃標準不存在');
 
-        const updatedStandard = {
-            ...ApiService.mockRentalStandards[index],
-            ...data,
+        const updatedStandard: RentalStandard = {
+            ...(ApiService.mockRentalStandards[index] as any),
+            ...(data as any),
             updatedAt: new Date().toISOString()
         };
         ApiService.mockRentalStandards[index] = updatedStandard;
@@ -618,8 +618,8 @@ export class ApiService {
         }
 
         const updatedStandard: ProfitSharingStandard = {
-            ...ApiService.mockProfitSharingStandards[index],
-            ...data,
+            ...(ApiService.mockProfitSharingStandards[index] as any),
+            ...(data as any),
             updatedAt: new Date().toISOString()
         } as ProfitSharingStandard;
 
@@ -790,9 +790,9 @@ export class ApiService {
         const index = ApiService.mockRentalPayments.findIndex(p => p.id === id);
         if (index === -1) throw new Error('租金收款項目不存在');
 
-        const updatedPayment = {
-            ...ApiService.mockRentalPayments[index],
-            ...data,
+        const updatedPayment: RentalPayment = {
+            ...(ApiService.mockRentalPayments[index] as any),
+            ...(data as any),
             updatedAt: new Date().toISOString()
         };
         ApiService.mockRentalPayments[index] = updatedPayment;
@@ -1114,9 +1114,9 @@ export class ApiService {
         const index = ApiService.mockMemberProfits.findIndex(p => p.id === id);
         if (index === -1) throw new Error('會員分潤項目不存在');
 
-        const updatedProfit = {
-            ...ApiService.mockMemberProfits[index],
-            ...data,
+        const updatedProfit: MemberProfit = {
+            ...(ApiService.mockMemberProfits[index] as any),
+            ...(data as any),
             updatedAt: new Date().toISOString()
         };
         ApiService.mockMemberProfits[index] = updatedProfit;

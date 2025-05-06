@@ -54,7 +54,7 @@ interface ImmovableInvestmentAttributes extends BaseInvestmentAttributes {
 type InvestmentAttributes = MovableInvestmentAttributes | ImmovableInvestmentAttributes;
 
 // 創建時可選屬性
-type InvestmentCreationAttributes = Optional<InvestmentAttributes, 'id' | 'createdAt' | 'updatedAt' | 'endDate'>;
+type InvestmentCreationAttributes = Optional<Omit<InvestmentAttributes, 'type'>, 'id' | 'createdAt' | 'updatedAt' | 'endDate'> & { type: 'movable' | 'immovable' };
 
 // 投資模型
 class Investment extends Model<InvestmentAttributes, InvestmentCreationAttributes> {
@@ -179,7 +179,7 @@ Investment.init(
             allowNull: false,
             defaultValue: DataTypes.NOW,
         },
-    },
+    } as any,
     {
         sequelize,
         tableName: 'investments',

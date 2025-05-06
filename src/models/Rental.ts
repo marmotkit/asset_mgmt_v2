@@ -94,20 +94,26 @@ RentalStandard.init(
 );
 
 // 付款狀態枚舉
-export enum PaymentStatus {
+export enum PaymentStatusEnum {
     PENDING = 'pending',
     PAID = 'paid',
     LATE = 'late',
     CANCELED = 'canceled'
 }
 
+// 保持兼容性
+export const PaymentStatus = PaymentStatusEnum;
+
 // 付款方式枚舉
-export enum PaymentMethod {
+export enum PaymentMethodEnum {
     CASH = 'cash',
     BANK_TRANSFER = 'bank_transfer',
     CREDIT_CARD = 'credit_card',
     CHEQUE = 'cheque'
 }
+
+// 保持兼容性
+export const PaymentMethod = PaymentMethodEnum;
 
 // 租金收款屬性
 interface RentalPaymentAttributes {
@@ -254,6 +260,5 @@ RentalPayment.init(
 RentalStandard.belongsTo(Investment, { foreignKey: 'investmentId' });
 RentalPayment.belongsTo(Investment, { foreignKey: 'investmentId' });
 
-// 避免導出衝突
-export { RentalStandard, RentalPayment };
-export { PaymentStatus, PaymentMethod }; 
+// 導出模型
+export { RentalStandard, RentalPayment }; 

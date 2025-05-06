@@ -5,10 +5,13 @@ import User from './User';
 import { PaymentStatus } from './Rental';
 
 // 分潤類型枚舉
-export enum ProfitSharingType {
+export enum ProfitSharingTypeEnum {
     PERCENTAGE = 'percentage',
     FIXED_AMOUNT = 'fixed_amount'
 }
+
+// 保持兼容性
+export const ProfitSharingType = ProfitSharingTypeEnum;
 
 // 分潤標準屬性
 interface ProfitSharingStandardAttributes {
@@ -215,6 +218,5 @@ ProfitSharingStandard.belongsTo(Investment, { foreignKey: 'investmentId' });
 MemberProfit.belongsTo(Investment, { foreignKey: 'investmentId' });
 MemberProfit.belongsTo(User, { foreignKey: 'memberId', as: 'member' });
 
-// 避免導出衝突
-export { ProfitSharingStandard, MemberProfit };
-export { ProfitSharingType }; 
+// 導出
+export { ProfitSharingStandard, MemberProfit }; 
