@@ -1,38 +1,40 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const dotenv_1 = __importDefault(require("dotenv"));
-const models_1 = require("./models");
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const sequelize = require('./src/db/connection');
+
 // 路由
-const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
-const user_routes_1 = __importDefault(require("./routes/user.routes"));
-const company_routes_1 = __importDefault(require("./routes/company.routes"));
+const authRoutes = require('./src/routes/auth.routes');
+const userRoutes = require('./src/routes/user.routes');
+const companyRoutes = require('./src/routes/company.routes');
+
 // 加載環境變量
-dotenv_1.default.config();
-const app = (0, express_1.default)();
+dotenv.config();
+
+const app = express();
 const PORT = process.env.PORT || 3001;
+
 // 中間件
-app.use((0, cors_1.default)());
-app.use(express_1.default.json());
+app.use(cors());
+app.use(express.json());
+
 // 路由
-app.use('/api/auth', auth_routes_1.default);
-app.use('/api/users', user_routes_1.default);
-app.use('/api/companies', company_routes_1.default);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/companies', companyRoutes);
+
 // 基本路由測試
 app.get('/', (req, res) => {
     res.send('資產管理系統 API 服務運行中');
 });
+
 // 數據庫連接與服務器啟動
-models_1.sequelize
+sequelize
     .authenticate()
     .then(() => {
         console.log('資料庫連接成功');
         // 同步數據庫模型
-        return models_1.sequelize.sync({ alter: true });
+        return sequelize.sync({ alter: true });
     })
     .then(() => {
         console.log('資料庫模型同步完成');
@@ -44,6 +46,3 @@ models_1.sequelize
     .catch((error) => {
         console.error('資料庫連接錯誤:', error);
     });
-
-// 轉發到 src/index.js
-require('./src/index');

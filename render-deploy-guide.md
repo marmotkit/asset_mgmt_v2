@@ -35,7 +35,7 @@
    - **Environment**: `Node`
    - **Region**: 選擇與數據庫相同的區域
    - **Branch**: `main` (或您的主分支)
-   - **Build Command**: `npm install`
+   - **Build Command**: `cd dist && npm install`
    - **Start Command**: `node dist/index.js`
 4. 設置環境變數：
    - `DATABASE_URL`: 使用步驟 1 中的 Internal Database URL
