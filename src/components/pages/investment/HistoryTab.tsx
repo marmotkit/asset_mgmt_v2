@@ -173,8 +173,41 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
         try {
             // 使用直接清除本地存儲的方法
             console.log(`使用 purgeLocalStorage 清除 ${yearToClear} 年度的資料...`);
-            await ApiService.purgeLocalStorage(yearToClear);
-            console.log(`${yearToClear} 年度的數據已從本地存儲中清除`);
+            try {
+                await ApiService.purgeLocalStorage(yearToClear);
+                console.log(`${yearToClear} 年度的數據已從本地存儲中清除`);
+            } catch (purgeError) {
+                console.error('使用 purgeLocalStorage 清除失敗，嘗試直接操作本地存儲:', purgeError);
+
+                // 備用清除機制：直接操作本地存儲
+                // 清除租金收款記錄
+                try {
+                    const storedPayments = localStorage.getItem('rentalPayments');
+                    if (storedPayments) {
+                        const allPayments = JSON.parse(storedPayments);
+                        const filteredPayments = allPayments.filter((payment: any) => payment.year !== yearToClear);
+                        console.log(`備用方法 - 租金收款：從 ${allPayments.length} 筆過濾到 ${filteredPayments.length} 筆`);
+                        localStorage.setItem('rentalPayments', JSON.stringify(filteredPayments));
+                    }
+                } catch (e) {
+                    console.error('備用方法 - 清除租金收款時出錯:', e);
+                }
+
+                // 清除會員分潤記錄
+                try {
+                    const storedProfits = localStorage.getItem('memberProfits');
+                    if (storedProfits) {
+                        const allProfits = JSON.parse(storedProfits);
+                        const filteredProfits = allProfits.filter((profit: any) => profit.year !== yearToClear);
+                        console.log(`備用方法 - 會員分潤：從 ${allProfits.length} 筆過濾到 ${filteredProfits.length} 筆`);
+                        localStorage.setItem('memberProfits', JSON.stringify(filteredProfits));
+                    }
+                } catch (e) {
+                    console.error('備用方法 - 清除會員分潤時出錯:', e);
+                }
+
+                console.log(`備用方法 - ${yearToClear} 年度的數據已從本地存儲中清除`);
+            }
 
             // 重新載入資料
             console.log('重新載入資料...');
