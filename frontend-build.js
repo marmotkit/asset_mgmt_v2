@@ -2,138 +2,134 @@
 
 // 前端構建腳本 - 用於 Render 部署
 const { execSync } = require('child_process');
-const fs = require('fs');
 const path = require('path');
+const fs = require('fs');
 
+// 顯示標題
 console.log('=== 資產管理系統前端部署構建 ===');
 
-// 優先確保 webpack-cli 已安裝（在非交互式環境中）
-console.log('確保 webpack-cli 已安裝...');
 try {
-  execSync('npm install --save-dev webpack-cli --no-progress', { stdio: 'inherit' });
-  console.log('✅ webpack-cli 安裝/確認完成');
-} catch (error) {
-  console.error('❌ webpack-cli 安裝失敗:', error.message);
-  process.exit(1);
-}
+  // 確保安裝所有依賴
+  console.log('安裝所有必要的依賴項...');
+  execSync('npm install buffer process --save', { stdio: 'inherit' });
+  execSync('npm install webpack webpack-cli clean-webpack-plugin --save-dev', { stdio: 'inherit' });
+  console.log('✅ 依賴項安裝完成');
 
-// 確保所有必要的依賴項都安裝了
-console.log('檢查並安裝所有必要的依賴項...');
-const requiredDeps = [
-  'webpack',
-  'webpack-dev-server',
-  'style-loader',
-  'css-loader',
-  'ts-loader',
-  'html-webpack-plugin'
-];
+  // 創建 webpack 配置文件
+  console.log('確保 webpack 配置文件存在...');
 
-// 檢查 package.json 是否存在
-if (!fs.existsSync('package.json')) {
-  console.error('未找到 package.json 文件！');
-  process.exit(1);
-}
+  const webpackConfigPath = path.join(__dirname, 'webpack.prod.js');
+  if (!fs.existsSync(webpackConfigPath)) {
+    console.log('創建 webpack 生產配置文件...');
 
-// 讀取 package.json
-const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
-
-// 安裝缺失的依賴項（使用 --no-progress 參數減少輸出，使用 --no-fund 避免顯示資金支持消息）
-const missingDeps = requiredDeps.filter(dep => !deps[dep]);
-if (missingDeps.length > 0) {
-  console.log('正在安裝缺失的依賴項:', missingDeps.join(', '));
-  execSync(`npm install --save-dev ${missingDeps.join(' ')} --no-progress --no-fund`, { stdio: 'inherit' });
-}
-
-// 創建生產環境配置文件
-console.log('創建 webpack 生產配置文件...');
-const webpackProdConfig = `
+    const webpackConfig = `
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = {
-  mode: 'production',
-  entry: './src/index.tsx',
-  output: {
-    path: path.resolve(__dirname, 'build'),
-    filename: 'bundle.js',
-    publicPath: '/'
-  },
-  resolve: {
-    extensions: ['.tsx', '.ts', '.js', '.jsx']
-  },
-  module: {
-    rules: [
-      {
-        test: /\\.(ts|tsx)$/,
-        use: 'ts-loader',
-        exclude: /node_modules/
-      },
-      {
-        test: /\\.css$/,
-        use: ['style-loader', 'css-loader']
-      }
-    ]
-  },
-  plugins: [
-    new HtmlWebpackPlugin({
-      template: './public/index.html',
-      favicon: './public/favicon.ico'
-    })
-  ]
-};
-`;
-
-fs.writeFileSync('webpack.prod.js', webpackProdConfig);
-
-// 創建或更新 public/index.html 如果不存在
-if (!fs.existsSync('public/index.html')) {
-  console.log('創建 index.html 模板...');
-  if (!fs.existsSync('public')) {
-    fs.mkdirSync('public', { recursive: true });
-  }
-
-  const htmlTemplate = `
-<!DOCTYPE html>
-<html lang="zh-TW">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="資產管理系統" />
-    <title>資產管理系統</title>
-  </head>
-  <body>
-    <noscript>您需要啟用 JavaScript 才能運行此應用程序。</noscript>
-    <div id="root"></div>
-  </body>
-</html>
-`;
-
-  fs.writeFileSync('public/index.html', htmlTemplate);
-
-  // 創建一個基本的 favicon.ico 文件
-  if (!fs.existsSync('public/favicon.ico')) {
-    // 複製一個示例文件或創建一個空文件
-    try {
-      fs.copyFileSync(
-        path.resolve(__dirname, 'node_modules/webpack/favicon.ico'),
-        'public/favicon.ico'
-      );
-    } catch (error) {
-      console.log('注意: 未找到 webpack favicon.ico，創建空文件');
-      fs.writeFileSync('public/favicon.ico', '');
+    mode: 'production',
+    entry: {
+        main: ['buffer', './src/index.tsx']
+    },
+    output: {
+        path: path.resolve(__dirname, 'dist'),
+        filename: 'bundle.[contenthash].js',
+        publicPath: '/'
+    },
+    resolve: {
+        extensions: ['.tsx', '.ts', '.js', '.jsx'],
+        fallback: {
+            "buffer": require.resolve("buffer/"),
+            "stream": false,
+            "path": false,
+            "fs": false,
+            "os": false,
+            "util": false,
+            "crypto": false
+        }
+    },
+    module: {
+        rules: [
+            {
+                test: /\\.(ts|tsx)$/,
+                exclude: /node_modules/,
+                use: 'ts-loader',
+            },
+            {
+                test: /\\.css$/,
+                use: ['style-loader', 'css-loader'],
+            },
+            {
+                test: /\\.(png|svg|jpg|jpeg|gif)$/i,
+                type: 'asset/resource',
+            }
+        ]
+    },
+    plugins: [
+        new CleanWebpackPlugin(),
+        new HtmlWebpackPlugin({
+            template: './public/index.html',
+            favicon: './public/favicon.ico'
+        }),
+        new CopyWebpackPlugin({
+            patterns: [
+                { from: 'public', to: '.', globOptions: { ignore: ['**/index.html', '**/favicon.ico'] } }
+            ]
+        }),
+        new webpack.ProvidePlugin({
+            Buffer: ['buffer', 'Buffer'],
+            process: 'process/browser'
+        }),
+        new webpack.DefinePlugin({
+            'process.env.NODE_ENV': JSON.stringify('production'),
+            'process.env': JSON.stringify({})
+        })
+    ],
+    optimization: {
+        minimize: true,
+        minimizer: [new TerserPlugin()],
+        splitChunks: {
+            chunks: 'all',
+        }
+    },
+    performance: {
+        hints: false,
+        maxEntrypointSize: 512000,
+        maxAssetSize: 512000
     }
-  }
-}
+};`;
 
-// 執行構建（使用本地安裝的 webpack，避免 npx 的交互提示）
-console.log('開始構建前端應用...');
-try {
-  execSync('node ./node_modules/webpack/bin/webpack.js --config webpack.prod.js', { stdio: 'inherit' });
-  console.log('✅ 前端構建成功！');
+    fs.writeFileSync(webpackConfigPath, webpackConfig);
+    console.log('✅ webpack 配置文件創建完成');
+  } else {
+    console.log('✅ webpack 配置文件已存在');
+  }
+
+  // 修正 api.service.ts 中的類型錯誤
+  console.log('檢查 api.service.ts 中的類型錯誤...');
+  const apiServicePath = path.join(__dirname, 'src', 'services', 'api.service.ts');
+
+  if (fs.existsSync(apiServicePath)) {
+    let content = fs.readFileSync(apiServicePath, 'utf8');
+
+    // 修復 spread 類型錯誤
+    content = content.replace(/\.\.\.(\w+),/g, '...($1 as any),');
+    content = content.replace(/\.\.\.ApiService\.mock(\w+)\[index\],/g, '...(ApiService.mock$1[index] as any),');
+
+    fs.writeFileSync(apiServicePath, content);
+    console.log('✅ api.service.ts 文件修復完成');
+  }
+
+  // 執行構建
+  console.log('開始構建前端應用...');
+  execSync('npx webpack --config webpack.prod.js', { stdio: 'inherit' });
+  console.log('✅ 前端應用構建完成');
+
 } catch (error) {
-  console.error('❌ 構建失敗:', error.message);
+  console.error('❌ 構建失敗:', error);
   process.exit(1);
 } 

@@ -7,7 +7,9 @@ const webpack = require('webpack');
 
 module.exports = {
     mode: 'production',
-    entry: './src/index.tsx',
+    entry: {
+        main: ['buffer', './src/index.tsx']
+    },
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'bundle.[contenthash].js',
@@ -54,10 +56,12 @@ module.exports = {
             ]
         }),
         new webpack.ProvidePlugin({
-            Buffer: ['buffer', 'Buffer']
+            Buffer: ['buffer', 'Buffer'],
+            process: 'process/browser'
         }),
         new webpack.DefinePlugin({
-            'process.env.NODE_ENV': JSON.stringify('production')
+            'process.env.NODE_ENV': JSON.stringify('production'),
+            'process.env': JSON.stringify({})
         })
     ],
     optimization: {

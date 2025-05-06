@@ -123,13 +123,13 @@ export class ApiService {
         if (ApiService.mockUsers.length === 0) {
             ApiService.loadUsersFromStorage();
         }
-        return Promise.resolve([...ApiService.mockUsers]);
+        return Promise.resolve([...(ApiService.mockUsers as any)]);
     }
 
     static async createUser(user: User): Promise<User> {
         console.log('Creating user:', user);
         const newUser = {
-            ...user,
+            ...(user as any),
             id: user.id || crypto.randomUUID(),
             memberNo: user.memberNo || await this.generateMemberNo(user.role),
             createdAt: user.createdAt || new Date().toISOString(),
@@ -305,7 +305,7 @@ export class ApiService {
         } else {
             // 默認為動產投資
             newInvestment = await ApiService.createMovableInvestment({
-                ...investment,
+                ...(investment as any),
                 type: 'movable'
             } as Partial<MovableInvestment>);
         }
@@ -357,7 +357,7 @@ export class ApiService {
         if (ApiService.mockCompanies.length === 0) {
             ApiService.loadCompaniesFromStorage();
         }
-        return Promise.resolve([...ApiService.mockCompanies]);
+        return Promise.resolve([...(ApiService.mockCompanies as any)]);
     }
 
     static async getCompany(id: string): Promise<Company | null> {
@@ -539,7 +539,7 @@ export class ApiService {
         if (ApiService.mockRentalStandards.length === 0) {
             ApiService.loadRentalStandardsFromStorage();
         }
-        let standards = [...ApiService.mockRentalStandards];
+        let standards = [...(ApiService.mockRentalStandards as any)];
         if (investmentId) {
             standards = standards.filter(s => s.investmentId === investmentId);
         }
@@ -591,7 +591,7 @@ export class ApiService {
         if (ApiService.mockProfitSharingStandards.length === 0) {
             ApiService.loadProfitSharingStandardsFromStorage();
         }
-        let standards = [...ApiService.mockProfitSharingStandards];
+        let standards = [...(ApiService.mockProfitSharingStandards as any)];
         if (investmentId) {
             standards = standards.filter(s => s.investmentId === investmentId);
         }
@@ -600,7 +600,7 @@ export class ApiService {
 
     public static async createProfitSharingStandard(data: Partial<ProfitSharingStandard>): Promise<ProfitSharingStandard> {
         const newStandard: ProfitSharingStandard = {
-            ...data,
+            ...(data as any),
             id: crypto.randomUUID(),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
@@ -677,8 +677,8 @@ export class ApiService {
         if (ApiService.mockRentalPayments.length === 0) {
             ApiService.loadRentalPaymentsFromStorage();
         }
-        let payments = [...ApiService.mockRentalPayments].map(payment => ({
-            ...payment,
+        let payments = [...(ApiService.mockRentalPayments as any)].map(payment => ({
+            ...(payment as any),
             amount: Number(payment.amount)
         }));
         if (investmentId) {
@@ -776,8 +776,8 @@ export class ApiService {
 
             // 儲存新生成的租金收款項目
             ApiService.mockRentalPayments = [
-                ...ApiService.mockRentalPayments,
-                ...newPayments
+                ...(ApiService.mockRentalPayments as any),
+                ...(newPayments as any)
             ];
             await ApiService.saveRentalPaymentsToStorage();
         } catch (error) {
@@ -1099,7 +1099,7 @@ export class ApiService {
             }
 
             // 添加新生成的分潤項目
-            ApiService.mockMemberProfits.push(...newProfits);
+            ApiService.mockMemberProfits.push(...(newProfits as any));
             ApiService.saveMemberProfitsToStorage();
             console.log('分潤項目已保存到本地存儲');
 
@@ -1272,7 +1272,7 @@ export class ApiService {
         // 建立新發票
         const newInvoice = {
             id: crypto.randomUUID(),
-            ...data,
+            ...(data as any),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -1287,7 +1287,7 @@ export class ApiService {
         );
         if (paymentIndex !== -1) {
             ApiService.mockRentalPayments[paymentIndex] = {
-                ...ApiService.mockRentalPayments[paymentIndex],
+                ...(ApiService.mockRentalPayments[paymentIndex] as any),
                 hasInvoice: true,
                 updatedAt: new Date().toISOString()
             };
@@ -1314,7 +1314,7 @@ export class ApiService {
 
     public static async getInvoices(investmentId?: string, paymentId?: string) {
         ApiService.loadInvoicesFromStorage();
-        let invoices = [...ApiService.mockInvoices];
+        let invoices = [...(ApiService.mockInvoices as any)];
         if (investmentId) {
             invoices = invoices.filter(inv => inv.investmentId === investmentId);
         }
@@ -1345,7 +1345,7 @@ export class ApiService {
             );
             if (paymentIndex !== -1) {
                 ApiService.mockRentalPayments[paymentIndex] = {
-                    ...ApiService.mockRentalPayments[paymentIndex],
+                    ...(ApiService.mockRentalPayments[paymentIndex] as any),
                     hasInvoice: false,
                     updatedAt: new Date().toISOString()
                 };
