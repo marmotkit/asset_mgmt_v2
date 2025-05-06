@@ -17,11 +17,18 @@ import {
 
 // 模擬 API 服務
 export class ApiService {
-    private static readonly API_BASE_URL = window.location.hostname.includes('render.com')
-        ? 'https://asset-mgmt-api.onrender.com/api'  // 雲端後端 API 地址
-        : (window.location.hostname === 'localhost'
-            ? '/api'  // 本地開發環境
-            : 'https://api.example.com/api'); // 其他環境
+    private static readonly API_BASE_URL = (() => {
+        const hostname = window.location.hostname;
+        const isRender = hostname.includes('render.com') || hostname.includes('onrender.com');
+        const baseUrl = isRender
+            ? 'https://asset-mgmt-api.onrender.com/api'  // 雲端後端 API 地址
+            : (hostname === 'localhost' || hostname === '127.0.0.1'
+                ? '/api'  // 本地開發環境
+                : 'https://asset-mgmt-api.onrender.com/api'); // 其他環境也用雲端地址
+
+        console.log(`API 服務初始化 - 主機名稱: ${hostname}, 基礎 URL: ${baseUrl}, 是否在 Render: ${isRender}`);
+        return baseUrl;
+    })();
     private static readonly LOCAL_STORAGE_KEY = 'auth_token';
 
     private static instance: ApiService;
@@ -209,10 +216,18 @@ export class ApiService {
 
     // Investment related methods
     private static loadInvestmentsFromStorage() {
+        console.log('正在載入投資資料從本地存儲...');
         const storedInvestments = localStorage.getItem('investments');
         if (storedInvestments) {
-            ApiService.investments = JSON.parse(storedInvestments);
+            try {
+                ApiService.investments = JSON.parse(storedInvestments);
+                console.log(`已載入 ${ApiService.investments.length} 筆投資資料`);
+            } catch (error) {
+                console.error('解析投資資料時發生錯誤:', error);
+                ApiService.investments = [];
+            }
         } else {
+            console.log('本地存儲中無投資資料，使用默認值');
             // 初始化預設投資項目
             ApiService.investments = [
                 {
@@ -249,6 +264,7 @@ export class ApiService {
                     updatedAt: '2023-02-01T00:00:00Z'
                 }
             ];
+            console.log('已初始化預設投資資料');
         }
         localStorage.setItem('investments', JSON.stringify(ApiService.investments));
     }
@@ -258,17 +274,25 @@ export class ApiService {
     }
 
     static async getInvestments(): Promise<Investment[]> {
+        console.log('獲取所有投資項目...');
         if (ApiService.investments.length === 0) {
             ApiService.loadInvestmentsFromStorage();
         }
-        return Promise.resolve([...ApiService.investments]);
+
+        // 複製陣列的簡單方法
+        const result: Investment[] = Array.from(ApiService.investments);
+        console.log(`返回 ${result.length} 筆投資項目`);
+        return Promise.resolve(result);
     }
 
     static async getInvestment(id: string): Promise<Investment | null> {
+        console.log(`正在查找投資項目 ID: ${id}`);
         if (ApiService.investments.length === 0) {
             ApiService.loadInvestmentsFromStorage();
         }
-        return Promise.resolve(ApiService.investments.find(i => i.id === id) || null);
+        const investment = ApiService.investments.find(i => i.id === id);
+        console.log('查找結果:', investment ? '找到項目' : '未找到項目');
+        return Promise.resolve(investment || null);
     }
 
     static async createInvestment(investment: Partial<Investment>): Promise<Investment> {

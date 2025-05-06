@@ -62,44 +62,54 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
     const loadData = async () => {
         setLoading(true);
         try {
+            console.log('歷史記錄 - 開始載入資料');
             // 載入所有年度的資料
             const years = Array.from(
                 { length: 5 },
                 (_, i) => new Date().getFullYear() - i
             );
+            console.log('歷史記錄 - 準備載入的年度:', years);
 
             const allPayments: RentalPayment[] = [];
             const allProfits: MemberProfit[] = [];
 
             // 依序載入每年的資料
             for (const year of years) {
-                const [paymentsData, profitsData] = await Promise.all([
-                    ApiService.getRentalPayments(undefined, year),
-                    ApiService.getMemberProfits(undefined, undefined, year),
-                ]);
-                allPayments.push(...paymentsData);
-                allProfits.push(...profitsData);
+                console.log(`歷史記錄 - 正在載入 ${year} 年度的資料`);
+                try {
+                    const [paymentsData, profitsData] = await Promise.all([
+                        ApiService.getRentalPayments(undefined, year),
+                        ApiService.getMemberProfits(undefined, undefined, year),
+                    ]);
+                    console.log(`歷史記錄 - ${year} 年度租金收款: ${paymentsData.length} 筆, 會員分潤: ${profitsData.length} 筆`);
+                    allPayments.push(...paymentsData);
+                    allProfits.push(...profitsData);
+                } catch (yearErr) {
+                    console.error(`歷史記錄 - 載入 ${year} 年度資料時出錯:`, yearErr);
+                }
             }
 
+            console.log(`歷史記錄 - 總共載入: 租金收款 ${allPayments.length} 筆, 會員分潤 ${allProfits.length} 筆`);
             setRentalPayments(allPayments);
             setMemberProfits(allProfits);
 
             // 計算年度統計
-            const stats = years.map(year => ({
-                year,
-                totalRental: allPayments
-                    .filter(p => p.year === year)
-                    .reduce((sum, p) => sum + Number(p.amount), 0),
-                collectedRental: allPayments
-                    .filter(p => p.year === year && p.status === PaymentStatus.PAID)
-                    .reduce((sum, p) => sum + Number(p.amount), 0),
-                totalProfit: allProfits
-                    .filter(p => p.year === year)
-                    .reduce((sum, p) => sum + Number(p.amount), 0),
-                paidProfit: allProfits
-                    .filter(p => p.year === year && p.status === PaymentStatus.PAID)
-                    .reduce((sum, p) => sum + Number(p.amount), 0),
-            }));
+            const stats = years.map(year => {
+                const yearPayments = allPayments.filter(p => p.year === year);
+                const yearProfits = allProfits.filter(p => p.year === year);
+                const paidPayments = yearPayments.filter(p => p.status === PaymentStatus.PAID);
+                const paidProfits = yearProfits.filter(p => p.status === PaymentStatus.PAID);
+
+                console.log(`歷史記錄 - ${year} 年度統計: 租金 ${yearPayments.length} 筆, 已收 ${paidPayments.length} 筆, 分潤 ${yearProfits.length} 筆, 已發放 ${paidProfits.length} 筆`);
+
+                return {
+                    year,
+                    totalRental: yearPayments.reduce((sum, p) => sum + Number(p.amount), 0),
+                    collectedRental: paidPayments.reduce((sum, p) => sum + Number(p.amount), 0),
+                    totalProfit: yearProfits.reduce((sum, p) => sum + Number(p.amount), 0),
+                    paidProfit: paidProfits.reduce((sum, p) => sum + Number(p.amount), 0),
+                };
+            });
 
             setYearlyStats(stats);
             setError(null);
@@ -108,6 +118,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
             console.error('載入資料失敗:', err);
         } finally {
             setLoading(false);
+            console.log('歷史記錄 - 資料載入完成');
         }
     };
 
