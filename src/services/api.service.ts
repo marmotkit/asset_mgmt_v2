@@ -787,10 +787,13 @@ export class ApiService {
     }
 
     static async clearRentalPayments(year?: number, month?: number): Promise<void> {
+        console.log(`開始清除租金收款記錄 - 年度: ${year}, 月份: ${month}`);
         if (!year) {
             // 如果沒有指定年份，則不執行任何操作
             return Promise.resolve();
         }
+
+        const beforeCount = ApiService.mockRentalPayments.length;
 
         if (month) {
             // 如果指定了月份，則只清除該年份和月份的租金項目
@@ -804,6 +807,9 @@ export class ApiService {
             );
         }
 
+        const afterCount = ApiService.mockRentalPayments.length;
+        console.log(`租金收款記錄清除完成：刪除 ${beforeCount - afterCount} 筆記錄`);
+
         ApiService.saveRentalPaymentsToStorage();
         return Promise.resolve();
     }
@@ -813,6 +819,8 @@ export class ApiService {
         const storedProfits = localStorage.getItem('memberProfits');
         if (storedProfits) {
             ApiService.mockMemberProfits = JSON.parse(storedProfits);
+        } else {
+            ApiService.mockMemberProfits = [];
         }
     }
 
@@ -824,23 +832,45 @@ export class ApiService {
         if (ApiService.mockMemberProfits.length === 0) {
             ApiService.loadMemberProfitsFromStorage();
         }
-        let profits = [...ApiService.mockMemberProfits].map(profit => ({
-            ...profit,
-            amount: Number(profit.amount)
-        }));
+
+        // 直接複製陣列而不使用擴展運算符
+        const profits: MemberProfit[] = [];
+
+        // 逐個複製物件所有屬性
+        for (const profit of ApiService.mockMemberProfits) {
+            const newProfit: MemberProfit = {
+                id: profit.id,
+                investmentId: profit.investmentId,
+                memberId: profit.memberId,
+                year: profit.year,
+                month: profit.month,
+                amount: Number(profit.amount),
+                status: profit.status,
+                paymentDate: profit.paymentDate,
+                paymentMethod: profit.paymentMethod,
+                note: profit.note,
+                createdAt: profit.createdAt,
+                updatedAt: profit.updatedAt
+            };
+            profits.push(newProfit);
+        }
+
+        // 依序套用篩選條件
+        let filteredProfits = profits;
         if (investmentId) {
-            profits = profits.filter(p => p.investmentId === investmentId);
+            filteredProfits = filteredProfits.filter(p => p.investmentId === investmentId);
         }
         if (memberId) {
-            profits = profits.filter(p => p.memberId === memberId);
+            filteredProfits = filteredProfits.filter(p => p.memberId === memberId);
         }
         if (year) {
-            profits = profits.filter(p => p.year === year);
+            filteredProfits = filteredProfits.filter(p => p.year === year);
         }
         if (month) {
-            profits = profits.filter(p => p.month === month);
+            filteredProfits = filteredProfits.filter(p => p.month === month);
         }
-        return Promise.resolve(profits);
+
+        return Promise.resolve(filteredProfits);
     }
 
     public static async generateMemberProfits(investmentId: string, year: number): Promise<MemberProfit[]> {
@@ -1035,15 +1065,25 @@ export class ApiService {
     }
 
     public static async clearMemberProfits(year?: number): Promise<void> {
+        console.log(`開始清除會員分潤記錄 - 年度: ${year}`);
         if (year) {
+            const beforeCount = ApiService.mockMemberProfits.length;
+
             // 如果指定了年份，只清除該年度的分潤項目
             ApiService.mockMemberProfits = ApiService.mockMemberProfits.filter(
                 profit => profit.year !== year
             );
+
+            const afterCount = ApiService.mockMemberProfits.length;
+            console.log(`會員分潤記錄清除完成：刪除 ${beforeCount - afterCount} 筆記錄`);
         } else {
             // 如果沒有指定年份，清除所有分潤項目
+            const beforeCount = ApiService.mockMemberProfits.length;
             ApiService.mockMemberProfits = [];
+            console.log(`會員分潤記錄清除完成：刪除所有 ${beforeCount} 筆記錄`);
         }
+
+        // 確保更新 localStorage
         ApiService.saveMemberProfitsToStorage();
         return Promise.resolve();
     }

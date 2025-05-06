@@ -102,8 +102,10 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
             }));
 
             setYearlyStats(stats);
+            setError(null);
         } catch (err) {
             setError('載入資料失敗');
+            console.error('載入資料失敗:', err);
         } finally {
             setLoading(false);
         }
@@ -165,13 +167,17 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
             // 重新載入資料
             await loadData();
 
+            // 清除選擇的年份和關閉對話框
+            setYearToClear(null);
+            setClearConfirmOpen(false);
+
+            // 顯示成功通知
             enqueueSnackbar(`${yearToClear}年度的歷史記錄已清除`, { variant: 'success' });
         } catch (error) {
             enqueueSnackbar('清除資料失敗', { variant: 'error' });
             console.error('清除資料失敗:', error);
         } finally {
             setLoading(false);
-            setClearConfirmOpen(false);
         }
     };
 
@@ -186,8 +192,11 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
             <Box sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
                 <Typography variant="h6" sx={{ flexGrow: 1 }}>投資歷史記錄</Typography>
                 <FormControl sx={{ minWidth: 120, mr: 2 }}>
-                    <InputLabel>年度</InputLabel>
+                    <InputLabel id="year-select-label">年度</InputLabel>
                     <Select
+                        labelId="year-select-label"
+                        id="year-select"
+                        name="year-select"
                         value={selectedYear}
                         label="年度"
                         onChange={(e) => setSelectedYear(e.target.value)}
@@ -205,6 +214,8 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
                     color="error"
                     startIcon={<DeleteIcon />}
                     onClick={handleClearClick}
+                    id="clear-history-btn"
+                    aria-label="清除歷史資料"
                 >
                     清除歷史資料
                 </Button>
