@@ -134,7 +134,7 @@ module.exports = {
         main: ['buffer', 'process', './src/index.tsx']
     },
     output: {
-        path: path.resolve(__dirname, 'dist'),
+        path: path.resolve(__dirname, 'build'),
         filename: 'bundle.[contenthash].js',
         publicPath: '/'
     },
@@ -377,7 +377,7 @@ module.exports = {
     mode: 'production',
     entry: './src/index.tsx',
     output: {
-        path: path.resolve(__dirname, 'dist'),
+        path: path.resolve(__dirname, 'build'),
         filename: 'bundle.js',
         publicPath: '/'
     },
@@ -409,6 +409,10 @@ module.exports = {
                 use: ['style-loader', 'css-loader'],
             },
             {
+                test: /\\.(png|svg|jpg|jpeg|gif)$/i,
+                type: 'asset/resource',
+            },
+            {
                 test: /\\.m?js$/,
                 resolve: {
                   fullySpecified: false
@@ -430,8 +434,51 @@ module.exports = {
             fs.writeFileSync(webpackConfigPath, simpleConfig);
             console.log('⚠️ 已切換到更簡化的 webpack 配置');
 
+            // 在構建前確保目標目錄存在
+            const buildDirBackup = path.join(__dirname, 'build');
+            if (!fs.existsSync(buildDirBackup)) {
+                fs.mkdirSync(buildDirBackup, { recursive: true });
+            }
+
             execSync('node ./node_modules/webpack/bin/webpack.js --config webpack.prod.js', { stdio: 'inherit' });
             console.log('✅ 前端應用構建完成 (使用本地 webpack 和簡化配置)');
+
+            // 確保公共資源被複製
+            try {
+                const publicDir = path.join(__dirname, 'public');
+                if (fs.existsSync(publicDir)) {
+                    console.log('複製其他公共資源到 build 目錄...');
+
+                    // 複製 logo192.png 和 logo512.png
+                    ['logo192.png', 'logo512.png', 'manifest.json'].forEach(file => {
+                        const srcPath = path.join(publicDir, file);
+                        if (fs.existsSync(srcPath)) {
+                            fs.copyFileSync(srcPath, path.join(buildDirBackup, file));
+                        }
+                    });
+
+                    // 複製其他可能的資源目錄
+                    const assets = path.join(publicDir, 'assets');
+                    if (fs.existsSync(assets)) {
+                        const destAssets = path.join(buildDirBackup, 'assets');
+                        if (!fs.existsSync(destAssets)) {
+                            fs.mkdirSync(destAssets, { recursive: true });
+                        }
+
+                        const assetFiles = fs.readdirSync(assets);
+                        for (const file of assetFiles) {
+                            fs.copyFileSync(
+                                path.join(assets, file),
+                                path.join(destAssets, file)
+                            );
+                        }
+                    }
+
+                    console.log('✅ 公共資源複製完成');
+                }
+            } catch (copyError) {
+                console.warn('複製公共資源時出錯，但繼續構建:', copyError.message);
+            }
 
         } catch (error) {
             console.error('⚠️ 所有構建嘗試都失敗，顯示完整錯誤：', error);
@@ -439,7 +486,40 @@ module.exports = {
         }
     }
 
+    // 檢查構建輸出目錄
+    const buildDir = path.join(__dirname, 'build');
+    if (fs.existsSync(buildDir)) {
+        console.log(`✅ 構建輸出目錄 'build' 已成功創建`);
+        const files = fs.readdirSync(buildDir);
+        console.log(`共有 ${files.length} 個文件在構建輸出目錄中`);
+    } else {
+        console.error(`❌ 構建輸出目錄 'build' 不存在，Render 部署可能會失敗`);
+
+        // 嘗試從 dist 複製文件到 build 目錄
+        const distDir = path.join(__dirname, 'dist');
+        if (fs.existsSync(distDir)) {
+            console.log('發現 dist 目錄，嘗試複製內容到 build 目錄...');
+            fs.mkdirSync(buildDir, { recursive: true });
+
+            const distFiles = fs.readdirSync(distDir);
+            for (const file of distFiles) {
+                const srcPath = path.join(distDir, file);
+                const destPath = path.join(buildDir, file);
+
+                if (fs.lstatSync(srcPath).isDirectory()) {
+                    // 複製目錄
+                    fs.cpSync(srcPath, destPath, { recursive: true });
+                } else {
+                    // 複製文件
+                    fs.copyFileSync(srcPath, destPath);
+                }
+            }
+
+            console.log(`✅ 已從 dist 目錄複製 ${distFiles.length} 個文件到 build 目錄`);
+        }
+    }
+
 } catch (error) {
     console.error('❌ 構建失敗:', error);
     process.exit(1);
-} 
+}

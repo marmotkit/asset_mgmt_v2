@@ -1,3 +1,4 @@
+
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
@@ -10,7 +11,7 @@ try {
 } catch (e) {
     console.warn('clean-webpack-plugin 未安裝，跳過清理功能');
     CleanWebpackPlugin = class CleanWebpackPlugin {
-        apply() { }
+        apply() {}
     };
 }
 
@@ -27,7 +28,7 @@ try {
     console.warn('copy-webpack-plugin 未安裝，跳過文件複製功能');
     CopyWebpackPlugin = class DummyCopyPlugin {
         constructor() {
-            this.apply = () => { };
+            this.apply = () => {};
         }
     };
 }
@@ -48,6 +49,14 @@ const plugins = [
     })
 ];
 
+
+// 特殊處理 xlsx 模塊
+plugins.push(new webpack.NormalModuleReplacementPlugin(
+  /xlsx[/\\]xlsx.mjs$/,
+  function(resource) {
+    resource.request = resource.request.replace(/xlsx.mjs$/, 'xlsx.js');
+  }
+));
 // 有條件添加 CopyWebpackPlugin
 if (CopyWebpackPlugin !== null) {
     try {
@@ -81,7 +90,7 @@ module.exports = {
         main: ['buffer', 'process', './src/index.tsx']
     },
     output: {
-        path: path.resolve(__dirname, 'dist'),
+        path: path.resolve(__dirname, 'build'),
         filename: 'bundle.[contenthash].js',
         publicPath: '/'
     },
@@ -131,4 +140,4 @@ module.exports = {
         maxEntrypointSize: 512000,
         maxAssetSize: 512000
     }
-}; 
+};
