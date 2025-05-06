@@ -25,6 +25,7 @@
    - **External Database URL**
    - **Username**
    - **Password**
+6. **重要**: 等待資料庫服務完全初始化並運行，這可能需要幾分鐘時間
 
 ### 2. 部署後端 API 服務
 
@@ -33,27 +34,35 @@
 3. 填寫以下資訊：
    - **Name**: `asset-mgmt-api`
    - **Environment**: `Node`
-   - **Region**: 選擇與數據庫相同的區域
+   - **Region**: 選擇與數據庫**相同**的區域 (非常重要!)
    - **Branch**: `main` (或您的主分支)
    - **Build Command**: `cd dist && npm install`
    - **Start Command**: `node dist/index.js`
 4. 設置環境變數：
-   - `DATABASE_URL`: 使用步驟 1 中的 **Internal Database URL**
+   - `DATABASE_URL`: 使用步驟 1 中的 **Internal Database URL** (完全複製，不要修改)
    - `JWT_SECRET`: 一個隨機的安全字符串，例如 `asset_mgmt_jwt_secret_key_2025`
    - `JWT_EXPIRES_IN`: `24h`
    - `NODE_ENV`: `production`
    - `PORT`: `3000`
 5. 點擊 **Advanced** > **Auto-Deploy**: 選擇 **Yes**
-6. 點擊 **Create Web Service**
+6. **重要設置**: 在 **Advanced** 設置中，找到 **Network** 部分:
+   - 確保選擇 **Private Service** 並將其添加到與 PostgreSQL 數據庫相同的網絡組
+   - 或者確保在 **Outbound** 部分允許訪問 PostgreSQL 服務
+7. 點擊 **Create Web Service**
 
 ### 3. 確保數據庫連接
 
-Render 的數據庫服務和 Web 服務之間需要連接：
+Render 的數據庫服務和 Web 服務之間需要正確連接：
 
-1. 確保後端服務的 **DATABASE_URL** 環境變數完全匹配 PostgreSQL 服務提供的 **Internal Database URL**
-2. 如果遇到 SSL 問題，確保 `dialectOptions.ssl.rejectUnauthorized` 設置為 `false`
-3. 在 Render 儀表板中，確保兩個服務在同一網絡組中（相同區域）
-4. 注意：在初次部署時，PostgreSQL 服務可能需要幾分鐘才能完全啟動並接受連接
+1. **等待服務啟動**: 第一次部署後，等待 5-10 分鐘讓所有服務完全啟動
+2. **檢查數據庫 URL**:
+   - 複製 PostgreSQL 服務的 **Internal Database URL**
+   - 進入 Web 服務的環境變數設置
+   - 確保 `DATABASE_URL` 環境變數完全匹配複製的 URL (應該以 `postgres://` 開頭)
+3. **檢查服務網絡**:
+   - 在 Render 儀表板中，檢查兩個服務是否在同一網絡或區域
+   - 確保 Web 服務有權訪問數據庫服務
+4. **手動重啟服務**: 如果所有設置都正確但仍無法連接，嘗試手動重啟 Web 服務
 
 ### 4. 部署前端靜態站點
 
@@ -95,8 +104,9 @@ Render 的數據庫服務和 Web 服務之間需要連接：
 
 1. **無法連接到數據庫**:
    - 檢查 DATABASE_URL 是否正確
-   - 確保 PostgreSQL 服務已完全啟動
+   - 確保 PostgreSQL 服務已完全啟動 (初始化可能需要 5-10 分鐘)
    - 確認 SSL 設置正確
+   - 確保兩個服務在相同區域或私有網絡
    - 嘗試重新部署 Web 服務
 
 2. **找不到模塊**:
