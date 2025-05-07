@@ -219,4 +219,4 @@ MemberProfit.belongsTo(Investment, { foreignKey: 'investmentId' });
 MemberProfit.belongsTo(User, { foreignKey: 'memberId', as: 'member' });
 
 // 導出
-export { ProfitSharingStandard, MemberProfit }; 
+export { ProfitSharingStandard, MemberProfit };

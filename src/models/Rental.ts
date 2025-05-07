@@ -261,4 +261,4 @@ RentalStandard.belongsTo(Investment, { foreignKey: 'investmentId' });
 RentalPayment.belongsTo(Investment, { foreignKey: 'investmentId' });
 
 // 導出模型
-export { RentalStandard, RentalPayment }; 
+export { RentalStandard, RentalPayment };
