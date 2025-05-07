@@ -228,12 +228,19 @@ export class ApiService {
             }
         } else {
             console.log('本地存儲中無投資資料，使用默認值');
+            // 獲取會員列表，確保我們使用存在的會員ID
+            const memberIds = ApiService.mockMembers.map(member => member.id);
+            const defaultUserId = memberIds.length > 0 ? memberIds[0] : '6e74484c-af9c-4a4e-be82-c91d65000c29';
+
+            console.log('使用預設會員ID:', defaultUserId);
+            console.log('可用會員列表:', ApiService.mockMembers.map(m => `${m.name}(${m.id})`));
+
             // 初始化預設投資項目
             ApiService.investments = [
                 {
                     id: '1',
                     companyId: '1',
-                    userId: 'ad9bfa89-6ea5-43fa-92e8-9ecbfb5d69c5',  // LKT 會員的 ID
+                    userId: defaultUserId,  // 使用確認存在的會員ID
                     type: 'movable',
                     name: '設備投資A',
                     description: '生產線設備',
@@ -249,7 +256,7 @@ export class ApiService {
                 {
                     id: '2',
                     companyId: '2',
-                    userId: 'ad9bfa89-6ea5-43fa-92e8-9ecbfb5d69c5',  // LKT 會員的 ID
+                    userId: defaultUserId,  // 使用確認存在的會員ID
                     type: 'immovable',
                     name: '不動產投資B',
                     description: '商業辦公室',
@@ -644,27 +651,8 @@ export class ApiService {
         if (storedPayments) {
             ApiService.mockRentalPayments = JSON.parse(storedPayments);
         } else {
-            // 初始化預設租金收款項目
+            // 初始化空的租金收款項目列表，不再自動創建預設資料
             ApiService.mockRentalPayments = [];
-
-            // 為 2025 年的 1-12 月添加租金收款項目
-            for (let month = 1; month <= 12; month++) {
-                ApiService.mockRentalPayments.push({
-                    id: crypto.randomUUID(),
-                    investmentId: '1',
-                    year: 2025,
-                    month: month,
-                    amount: 5000,
-                    status: PaymentStatus.PAID,
-                    startDate: `2025-${month.toString().padStart(2, '0')}-01`,
-                    endDate: `2025-${month.toString().padStart(2, '0')}-${new Date(2025, month, 0).getDate()}`,
-                    renterName: 'LKT',
-                    renterTaxId: '123456789',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                });
-            }
-
             localStorage.setItem('rentalPayments', JSON.stringify(ApiService.mockRentalPayments));
         }
     }
@@ -950,14 +938,34 @@ export class ApiService {
             // 載入會員資料
             const members = await this.getMembers();
             console.log('載入會員資料, 共', members.length, '位會員');
+            console.log('所有會員 ID:', members.map(m => m.id));
 
             const member = members.find(m => m.id === investment.userId);
-            console.log('投資項目所屬會員:', member?.name || '未找到');
-
             if (!member) {
+                console.error('投資項目所屬會員: 未找到');
                 console.error('找不到會員:', investment.userId);
-                throw new Error('找不到所屬會員');
+
+                // 嘗試更新投資項目關聯到存在的會員
+                if (members.length > 0) {
+                    console.log('嘗試將投資項目關聯到現有會員...');
+                    const availableMember = members[0];
+
+                    // 更新投資項目的會員ID
+                    const index = ApiService.investments.findIndex(inv => inv.id === investmentId);
+                    if (index !== -1) {
+                        ApiService.investments[index].userId = availableMember.id;
+                        ApiService.saveInvestmentsToStorage();
+                        console.log(`已更新投資項目 ${investment.name} 關聯到會員 ${availableMember.name}(${availableMember.id})`);
+
+                        // 使用更新後的會員繼續處理
+                        return this.generateMemberProfits(investmentId, year);
+                    }
+                }
+
+                throw new Error('找不到所屬會員，請確保投資項目已正確關聯到現有會員');
             }
+
+            console.log('找到投資項目所屬會員:', member.name, `(${member.id})`);
 
             // 載入該年度的租金收款項目
             const rentalPayments = ApiService.mockRentalPayments.filter(p =>

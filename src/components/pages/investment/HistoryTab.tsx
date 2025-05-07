@@ -21,7 +21,11 @@ import {
     DialogActions,
     DialogContent,
     DialogContentText,
-    DialogTitle
+    DialogTitle,
+    Chip,
+    TextField,
+    SelectChangeEvent,
+    Tooltip
 } from '@mui/material';
 import { Investment } from '../../../types/investment';
 import { RentalPayment, MemberProfit, PaymentStatus } from '../../../types/rental';
@@ -31,6 +35,7 @@ import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useSnackbar } from 'notistack';
+import { DeleteOutline as DeleteOutlineIcon, WarningAmber as WarningIcon } from '@mui/icons-material';
 
 interface HistoryTabProps {
     investments: Investment[];
@@ -53,6 +58,10 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
     const [yearlyStats, setYearlyStats] = useState<YearlyStats[]>([]);
     const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
     const [yearToClear, setYearToClear] = useState<number | null>(null);
+    const [yearFilter, setYearFilter] = useState<number>(new Date().getFullYear());
+    const [clearDialogOpen, setClearDialogOpen] = useState(false);
+    const [confirmText, setConfirmText] = useState('');
+    const [confirmClearDialogOpen, setConfirmClearDialogOpen] = useState(false);
     const { enqueueSnackbar } = useSnackbar();
 
     useEffect(() => {
@@ -235,6 +244,92 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
         }
     };
 
+    const handleYearFilterChange = (event: SelectChangeEvent<number>) => {
+        setYearFilter(event.target.value as number);
+    };
+
+    const handleClearAllData = async () => {
+        setLoading(true);
+        try {
+            // 清除所有本地存儲資料
+            localStorage.removeItem('investments');
+            localStorage.removeItem('rentalStandards');
+            localStorage.removeItem('rentalPayments');
+            localStorage.removeItem('memberProfits');
+            localStorage.removeItem('profitSharingStandards');
+
+            // 刷新本地緩存
+            await ApiService.getInvestments();
+
+            enqueueSnackbar('所有資料已清除', { variant: 'success' });
+
+            // 延遲重新載入頁面
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : '未知錯誤';
+            console.error('清除資料失敗:', errorMsg);
+            enqueueSnackbar(`清除資料失敗: ${errorMsg}`, { variant: 'error' });
+            setError(`清除資料失敗: ${errorMsg}`);
+        } finally {
+            setLoading(false);
+            setConfirmClearDialogOpen(false);
+            setConfirmText('');
+        }
+    };
+
+    const handleClearHistoryData = async () => {
+        if (!yearFilter) {
+            enqueueSnackbar('請選擇要清除的年度', { variant: 'error' });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // 清除指定年度的租金收款和分潤資料
+            const rentalPayments = await ApiService.getRentalPayments();
+            const memberProfits = await ApiService.getMemberProfits();
+
+            // 過濾出非選定年度的資料
+            const filteredRentalPayments = rentalPayments.filter(p => p.year !== yearFilter);
+            const filteredMemberProfits = memberProfits.filter(p => p.year !== yearFilter);
+
+            // 保存到本地存儲
+            localStorage.setItem('rentalPayments', JSON.stringify(filteredRentalPayments));
+            localStorage.setItem('memberProfits', JSON.stringify(filteredMemberProfits));
+
+            enqueueSnackbar(`${yearFilter} 年度的租金收款和分潤資料已清除`, { variant: 'success' });
+
+            // 延遲重新載入頁面
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : '未知錯誤';
+            console.error('清除歷史資料失敗:', errorMsg);
+            enqueueSnackbar(`清除歷史資料失敗: ${errorMsg}`, { variant: 'error' });
+            setError(`清除歷史資料失敗: ${errorMsg}`);
+        } finally {
+            setLoading(false);
+            handleCloseDialog();
+        }
+    };
+
+    const handleCloseDialog = () => {
+        setClearDialogOpen(false);
+    };
+
+    const handleConfirmClick = () => {
+        setClearDialogOpen(false);
+        setConfirmClearDialogOpen(true);
+    };
+
+    const handleCloseConfirmDialog = () => {
+        setConfirmClearDialogOpen(false);
+        setConfirmText('');
+    };
+
     if (loading) return <LoadingSpinner />;
     if (error) return <ErrorAlert message={error} />;
 
@@ -368,6 +463,90 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
                     <Button onClick={() => setClearConfirmOpen(false)}>取消</Button>
                     <Button onClick={handleClearConfirm} color="error" variant="contained">
                         確認清除
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={12} sm={4} md={3}>
+                    <FormControl fullWidth>
+                        <InputLabel>選擇年度</InputLabel>
+                        <Select
+                            value={yearFilter}
+                            onChange={handleYearFilterChange}
+                            label="選擇年度"
+                        >
+                            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
+                                <MenuItem key={year} value={year}>{year}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={4} md={3}>
+                    <Button
+                        variant="outlined"
+                        color="warning"
+                        onClick={handleClearClick}
+                        fullWidth
+                        sx={{ height: '100%' }}
+                    >
+                        清除歷史資料
+                    </Button>
+                </Grid>
+                <Grid item xs={12} sm={4} md={3}>
+                    <Tooltip title="警告：此操作將清除所有投資、租金、分潤資料！僅用於測試環境">
+                        <Button
+                            variant="contained"
+                            color="error"
+                            onClick={() => setConfirmClearDialogOpen(true)}
+                            fullWidth
+                            sx={{ height: '100%' }}
+                            startIcon={<WarningIcon />}
+                        >
+                            清除所有資料
+                        </Button>
+                    </Tooltip>
+                </Grid>
+            </Grid>
+
+            <Dialog open={clearDialogOpen} onClose={handleCloseDialog}>
+                <DialogTitle>確認清除歷史資料</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        確定要清除 {yearFilter} 年度的所有歷史資料嗎？此操作無法撤消。
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog}>取消</Button>
+                    <Button onClick={handleConfirmClick} color="warning">確認清除</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={confirmClearDialogOpen} onClose={handleCloseConfirmDialog}>
+                <DialogTitle>危險操作確認</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{ mb: 2 }}>
+                        <WarningIcon color="error" sx={{ verticalAlign: 'middle', mr: 1 }} />
+                        此操作將清除所有投資項目、租金收款、分潤資料等系統數據，且無法恢復！
+                    </DialogContentText>
+                    <DialogContentText sx={{ mb: 2 }}>
+                        請輸入「確認清除」並點擊確認按鈕以繼續操作：
+                    </DialogContentText>
+                    <TextField
+                        fullWidth
+                        value={confirmText}
+                        onChange={(e) => setConfirmText(e.target.value)}
+                        placeholder="確認清除"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseConfirmDialog}>取消</Button>
+                    <Button
+                        onClick={handleClearAllData}
+                        color="error"
+                        disabled={confirmText !== '確認清除'}
+                    >
+                        確認清除所有資料
                     </Button>
                 </DialogActions>
             </Dialog>

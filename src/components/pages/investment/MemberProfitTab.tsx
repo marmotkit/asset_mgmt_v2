@@ -144,6 +144,12 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
             const selectedInvestments = investmentSelections.filter(inv => inv.selected);
             console.log(`選擇了 ${selectedInvestments.length} 個投資項目進行分潤生成`);
 
+            if (selectedInvestments.length === 0) {
+                enqueueSnackbar('請選擇至少一個投資項目進行分潤生成', { variant: 'warning' });
+                setLoading(false);
+                return;
+            }
+
             // 依序處理每個選擇的投資項目
             for (const inv of selectedInvestments) {
                 try {
@@ -155,12 +161,22 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
                     const errMsg = error instanceof Error ? error.message : '生成失敗';
                     errorMessage += `${inv.name}: ${errMsg}\n`;
                     console.error(`投資項目 ${inv.name} 分潤生成失敗:`, error);
+
+                    // 檢查是否是會員不存在的問題
+                    if (errMsg.includes('找不到所屬會員')) {
+                        // 提示用戶需要檢查投資項目與會員的關聯
+                        enqueueSnackbar(`投資項目 ${inv.name} 的所屬會員不存在或未設定，請先更新投資項目的會員關聯`,
+                            { variant: 'error', autoHideDuration: 6000 });
+                    }
                 }
             }
 
             if (hasError) {
                 console.warn('部分投資項目生成失敗:', errorMessage);
-                enqueueSnackbar(errorMessage, { variant: 'warning' });
+                enqueueSnackbar('部分投資項目生成失敗:\n' + errorMessage, {
+                    variant: 'warning',
+                    autoHideDuration: 8000
+                });
             } else {
                 console.log('所有投資項目分潤生成完成');
                 enqueueSnackbar('會員分潤項目生成完成', { variant: 'success' });
@@ -176,11 +192,11 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
                 window.location.reload();
             }, 500);
         } catch (error) {
-            console.error('生成會員分潤項目時發生錯誤:', error);
-            enqueueSnackbar('生成會員分潤項目時發生錯誤', { variant: 'error' });
+            const errorMsg = error instanceof Error ? error.message : '未知錯誤';
+            console.error('生成會員分潤項目時發生錯誤:', errorMsg);
+            enqueueSnackbar(`生成會員分潤項目時發生錯誤: ${errorMsg}`, { variant: 'error' });
         } finally {
             setLoading(false);
-            console.log('分潤生成過程完成');
         }
     };
 
