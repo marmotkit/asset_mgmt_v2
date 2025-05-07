@@ -10,7 +10,7 @@ process.env = {};
 process.argv = [];
 process.version = '';
 
-function noop() {}
+function noop() { }
 
 process.on = noop;
 process.addListener = noop;
