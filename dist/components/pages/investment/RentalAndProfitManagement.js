@@ -16,12 +16,18 @@ function TabPanel(props) {
     const { children, value, index, ...other } = props;
     return ((0, jsx_runtime_1.jsx)("div", { role: "tabpanel", hidden: value !== index, id: `rental-tabpanel-${index}`, "aria-labelledby": `rental-tab-${index}`, ...other, children: value === index && ((0, jsx_runtime_1.jsx)(material_1.Box, { sx: { p: 3 }, children: children })) }));
 }
-const RentalAndProfitManagement = () => {
-    const [currentTab, setCurrentTab] = (0, react_1.useState)(0);
+const RentalAndProfitManagement = ({ initialTab = 0 }) => {
+    const [currentTab, setCurrentTab] = (0, react_1.useState)(initialTab);
     const [investments, setInvestments] = (0, react_1.useState)([]);
     (0, react_1.useEffect)(() => {
         loadInvestments();
     }, []);
+    // 當 initialTab 變化時更新當前標籤
+    (0, react_1.useEffect)(() => {
+        if (initialTab !== undefined) {
+            setCurrentTab(initialTab);
+        }
+    }, [initialTab]);
     const loadInvestments = async () => {
         try {
             const data = await services_1.ApiService.getInvestments();
