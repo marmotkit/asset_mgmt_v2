@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import AnnualActivitiesTab from './AnnualActivitiesTab';
 import MemberCareTab from './MemberCareTab';
+import RiskManagementTab from './RiskManagementTab';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -61,6 +62,7 @@ const MemberServicesManagement: React.FC<MemberServicesManagementProps> = ({ ini
                     >
                         <Tab label="年度活動" />
                         <Tab label="會員關懷" />
+                        <Tab label="風險管理" />
                     </Tabs>
                 </Box>
 
@@ -70,6 +72,10 @@ const MemberServicesManagement: React.FC<MemberServicesManagementProps> = ({ ini
 
                 <TabPanel value={currentTab} index={1}>
                     <MemberCareTab />
+                </TabPanel>
+
+                <TabPanel value={currentTab} index={2}>
+                    <RiskManagementTab />
                 </TabPanel>
             </Paper>
         </Box>

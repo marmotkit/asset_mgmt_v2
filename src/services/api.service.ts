@@ -1408,6 +1408,131 @@ export class ApiService {
             return Promise.reject(error);
         }
     }
+
+    // 獲取會員逾期繳款記錄
+    public static async getOverdueMemberPayments(): Promise<MemberProfit[]> {
+        if (ApiService.mockMemberProfits.length === 0) {
+            ApiService.loadMemberProfitsFromStorage();
+        }
+
+        // 獲取當前日期
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth() + 1;
+
+        // 篩選出逾期的分潤記錄
+        const overdueProfits = ApiService.mockMemberProfits.filter(profit => {
+            // 如果已經標記為逾期，直接返回
+            if (profit.status === PaymentStatus.OVERDUE) {
+                return true;
+            }
+
+            // 檢查是否已過期（已過了預期的付款月份）
+            const isPastDue = (profit.year < currentYear) ||
+                (profit.year === currentYear && profit.month < currentMonth);
+
+            // 如果已過期並且尚未支付，則視為逾期
+            return isPastDue && profit.status === PaymentStatus.PENDING;
+        });
+
+        // 將狀態標記為逾期
+        for (const profit of overdueProfits) {
+            if (profit.status !== PaymentStatus.OVERDUE) {
+                const index = ApiService.mockMemberProfits.findIndex(p => p.id === profit.id);
+                if (index !== -1) {
+                    ApiService.mockMemberProfits[index].status = PaymentStatus.OVERDUE;
+                }
+            }
+        }
+
+        // 儲存更新後的資料
+        ApiService.saveMemberProfitsToStorage();
+
+        return Promise.resolve(overdueProfits.map(profit => ({
+            ...profit,
+            amount: Number(profit.amount)
+        })));
+    }
+
+    // 獲取客戶租金逾期繳款記錄
+    public static async getOverdueRentalPayments(): Promise<RentalPayment[]> {
+        if (ApiService.mockRentalPayments.length === 0) {
+            ApiService.loadRentalPaymentsFromStorage();
+        }
+
+        // 獲取當前日期
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth() + 1;
+
+        // 篩選出逾期的租金記錄
+        const overduePayments = ApiService.mockRentalPayments.filter(payment => {
+            // 如果已經標記為逾期，直接返回
+            if (payment.status === PaymentStatus.OVERDUE) {
+                return true;
+            }
+
+            // 檢查是否已過期（已過了預期的繳款月份）
+            const isPastDue = (payment.year < currentYear) ||
+                (payment.year === currentYear && payment.month < currentMonth);
+
+            // 如果已過期並且尚未繳款，則視為逾期
+            return isPastDue && payment.status === PaymentStatus.PENDING;
+        });
+
+        // 將狀態標記為逾期
+        for (const payment of overduePayments) {
+            if (payment.status !== PaymentStatus.OVERDUE) {
+                const index = ApiService.mockRentalPayments.findIndex(p => p.id === payment.id);
+                if (index !== -1) {
+                    ApiService.mockRentalPayments[index].status = PaymentStatus.OVERDUE;
+                }
+            }
+        }
+
+        // 儲存更新後的資料
+        ApiService.saveRentalPaymentsToStorage();
+
+        return Promise.resolve(overduePayments.map(payment => ({
+            ...payment,
+            amount: Number(payment.amount)
+        })));
+    }
+
+    // 記錄其他異常事件
+    public static async recordAnomaly(data: {
+        type: string;
+        personId?: string;
+        personName: string;
+        description: string;
+        date: string;
+        status: string;
+        handling?: string;
+    }): Promise<any> {
+        // 從本地存儲獲取異常記錄
+        const storedAnomalies = localStorage.getItem('anomalies') || '[]';
+        const anomalies = JSON.parse(storedAnomalies);
+
+        // 建立新的異常記錄
+        const newAnomaly = {
+            id: crypto.randomUUID(),
+            ...data,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        // 添加到列表並儲存
+        anomalies.push(newAnomaly);
+        localStorage.setItem('anomalies', JSON.stringify(anomalies));
+
+        return Promise.resolve(newAnomaly);
+    }
+
+    // 獲取異常記錄列表
+    public static async getAnomalies(): Promise<any[]> {
+        const storedAnomalies = localStorage.getItem('anomalies') || '[]';
+        return Promise.resolve(JSON.parse(storedAnomalies));
+    }
 }
 
 export const ApiServiceInstance = ApiService.getInstance();
