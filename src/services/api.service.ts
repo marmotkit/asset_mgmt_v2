@@ -18,7 +18,7 @@ import { AccountPayable, AccountReceivable, AccountRecord, MonthlyClosing } from
 
 // 設置一個axios實例
 const apiClient = axios.create({
-    baseURL: process.env.REACT_APP_API_URL || '/api',
+    baseURL: typeof window !== 'undefined' && window.ENV && window.ENV.API_URL ? window.ENV.API_URL : '/api',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -38,9 +38,25 @@ apiClient.interceptors.request.use(
     }
 );
 
+// 為TS添加全局window.ENV類型定義
+declare global {
+    interface Window {
+        ENV?: {
+            API_URL?: string;
+        };
+    }
+}
+
 // 模擬 API 服務
 export class ApiService {
     private static readonly API_BASE_URL = (() => {
+        if (typeof window === 'undefined') return '/api';
+
+        // 優先使用環境配置
+        if (window.ENV && window.ENV.API_URL) {
+            return window.ENV.API_URL;
+        }
+
         const hostname = window.location.hostname;
         const isRender = hostname.includes('render.com') || hostname.includes('onrender.com');
         const baseUrl = isRender
