@@ -46,8 +46,8 @@ interface BalanceSheetReportProps {
 const BalanceSheetReport: React.FC<BalanceSheetReportProps> = ({ data }) => {
     // 計算百分比
     const calculatePercentage = (amount: number, total: number) => {
-        if (!total) return 0;
-        return ((amount / total) * 100).toFixed(1);
+        if (!amount || !total) return 0;
+        return Math.round((amount / total) * 100);
     };
 
     // 準備資產餅圖數據
@@ -100,16 +100,21 @@ const BalanceSheetReport: React.FC<BalanceSheetReportProps> = ({ data }) => {
 
     // 準備流動資產明細
     const prepareCurrentAssetsData = () => {
-        const { cash, accountsReceivable, inventory, ...rest } = data.assets.currentAssets;
-        const otherAssets = Object.values(rest).reduce((sum: number, value: any) => {
-            return typeof value === 'number' ? sum + value : sum;
-        }, 0) - data.assets.currentAssets.total;
+        const { cash, accountsReceivable, inventory, total, ...rest } = data.assets.currentAssets;
+        let otherAssets = 0;
+
+        // 安全地計算其他資產
+        Object.values(rest).forEach((value: any) => {
+            if (typeof value === 'number') {
+                otherAssets += value;
+            }
+        });
 
         return {
             labels: ['現金', '應收帳款', '庫存', '其他流動資產'],
             datasets: [
                 {
-                    data: [cash, accountsReceivable, inventory, otherAssets > 0 ? otherAssets : 0],
+                    data: [cash || 0, accountsReceivable || 0, inventory || 0, otherAssets || 0],
                     backgroundColor: [
                         'rgba(54, 162, 235, 0.6)',
                         'rgba(75, 192, 192, 0.6)',

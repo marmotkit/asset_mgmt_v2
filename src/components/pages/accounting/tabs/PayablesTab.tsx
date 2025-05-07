@@ -68,7 +68,7 @@ const initialFormData = {
     vendorName: '',
     amount: 0,
     paidAmount: 0,
-    status: 'pending',
+    status: 'pending' as 'pending' | 'partially_paid' | 'paid' | 'overdue',
     description: '',
     invoiceNumber: ''
 };
@@ -80,7 +80,7 @@ const PayablesTab: React.FC = () => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
     const [editingPayable, setEditingPayable] = useState<AccountPayable | null>(null);
-    const [formData, setFormData] = useState(initialFormData);
+    const [formData, setFormData] = useState<typeof initialFormData>(initialFormData);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -244,7 +244,7 @@ const PayablesTab: React.FC = () => {
                 const newPayable = await accountingService.addPayable({
                     ...formData,
                     paidAmount: 0,
-                    status: 'pending'
+                    status: 'pending' as 'pending' | 'partially_paid' | 'paid' | 'overdue'
                 });
                 setPayables(prev => [...prev, newPayable]);
                 setSnackbar({
@@ -279,9 +279,10 @@ const PayablesTab: React.FC = () => {
 
         try {
             const newPaidAmount = editingPayable.paidAmount + paymentData.amount;
-            const newStatus =
+            const newStatus = (
                 newPaidAmount >= editingPayable.amount ? 'paid' :
-                    newPaidAmount > 0 ? 'partially_paid' : 'pending';
+                    newPaidAmount > 0 ? 'partially_paid' : 'pending'
+            ) as 'pending' | 'partially_paid' | 'paid' | 'overdue';
 
             // 這裡也可以添加會計記錄功能，記錄支出
 

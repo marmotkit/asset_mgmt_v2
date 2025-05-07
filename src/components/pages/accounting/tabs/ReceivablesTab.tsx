@@ -58,7 +58,7 @@ const initialFormData = {
     clientName: '',
     amount: 0,
     paidAmount: 0,
-    status: 'pending',
+    status: 'pending' as 'pending' | 'partially_paid' | 'paid' | 'overdue',
     description: '',
     invoiceNumber: ''
 };
@@ -70,7 +70,7 @@ const ReceivablesTab: React.FC = () => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
     const [editingReceivable, setEditingReceivable] = useState<AccountReceivable | null>(null);
-    const [formData, setFormData] = useState(initialFormData);
+    const [formData, setFormData] = useState<typeof initialFormData>(initialFormData);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -228,7 +228,7 @@ const ReceivablesTab: React.FC = () => {
                 const newReceivable = await accountingService.addReceivable({
                     ...formData,
                     paidAmount: 0,
-                    status: 'pending'
+                    status: 'pending' as 'pending' | 'partially_paid' | 'paid' | 'overdue'
                 });
                 setReceivables(prev => [...prev, newReceivable]);
                 setSnackbar({
@@ -263,9 +263,10 @@ const ReceivablesTab: React.FC = () => {
 
         try {
             const newPaidAmount = editingReceivable.paidAmount + paymentAmount;
-            const newStatus =
+            const newStatus = (
                 newPaidAmount >= editingReceivable.amount ? 'paid' :
-                    newPaidAmount > 0 ? 'partially_paid' : 'pending';
+                    newPaidAmount > 0 ? 'partially_paid' : 'pending'
+            ) as 'pending' | 'partially_paid' | 'paid' | 'overdue';
 
             const updatedReceivable = await accountingService.updateReceivable(editingReceivable.id, {
                 paidAmount: newPaidAmount,
@@ -616,7 +617,7 @@ const ReceivablesTab: React.FC = () => {
                                     <InputLabel>狀態</InputLabel>
                                     <Select
                                         value={formData.status}
-                                        onChange={e => handleFormChange('status', e.target.value)}
+                                        onChange={e => handleFormChange('status', e.target.value as 'pending' | 'partially_paid' | 'paid' | 'overdue')}
                                         label="狀態"
                                     >
                                         {statusOptions.map(option => (
