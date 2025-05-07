@@ -60,8 +60,9 @@ npm run build
     * 關懷記錄管理
     * 關懷結果追蹤
   - 數據持久化
-    * 使用 localStorage 存儲數據
-    * 跨頁面數據同步
+    * 使用 PostgreSQL 數據庫存儲
+    * 透過 Render 平台的數據庫服務進行管理
+    * 確保數據安全和一致性
 - 修復部署問題
   - 解決 AnnualActivitiesTab.tsx 模組問題
   - 修復 xlsx 依賴問題
