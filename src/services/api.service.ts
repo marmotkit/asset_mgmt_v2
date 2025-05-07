@@ -14,6 +14,29 @@ import {
     PaymentStatus,
     PaymentMethod
 } from '../types/rental';
+import { AccountPayable, AccountReceivable, AccountRecord, MonthlyClosing } from '../types/payment';
+
+// 設置一個axios實例
+const apiClient = axios.create({
+    baseURL: process.env.REACT_APP_API_URL || '/api',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// 添加請求攔截器，用於設置JWT token
+apiClient.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
 
 // 模擬 API 服務
 export class ApiService {
@@ -1532,6 +1555,204 @@ export class ApiService {
     public static async getAnomalies(): Promise<any[]> {
         const storedAnomalies = localStorage.getItem('anomalies') || '[]';
         return Promise.resolve(JSON.parse(storedAnomalies));
+    }
+
+    // 帳務管理相關API
+    accounting: {
+        // 日記帳功能
+        getAccountRecords: async () => {
+            try {
+    const response = await apiClient.get('/accounting/records');
+    return response.data as AccountRecord[];
+} catch (error) {
+    console.error('獲取帳務記錄失敗', error);
+    throw error;
+}
+        },
+
+addAccountRecord: async (record: Omit<AccountRecord, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+        const response = await apiClient.post('/accounting/records', record);
+        return response.data;
+    } catch (error) {
+        console.error('添加帳務記錄失敗', error);
+        throw error;
+    }
+},
+
+    updateAccountRecord: async (id: string, record: Partial<AccountRecord>) => {
+        try {
+            const response = await apiClient.put(`/accounting/records/${id}`, record);
+            return response.data;
+        } catch (error) {
+            console.error('更新帳務記錄失敗', error);
+            throw error;
+        }
+    },
+
+        deleteAccountRecord: async (id: string) => {
+            try {
+                const response = await apiClient.delete(`/accounting/records/${id}`);
+                return response.data;
+            } catch (error) {
+                console.error('刪除帳務記錄失敗', error);
+                throw error;
+            }
+        },
+
+            // 應收帳款功能
+            getReceivables: async () => {
+                try {
+                    const response = await apiClient.get('/accounting/receivables');
+                    return response.data as AccountReceivable[];
+                } catch (error) {
+                    console.error('獲取應收帳款失敗', error);
+                    throw error;
+                }
+            },
+
+                addReceivable: async (receivable: Omit<AccountReceivable, 'id' | 'createdAt' | 'updatedAt'>) => {
+                    try {
+                        const response = await apiClient.post('/accounting/receivables', receivable);
+                        return response.data;
+                    } catch (error) {
+                        console.error('添加應收帳款失敗', error);
+                        throw error;
+                    }
+                },
+
+                    updateReceivable: async (id: string, receivable: Partial<AccountReceivable>) => {
+                        try {
+                            const response = await apiClient.put(`/accounting/receivables/${id}`, receivable);
+                            return response.data;
+                        } catch (error) {
+                            console.error('更新應收帳款失敗', error);
+                            throw error;
+                        }
+                    },
+
+                        deleteReceivable: async (id: string) => {
+                            try {
+                                const response = await apiClient.delete(`/accounting/receivables/${id}`);
+                                return response.data;
+                            } catch (error) {
+                                console.error('刪除應收帳款失敗', error);
+                                throw error;
+                            }
+                        },
+
+                            // 應付帳款功能
+                            getPayables: async () => {
+                                try {
+                                    const response = await apiClient.get('/accounting/payables');
+                                    return response.data as AccountPayable[];
+                                } catch (error) {
+                                    console.error('獲取應付帳款失敗', error);
+                                    throw error;
+                                }
+                            },
+
+                                addPayable: async (payable: Omit<AccountPayable, 'id' | 'createdAt' | 'updatedAt'>) => {
+                                    try {
+                                        const response = await apiClient.post('/accounting/payables', payable);
+                                        return response.data;
+                                    } catch (error) {
+                                        console.error('添加應付帳款失敗', error);
+                                        throw error;
+                                    }
+                                },
+
+                                    updatePayable: async (id: string, payable: Partial<AccountPayable>) => {
+                                        try {
+                                            const response = await apiClient.put(`/accounting/payables/${id}`, payable);
+                                            return response.data;
+                                        } catch (error) {
+                                            console.error('更新應付帳款失敗', error);
+                                            throw error;
+                                        }
+                                    },
+
+                                        deletePayable: async (id: string) => {
+                                            try {
+                                                const response = await apiClient.delete(`/accounting/payables/${id}`);
+                                                return response.data;
+                                            } catch (error) {
+                                                console.error('刪除應付帳款失敗', error);
+                                                throw error;
+                                            }
+                                        },
+
+                                            // 月結功能
+                                            getMonthlyClosings: async () => {
+                                                try {
+                                                    const response = await apiClient.get('/accounting/monthly-closings');
+                                                    return response.data as MonthlyClosing[];
+                                                } catch (error) {
+                                                    console.error('獲取月結記錄失敗', error);
+                                                    throw error;
+                                                }
+                                            },
+
+                                                getMonthlyClosingDetail: async (id: string) => {
+                                                    try {
+                                                        const response = await apiClient.get(`/accounting/monthly-closings/${id}`);
+                                                        return response.data;
+                                                    } catch (error) {
+                                                        console.error('獲取月結詳情失敗', error);
+                                                        throw error;
+                                                    }
+                                                },
+
+                                                    createMonthlyClosing: async (data: { year: number, month: number }) => {
+                                                        try {
+                                                            const response = await apiClient.post('/accounting/monthly-closings', data);
+                                                            return response.data;
+                                                        } catch (error) {
+                                                            console.error('創建月結記錄失敗', error);
+                                                            throw error;
+                                                        }
+                                                    },
+
+                                                        finalizeMonthlyClosing: async (id: string) => {
+                                                            try {
+                                                                const response = await apiClient.put(`/accounting/monthly-closings/${id}/finalize`);
+                                                                return response.data;
+                                                            } catch (error) {
+                                                                console.error('確認月結失敗', error);
+                                                                throw error;
+                                                            }
+                                                        },
+
+                                                            // 財務報表
+                                                            getFinancialReport: async (params: { year: number, month?: number }) => {
+                                                                try {
+                                                                    const response = await apiClient.get('/accounting/reports/financial', { params });
+                                                                    return response.data;
+                                                                } catch (error) {
+                                                                    console.error('獲取財務報表失敗', error);
+                                                                    throw error;
+                                                                }
+                                                            },
+
+                                                                getBalanceSheet: async (params: { date: string }) => {
+                                                                    try {
+                                                                        const response = await apiClient.get('/accounting/reports/balance-sheet', { params });
+                                                                        return response.data;
+                                                                    } catch (error) {
+                                                                        console.error('獲取資產負債表失敗', error);
+                                                                        throw error;
+                                                                    }
+                                                                },
+
+                                                                    getCashFlowStatement: async (params: { year: number, month?: number }) => {
+                                                                        try {
+                                                                            const response = await apiClient.get('/accounting/reports/cash-flow', { params });
+                                                                            return response.data;
+                                                                        } catch (error) {
+                                                                            console.error('獲取現金流量表失敗', error);
+                                                                            throw error;
+                                                                        }
+                                                                    }
     }
 }
 

@@ -87,7 +87,7 @@ const Sidebar: React.FC = () => {
       path: '/services'
     },
     {
-      text: '交易支付',
+      text: '帳務管理',
       icon: <PaymentIcon />,
       path: '/payment'
     },
