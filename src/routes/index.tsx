@@ -8,6 +8,7 @@ import CompanyManagement from '../components/pages/company/CompanyManagement';
 import InvestmentManagement from '../components/pages/investment/InvestmentManagement';
 import FeeManagement from '../components/pages/fees/FeeManagement';
 import InvoicePrintPage from '../components/pages/investment/InvoicePrintPage';
+import RentalAndProfitManagement from '../components/pages/investment/RentalAndProfitManagement';
 
 // 保護路由的高階組件
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -54,6 +55,25 @@ const AppRoutes = () => {
       <Route path="/investment" element={
         <ProtectedRoute>
           <InvestmentManagement />
+        </ProtectedRoute>
+      } />
+
+      {/* 新增的投資相關子路由 */}
+      <Route path="/investment/rental-payment" element={
+        <ProtectedRoute>
+          <RentalAndProfitManagement initialTab={1} />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/investment/member-profit" element={
+        <ProtectedRoute>
+          <RentalAndProfitManagement initialTab={2} />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/investment/history" element={
+        <ProtectedRoute>
+          <RentalAndProfitManagement initialTab={3} />
         </ProtectedRoute>
       } />
 

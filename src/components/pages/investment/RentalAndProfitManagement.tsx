@@ -21,6 +21,10 @@ interface TabPanelProps {
     value: number;
 }
 
+interface RentalAndProfitManagementProps {
+    initialTab?: number;
+}
+
 function TabPanel(props: TabPanelProps) {
     const { children, value, index, ...other } = props;
 
@@ -41,13 +45,20 @@ function TabPanel(props: TabPanelProps) {
     );
 }
 
-const RentalAndProfitManagement: React.FC = () => {
-    const [currentTab, setCurrentTab] = useState(0);
+const RentalAndProfitManagement: React.FC<RentalAndProfitManagementProps> = ({ initialTab = 0 }) => {
+    const [currentTab, setCurrentTab] = useState(initialTab);
     const [investments, setInvestments] = useState<Investment[]>([]);
 
     useEffect(() => {
         loadInvestments();
     }, []);
+
+    // 當 initialTab 變化時更新當前標籤
+    useEffect(() => {
+        if (initialTab !== undefined) {
+            setCurrentTab(initialTab);
+        }
+    }, [initialTab]);
 
     const loadInvestments = async () => {
         try {
