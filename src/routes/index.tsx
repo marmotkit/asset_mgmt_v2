@@ -9,6 +9,7 @@ import InvestmentManagement from '../components/pages/investment/InvestmentManag
 import FeeManagement from '../components/pages/fees/FeeManagement';
 import InvoicePrintPage from '../components/pages/investment/InvoicePrintPage';
 import RentalAndProfitManagement from '../components/pages/investment/RentalAndProfitManagement';
+import MemberServicesManagement from '../components/pages/services/MemberServicesManagement';
 
 // 保護路由的高階組件
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -81,7 +82,7 @@ const AppRoutes = () => {
 
       <Route path="/services" element={
         <ProtectedRoute>
-          <div>會員服務</div>
+          <MemberServicesManagement />
         </ProtectedRoute>
       } />
 
