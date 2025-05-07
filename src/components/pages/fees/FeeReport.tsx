@@ -29,7 +29,7 @@ import { invoiceService } from '../../../services/invoiceService';
 import { memberService } from '../../../services/memberService';
 import { FeeHistory, MemberType } from '../../../types/fee';
 import { Member } from '../../../types/member';
-import XLSX from 'xlsx/dist/xlsx.full.min';
+import * as XLSX from 'xlsx';
 
 interface DashboardStats {
     yearlyTotal: number;

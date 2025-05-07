@@ -19,6 +19,15 @@ try {
         console.log('檢測到 Render 部署環境');
     }
 
+    // 執行修復腳本
+    console.log('執行修復腳本...');
+    if (fs.existsSync('./fix-build.js')) {
+        execSync('node fix-build.js', { stdio: 'inherit' });
+        console.log('✅ 修復腳本執行完成');
+    } else {
+        console.log('⚠️ 修復腳本不存在，繼續執行構建流程');
+    }
+
     // 確保安裝所有依賴
     console.log('安裝所有必要的依賴項...');
     execSync('npm install buffer process --save', { stdio: 'inherit' });
@@ -374,14 +383,14 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
 
 module.exports = {
-    mode: 'production',
-    entry: './src/index.tsx',
-    output: {
-        path: path.resolve(__dirname, 'build'),
-        filename: 'bundle.js',
-        publicPath: '/'
-    },
-    resolve: {
+  mode: 'production',
+  entry: './src/index.tsx',
+  output: {
+    path: path.resolve(__dirname, 'build'),
+    filename: 'bundle.js',
+    publicPath: '/'
+  },
+  resolve: {
         extensions: ['.tsx', '.ts', '.js', '.jsx'],
         fallback: {
             buffer: false,
@@ -396,16 +405,16 @@ module.exports = {
         alias: {
             xlsx: path.resolve(__dirname, 'node_modules/xlsx/dist/xlsx.full.min.js')
         }
-    },
-    module: {
-        rules: [
-            {
-                test: /\\.(ts|tsx)$/,
+  },
+  module: {
+    rules: [
+      {
+        test: /\\.(ts|tsx)$/,
                 exclude: /node_modules/,
-                use: 'ts-loader',
-            },
-            {
-                test: /\\.css$/,
+        use: 'ts-loader',
+      },
+      {
+        test: /\\.css$/,
                 use: ['style-loader', 'css-loader'],
             },
             {
@@ -417,13 +426,13 @@ module.exports = {
                 resolve: {
                   fullySpecified: false
                 }
-            }
-        ]
-    },
-    plugins: [
-        new HtmlWebpackPlugin({
-            template: './public/index.html',
-            favicon: './public/favicon.ico'
+      }
+    ]
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: './public/index.html',
+      favicon: './public/favicon.ico'
         }),
         new webpack.DefinePlugin({
             'process.env.NODE_ENV': JSON.stringify('production')
@@ -522,4 +531,4 @@ module.exports = {
 } catch (error) {
     console.error('❌ 構建失敗:', error);
     process.exit(1);
-}
+} 
