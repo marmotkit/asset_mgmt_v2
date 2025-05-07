@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RentalPayment = exports.RentalStandard = exports.PaymentMethod = exports.PaymentStatus = void 0;
+exports.RentalPayment = exports.RentalStandard = exports.PaymentMethod = exports.PaymentMethodEnum = exports.PaymentStatus = exports.PaymentStatusEnum = void 0;
 const sequelize_1 = require("sequelize");
 const connection_1 = __importDefault(require("../db/connection"));
 const Investment_1 = __importDefault(require("./Investment"));
@@ -65,21 +65,25 @@ RentalStandard.init({
     timestamps: true,
 });
 // 付款狀態枚舉
-var PaymentStatus;
-(function (PaymentStatus) {
-    PaymentStatus["PENDING"] = "pending";
-    PaymentStatus["PAID"] = "paid";
-    PaymentStatus["LATE"] = "late";
-    PaymentStatus["CANCELED"] = "canceled";
-})(PaymentStatus || (exports.PaymentStatus = PaymentStatus = {}));
+var PaymentStatusEnum;
+(function (PaymentStatusEnum) {
+    PaymentStatusEnum["PENDING"] = "pending";
+    PaymentStatusEnum["PAID"] = "paid";
+    PaymentStatusEnum["LATE"] = "late";
+    PaymentStatusEnum["CANCELED"] = "canceled";
+})(PaymentStatusEnum || (exports.PaymentStatusEnum = PaymentStatusEnum = {}));
+// 保持兼容性
+exports.PaymentStatus = PaymentStatusEnum;
 // 付款方式枚舉
-var PaymentMethod;
-(function (PaymentMethod) {
-    PaymentMethod["CASH"] = "cash";
-    PaymentMethod["BANK_TRANSFER"] = "bank_transfer";
-    PaymentMethod["CREDIT_CARD"] = "credit_card";
-    PaymentMethod["CHEQUE"] = "cheque";
-})(PaymentMethod || (exports.PaymentMethod = PaymentMethod = {}));
+var PaymentMethodEnum;
+(function (PaymentMethodEnum) {
+    PaymentMethodEnum["CASH"] = "cash";
+    PaymentMethodEnum["BANK_TRANSFER"] = "bank_transfer";
+    PaymentMethodEnum["CREDIT_CARD"] = "credit_card";
+    PaymentMethodEnum["CHEQUE"] = "cheque";
+})(PaymentMethodEnum || (exports.PaymentMethodEnum = PaymentMethodEnum = {}));
+// 保持兼容性
+exports.PaymentMethod = PaymentMethodEnum;
 // 租金收款模型
 class RentalPayment extends sequelize_1.Model {
 }

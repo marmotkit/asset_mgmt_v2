@@ -127,17 +127,31 @@ class ApiService {
     }
     // Investment related methods
     static loadInvestmentsFromStorage() {
+        console.log('正在載入投資資料從本地存儲...');
         const storedInvestments = localStorage.getItem('investments');
         if (storedInvestments) {
-            ApiService.investments = JSON.parse(storedInvestments);
+            try {
+                ApiService.investments = JSON.parse(storedInvestments);
+                console.log(`已載入 ${ApiService.investments.length} 筆投資資料`);
+            }
+            catch (error) {
+                console.error('解析投資資料時發生錯誤:', error);
+                ApiService.investments = [];
+            }
         }
         else {
+            console.log('本地存儲中無投資資料，使用默認值');
+            // 獲取會員列表，確保我們使用存在的會員ID
+            const memberIds = ApiService.mockMembers.map(member => member.id);
+            const defaultUserId = memberIds.length > 0 ? memberIds[0] : '6e74484c-af9c-4a4e-be82-c91d65000c29';
+            console.log('使用預設會員ID:', defaultUserId);
+            console.log('可用會員列表:', ApiService.mockMembers.map(m => `${m.name}(${m.id})`));
             // 初始化預設投資項目
             ApiService.investments = [
                 {
                     id: '1',
                     companyId: '1',
-                    userId: 'ad9bfa89-6ea5-43fa-92e8-9ecbfb5d69c5', // LKT 會員的 ID
+                    userId: defaultUserId, // 使用確認存在的會員ID
                     type: 'movable',
                     name: '設備投資A',
                     description: '生產線設備',
@@ -153,7 +167,7 @@ class ApiService {
                 {
                     id: '2',
                     companyId: '2',
-                    userId: 'ad9bfa89-6ea5-43fa-92e8-9ecbfb5d69c5', // LKT 會員的 ID
+                    userId: defaultUserId, // 使用確認存在的會員ID
                     type: 'immovable',
                     name: '不動產投資B',
                     description: '商業辦公室',
@@ -168,6 +182,7 @@ class ApiService {
                     updatedAt: '2023-02-01T00:00:00Z'
                 }
             ];
+            console.log('已初始化預設投資資料');
         }
         localStorage.setItem('investments', JSON.stringify(ApiService.investments));
     }
@@ -175,16 +190,23 @@ class ApiService {
         localStorage.setItem('investments', JSON.stringify(ApiService.investments));
     }
     static async getInvestments() {
+        console.log('獲取所有投資項目...');
         if (ApiService.investments.length === 0) {
             ApiService.loadInvestmentsFromStorage();
         }
-        return Promise.resolve([...ApiService.investments]);
+        // 複製陣列的簡單方法
+        const result = Array.from(ApiService.investments);
+        console.log(`返回 ${result.length} 筆投資項目`);
+        return Promise.resolve(result);
     }
     static async getInvestment(id) {
+        console.log(`正在查找投資項目 ID: ${id}`);
         if (ApiService.investments.length === 0) {
             ApiService.loadInvestmentsFromStorage();
         }
-        return Promise.resolve(ApiService.investments.find(i => i.id === id) || null);
+        const investment = ApiService.investments.find(i => i.id === id);
+        console.log('查找結果:', investment ? '找到項目' : '未找到項目');
+        return Promise.resolve(investment || null);
     }
     static async createInvestment(investment) {
         let newInvestment;
@@ -508,25 +530,8 @@ class ApiService {
             ApiService.mockRentalPayments = JSON.parse(storedPayments);
         }
         else {
-            // 初始化預設租金收款項目
+            // 初始化空的租金收款項目列表，不再自動創建預設資料
             ApiService.mockRentalPayments = [];
-            // 為 2025 年的 1-12 月添加租金收款項目
-            for (let month = 1; month <= 12; month++) {
-                ApiService.mockRentalPayments.push({
-                    id: crypto.randomUUID(),
-                    investmentId: '1',
-                    year: 2025,
-                    month: month,
-                    amount: 5000,
-                    status: rental_1.PaymentStatus.PAID,
-                    startDate: `2025-${month.toString().padStart(2, '0')}-01`,
-                    endDate: `2025-${month.toString().padStart(2, '0')}-${new Date(2025, month, 0).getDate()}`,
-                    renterName: 'LKT',
-                    renterTaxId: '123456789',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                });
-            }
             localStorage.setItem('rentalPayments', JSON.stringify(ApiService.mockRentalPayments));
         }
     }
@@ -654,26 +659,46 @@ class ApiService {
         return Promise.resolve();
     }
     static async clearRentalPayments(year, month) {
-        if (!year) {
-            // 如果沒有指定年份，則不執行任何操作
+        console.log(`開始清除租金收款記錄 - 年度: ${year}, 月份: ${month}`);
+        try {
+            if (!year) {
+                // 如果沒有指定年份，則不執行任何操作
+                return Promise.resolve();
+            }
+            // 確保先載入數據
+            if (ApiService.mockRentalPayments.length === 0) {
+                ApiService.loadRentalPaymentsFromStorage();
+            }
+            const beforeCount = ApiService.mockRentalPayments.length;
+            if (month) {
+                // 如果指定了月份，則只清除該年份和月份的租金項目
+                ApiService.mockRentalPayments = ApiService.mockRentalPayments.filter(payment => payment.year !== year || payment.month !== month);
+            }
+            else {
+                // 如果只指定了年份，則清除該年份的所有租金項目
+                ApiService.mockRentalPayments = ApiService.mockRentalPayments.filter(payment => payment.year !== year);
+            }
+            const afterCount = ApiService.mockRentalPayments.length;
+            const deletedCount = beforeCount - afterCount;
+            console.log(`租金收款記錄清除完成：刪除 ${deletedCount} 筆記錄`);
+            // 保存到本地存儲
+            ApiService.saveRentalPaymentsToStorage();
+            // 返回成功訊息
             return Promise.resolve();
         }
-        if (month) {
-            // 如果指定了月份，則只清除該年份和月份的租金項目
-            ApiService.mockRentalPayments = ApiService.mockRentalPayments.filter(payment => payment.year !== year || payment.month !== month);
+        catch (error) {
+            console.error('清除租金收款記錄時發生錯誤:', error);
+            return Promise.reject(error);
         }
-        else {
-            // 如果只指定了年份，則清除該年份的所有租金項目
-            ApiService.mockRentalPayments = ApiService.mockRentalPayments.filter(payment => payment.year !== year);
-        }
-        ApiService.saveRentalPaymentsToStorage();
-        return Promise.resolve();
     }
     // 會員分潤項目相關方法
     static loadMemberProfitsFromStorage() {
         const storedProfits = localStorage.getItem('memberProfits');
         if (storedProfits) {
             ApiService.mockMemberProfits = JSON.parse(storedProfits);
+        }
+        else {
+            ApiService.mockMemberProfits = [];
         }
     }
     static saveMemberProfitsToStorage() {
@@ -683,23 +708,41 @@ class ApiService {
         if (ApiService.mockMemberProfits.length === 0) {
             ApiService.loadMemberProfitsFromStorage();
         }
-        let profits = [...ApiService.mockMemberProfits].map(profit => ({
-            ...profit,
-            amount: Number(profit.amount)
-        }));
+        // 直接複製陣列而不使用擴展運算符
+        const profits = [];
+        // 逐個複製物件所有屬性
+        for (const profit of ApiService.mockMemberProfits) {
+            const newProfit = {
+                id: profit.id,
+                investmentId: profit.investmentId,
+                memberId: profit.memberId,
+                year: profit.year,
+                month: profit.month,
+                amount: Number(profit.amount),
+                status: profit.status,
+                paymentDate: profit.paymentDate,
+                paymentMethod: profit.paymentMethod,
+                note: profit.note,
+                createdAt: profit.createdAt,
+                updatedAt: profit.updatedAt
+            };
+            profits.push(newProfit);
+        }
+        // 依序套用篩選條件
+        let filteredProfits = profits;
         if (investmentId) {
-            profits = profits.filter(p => p.investmentId === investmentId);
+            filteredProfits = filteredProfits.filter(p => p.investmentId === investmentId);
         }
         if (memberId) {
-            profits = profits.filter(p => p.memberId === memberId);
+            filteredProfits = filteredProfits.filter(p => p.memberId === memberId);
         }
         if (year) {
-            profits = profits.filter(p => p.year === year);
+            filteredProfits = filteredProfits.filter(p => p.year === year);
         }
         if (month) {
-            profits = profits.filter(p => p.month === month);
+            filteredProfits = filteredProfits.filter(p => p.month === month);
         }
-        return Promise.resolve(profits);
+        return Promise.resolve(filteredProfits);
     }
     static async generateMemberProfits(investmentId, year) {
         try {
@@ -712,37 +755,59 @@ class ApiService {
             // 檢查是否已存在該投資項目的分潤項目
             const existingProfits = ApiService.mockMemberProfits.filter(p => p.investmentId === investmentId && p.year === year);
             if (existingProfits.length > 0) {
+                console.warn('該投資項目已存在分潤項目:', existingProfits.length, '筆');
                 throw new Error('該投資項目的分潤項目已存在，請勿重複生成');
             }
             // 獲取投資項目
             const investment = ApiService.investments.find(inv => inv.id === investmentId);
-            console.log('投資項目', investment);
+            console.log('投資項目', (investment === null || investment === void 0 ? void 0 : investment.name) || (investment === null || investment === void 0 ? void 0 : investment.id) || '未找到');
             if (!investment) {
+                console.error('找不到投資項目:', investmentId);
                 throw new Error('找不到投資項目');
             }
             // 檢查投資項目是否有指定會員
             if (!investment.userId) {
+                console.error('投資項目未指定所屬會員:', investment.id, investment.name);
                 throw new Error('投資項目未指定所屬會員');
             }
             console.log('投資項目所屬會員 ID', investment.userId);
             // 載入會員資料
             const members = await this.getMembers();
-            console.log('所有會員', members);
+            console.log('載入會員資料, 共', members.length, '位會員');
+            console.log('所有會員 ID:', members.map(m => m.id));
             const member = members.find(m => m.id === investment.userId);
-            console.log('找到的會員', member);
             if (!member) {
-                throw new Error('找不到所屬會員');
+                console.error('投資項目所屬會員: 未找到');
+                console.error('找不到會員:', investment.userId);
+                // 嘗試更新投資項目關聯到存在的會員
+                if (members.length > 0) {
+                    console.log('嘗試將投資項目關聯到現有會員...');
+                    const availableMember = members[0];
+                    // 更新投資項目的會員ID
+                    const index = ApiService.investments.findIndex(inv => inv.id === investmentId);
+                    if (index !== -1) {
+                        ApiService.investments[index].userId = availableMember.id;
+                        ApiService.saveInvestmentsToStorage();
+                        console.log(`已更新投資項目 ${investment.name} 關聯到會員 ${availableMember.name}(${availableMember.id})`);
+                        // 使用更新後的會員繼續處理
+                        return this.generateMemberProfits(investmentId, year);
+                    }
+                }
+                throw new Error('找不到所屬會員，請確保投資項目已正確關聯到現有會員');
             }
+            console.log('找到投資項目所屬會員:', member.name, `(${member.id})`);
             // 載入該年度的租金收款項目
             const rentalPayments = ApiService.mockRentalPayments.filter(p => p.investmentId === investmentId && p.year === year);
-            console.log('租金收款項目', rentalPayments);
+            console.log('找到租金收款項目:', rentalPayments.length, '筆');
             if (rentalPayments.length === 0) {
+                console.error('未找到租金收款項目:', { investmentId, year });
                 throw new Error('未找到該投資項目的租金收款項目');
             }
             // 載入分潤標準
             const standards = await this.getProfitSharingStandards(investmentId);
-            console.log('分潤標準', standards);
+            console.log('載入分潤標準:', standards.length, '筆');
             if (standards.length === 0) {
+                console.error('未設定分潤標準:', { investmentId });
                 throw new Error('未設定分潤標準');
             }
             const newProfits = [];
@@ -751,8 +816,8 @@ class ApiService {
                 const endDate = standard.endDate ? new Date(standard.endDate) : new Date(year, 11, 31);
                 console.log('處理分潤標準', {
                     標準ID: standard.id,
-                    標準開始日期: startDate,
-                    標準結束日期: endDate,
+                    標準開始日期: startDate.toISOString().split('T')[0],
+                    標準結束日期: endDate.toISOString().split('T')[0],
                     年度: year
                 });
                 // 跳過不適用的分潤標準
@@ -768,50 +833,67 @@ class ApiService {
                 // 計算適用的月份範圍
                 const startMonth = startDate.getFullYear() === year ? startDate.getMonth() + 1 : 1;
                 const endMonth = endDate.getFullYear() === year ? endDate.getMonth() + 1 : 12;
-                console.log('適用的月份範圍', {
+                console.log('計算適用的月份範圍', {
                     標準ID: standard.id,
                     開始月份: startMonth,
                     結束月份: endMonth
                 });
                 // 只為指定的會員生成分潤項目
+                let generatedCount = 0;
                 for (let month = startMonth; month <= endMonth; month++) {
                     // 查找對應月份的租金收款項目
                     const rentalPayment = rentalPayments.find(p => p.month === month);
                     if (!rentalPayment) {
-                        console.log('找不到對應月份的租金收款項目', {
+                        console.warn('找不到對應月份的租金收款項目', {
                             月份: month
                         });
                         continue;
                     }
                     console.log('找到對應月份的租金收款項目', {
                         月份: month,
-                        租金收款項目: rentalPayment
+                        租金ID: rentalPayment.id,
+                        金額: rentalPayment.amount
                     });
                     // 計算分潤金額
                     let amount = 0;
                     if (standard.type === rental_1.ProfitSharingType.FIXED_AMOUNT) {
                         amount = standard.value;
+                        console.log('使用固定金額分潤:', standard.value);
                     }
                     else if (standard.type === rental_1.ProfitSharingType.PERCENTAGE) {
                         // 使用租金收款金額計算分潤
                         amount = rentalPayment.amount * (standard.value / 100);
+                        console.log('使用百分比計算分潤:', {
+                            百分比: standard.value,
+                            計算結果: amount
+                        });
                     }
-                    console.log('計算分潤金額', {
-                        標準類型: standard.type,
-                        標準值: standard.value,
-                        租金金額: rentalPayment.amount,
-                        分潤金額: amount
-                    });
                     // 應用最小/最大金額限制
+                    let originalAmount = amount;
                     if (standard.minAmount !== undefined) {
                         amount = Math.max(amount, standard.minAmount);
+                        if (amount !== originalAmount) {
+                            console.log('應用最小金額限制:', {
+                                原始金額: originalAmount,
+                                最小限制: standard.minAmount,
+                                調整後: amount
+                            });
+                        }
                     }
+                    originalAmount = amount;
                     if (standard.maxAmount !== undefined) {
                         amount = Math.min(amount, standard.maxAmount);
+                        if (amount !== originalAmount) {
+                            console.log('應用最大金額限制:', {
+                                原始金額: originalAmount,
+                                最大限制: standard.maxAmount,
+                                調整後: amount
+                            });
+                        }
                     }
-                    console.log('最終分潤金額', {
-                        分潤金額: amount
-                    });
+                    // 這裡進行四捨五入，避免小數點問題
+                    amount = Math.round(amount);
+                    console.log(`${month}月份最終分潤金額:`, amount);
                     const profit = {
                         id: crypto.randomUUID(),
                         investmentId,
@@ -824,18 +906,23 @@ class ApiService {
                         updatedAt: new Date().toISOString()
                     };
                     newProfits.push(profit);
+                    generatedCount++;
                 }
+                console.log(`依照分潤標準 ${standard.id} 生成了 ${generatedCount} 筆分潤記錄`);
             }
-            console.log('生成的會員分潤項目', newProfits);
+            console.log(`總共生成 ${newProfits.length} 筆會員分潤項目`);
             if (newProfits.length === 0) {
+                console.error('無法生成分潤項目:', { investmentId, year });
                 throw new Error('無法生成分潤項目，請檢查分潤標準的生效日期');
             }
             // 添加新生成的分潤項目
             ApiService.mockMemberProfits.push(...newProfits);
             ApiService.saveMemberProfitsToStorage();
+            console.log('分潤項目已保存到本地存儲');
             return Promise.resolve(newProfits);
         }
         catch (error) {
+            console.error('生成會員分潤項目失敗:', error);
             return Promise.reject(error);
         }
     }
@@ -860,10 +947,36 @@ class ApiService {
         ApiService.saveMemberProfitsToStorage();
         return Promise.resolve();
     }
-    static async clearMemberProfits() {
-        ApiService.mockMemberProfits = [];
-        ApiService.saveMemberProfitsToStorage();
-        return Promise.resolve();
+    static async clearMemberProfits(year) {
+        console.log(`開始清除會員分潤記錄 - 年度: ${year}`);
+        try {
+            // 確保先載入數據
+            if (ApiService.mockMemberProfits.length === 0) {
+                ApiService.loadMemberProfitsFromStorage();
+            }
+            if (year) {
+                const beforeCount = ApiService.mockMemberProfits.length;
+                // 如果指定了年份，只清除該年度的分潤項目
+                ApiService.mockMemberProfits = ApiService.mockMemberProfits.filter(profit => profit.year !== year);
+                const afterCount = ApiService.mockMemberProfits.length;
+                const deletedCount = beforeCount - afterCount;
+                console.log(`會員分潤記錄清除完成：刪除 ${deletedCount} 筆記錄`);
+            }
+            else {
+                // 如果沒有指定年份，清除所有分潤項目
+                const beforeCount = ApiService.mockMemberProfits.length;
+                ApiService.mockMemberProfits = [];
+                console.log(`會員分潤記錄清除完成：刪除所有 ${beforeCount} 筆記錄`);
+            }
+            // 確保更新 localStorage
+            ApiService.saveMemberProfitsToStorage();
+            // 返回成功訊息
+            return Promise.resolve();
+        }
+        catch (error) {
+            console.error('清除會員分潤記錄時發生錯誤:', error);
+            return Promise.reject(error);
+        }
     }
     // 會員相關方法
     static async getMembers() {
@@ -1006,13 +1119,62 @@ class ApiService {
         }
         return Promise.resolve();
     }
+    // 添加直接清除本地存儲的方法
+    static async purgeLocalStorage(year) {
+        console.log(`直接清除本地存儲中的 ${year} 年度數據`);
+        try {
+            // 清除租金收款記錄
+            let rentalPayments = [];
+            const storedPayments = localStorage.getItem('rentalPayments');
+            if (storedPayments) {
+                try {
+                    const allPayments = JSON.parse(storedPayments);
+                    rentalPayments = allPayments.filter((payment) => payment.year !== year);
+                    console.log(`租金收款：從 ${allPayments.length} 筆過濾到 ${rentalPayments.length} 筆`);
+                    localStorage.setItem('rentalPayments', JSON.stringify(rentalPayments));
+                }
+                catch (e) {
+                    console.error('解析租金收款數據時出錯:', e);
+                }
+            }
+            // 清除會員分潤記錄
+            let memberProfits = [];
+            const storedProfits = localStorage.getItem('memberProfits');
+            if (storedProfits) {
+                try {
+                    const allProfits = JSON.parse(storedProfits);
+                    memberProfits = allProfits.filter((profit) => profit.year !== year);
+                    console.log(`會員分潤：從 ${allProfits.length} 筆過濾到 ${memberProfits.length} 筆`);
+                    localStorage.setItem('memberProfits', JSON.stringify(memberProfits));
+                }
+                catch (e) {
+                    console.error('解析會員分潤數據時出錯:', e);
+                }
+            }
+            // 同步更新內存中的數據
+            ApiService.mockRentalPayments = rentalPayments;
+            ApiService.mockMemberProfits = memberProfits;
+            console.log(`${year} 年度數據已從本地存儲中清除`);
+            return Promise.resolve();
+        }
+        catch (error) {
+            console.error('清除本地存儲數據時出錯:', error);
+            return Promise.reject(error);
+        }
+    }
 }
 exports.ApiService = ApiService;
-ApiService.API_BASE_URL = window.location.hostname.includes('render.com')
-    ? 'https://asset-mgmt-api.onrender.com/api' // 雲端後端 API 地址
-    : (window.location.hostname === 'localhost'
-        ? '/api' // 本地開發環境
-        : 'https://api.example.com/api'); // 其他環境
+ApiService.API_BASE_URL = (() => {
+    const hostname = window.location.hostname;
+    const isRender = hostname.includes('render.com') || hostname.includes('onrender.com');
+    const baseUrl = isRender
+        ? 'https://asset-mgmt-api.onrender.com/api' // 雲端後端 API 地址
+        : (hostname === 'localhost' || hostname === '127.0.0.1'
+            ? '/api' // 本地開發環境
+            : 'https://asset-mgmt-api.onrender.com/api'); // 其他環境也用雲端地址
+    console.log(`API 服務初始化 - 主機名稱: ${hostname}, 基礎 URL: ${baseUrl}, 是否在 Render: ${isRender}`);
+    return baseUrl;
+})();
 ApiService.LOCAL_STORAGE_KEY = 'auth_token';
 ApiService.investments = []; // 移除預設資料
 ApiService.mockUsers = [];

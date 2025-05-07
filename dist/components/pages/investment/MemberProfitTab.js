@@ -89,29 +89,60 @@ const MemberProfitTab = ({ investments }) => {
         setLoading(true);
         let hasError = false;
         let errorMessage = '';
+        console.log('開始生成會員分潤項目...');
         try {
             // 取得選擇的投資項目
             const selectedInvestments = investmentSelections.filter(inv => inv.selected);
+            console.log(`選擇了 ${selectedInvestments.length} 個投資項目進行分潤生成`);
+            if (selectedInvestments.length === 0) {
+                enqueueSnackbar('請選擇至少一個投資項目進行分潤生成', { variant: 'warning' });
+                setLoading(false);
+                return;
+            }
             // 依序處理每個選擇的投資項目
             for (const inv of selectedInvestments) {
                 try {
+                    console.log(`正在為投資項目 ${inv.name}(${inv.id}) 生成分潤...`);
                     await api_service_1.ApiService.generateMemberProfits(inv.id, yearFilter);
+                    console.log(`投資項目 ${inv.name} 分潤生成成功`);
                 }
                 catch (error) {
                     hasError = true;
-                    errorMessage += `${inv.name}: ${error instanceof Error ? error.message : '生成失敗'}\n`;
+                    const errMsg = error instanceof Error ? error.message : '生成失敗';
+                    errorMessage += `${inv.name}: ${errMsg}\n`;
+                    console.error(`投資項目 ${inv.name} 分潤生成失敗:`, error);
+                    // 檢查是否是會員不存在的問題
+                    if (errMsg.includes('找不到所屬會員')) {
+                        // 提示用戶需要檢查投資項目與會員的關聯
+                        enqueueSnackbar(`投資項目 ${inv.name} 的所屬會員不存在或未設定，請先更新投資項目的會員關聯`, { variant: 'error', autoHideDuration: 6000 });
+                    }
                 }
             }
             if (hasError) {
-                enqueueSnackbar(errorMessage, { variant: 'warning' });
+                console.warn('部分投資項目生成失敗:', errorMessage);
+                enqueueSnackbar('部分投資項目生成失敗:\n' + errorMessage, {
+                    variant: 'warning',
+                    autoHideDuration: 8000
+                });
             }
             else {
+                console.log('所有投資項目分潤生成完成');
                 enqueueSnackbar('會員分潤項目生成完成', { variant: 'success' });
             }
+            console.log('重新載入分潤資料...');
             await loadData();
+            console.log('資料重新載入完成');
+            // 改用路由導航代替強制刷新
+            setTimeout(() => {
+                console.log('使用路由導航...');
+                // 使用相對路徑而非絕對路徑
+                window.location.href = '#/investment/member-profit';
+            }, 500);
         }
         catch (error) {
-            enqueueSnackbar('生成會員分潤項目時發生錯誤', { variant: 'error' });
+            const errorMsg = error instanceof Error ? error.message : '未知錯誤';
+            console.error('生成會員分潤項目時發生錯誤:', errorMsg);
+            enqueueSnackbar(`生成會員分潤項目時發生錯誤: ${errorMsg}`, { variant: 'error' });
         }
         finally {
             setLoading(false);

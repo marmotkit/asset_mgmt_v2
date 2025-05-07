@@ -3,17 +3,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MemberProfit = exports.ProfitSharingStandard = exports.ProfitSharingType = void 0;
+exports.MemberProfit = exports.ProfitSharingStandard = exports.ProfitSharingType = exports.ProfitSharingTypeEnum = void 0;
 const sequelize_1 = require("sequelize");
 const connection_1 = __importDefault(require("../db/connection"));
 const Investment_1 = __importDefault(require("./Investment"));
 const User_1 = __importDefault(require("./User"));
 // 分潤類型枚舉
-var ProfitSharingType;
-(function (ProfitSharingType) {
-    ProfitSharingType["PERCENTAGE"] = "percentage";
-    ProfitSharingType["FIXED_AMOUNT"] = "fixed_amount";
-})(ProfitSharingType || (exports.ProfitSharingType = ProfitSharingType = {}));
+var ProfitSharingTypeEnum;
+(function (ProfitSharingTypeEnum) {
+    ProfitSharingTypeEnum["PERCENTAGE"] = "percentage";
+    ProfitSharingTypeEnum["FIXED_AMOUNT"] = "fixed_amount";
+})(ProfitSharingTypeEnum || (exports.ProfitSharingTypeEnum = ProfitSharingTypeEnum = {}));
+// 保持兼容性
+exports.ProfitSharingType = ProfitSharingTypeEnum;
 // 分潤標準模型
 class ProfitSharingStandard extends sequelize_1.Model {
 }
