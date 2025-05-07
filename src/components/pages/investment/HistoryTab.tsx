@@ -232,8 +232,8 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
 
             // 強制刷新頁面 (可以解決部分緩存問題)
             setTimeout(() => {
-                console.log('強制刷新頁面...');
-                window.location.reload();
+                console.log('使用路由導航...');
+                window.location.href = '#/investment/history';
             }, 500);
         } catch (error) {
             console.error('清除資料失敗:', error);
@@ -265,7 +265,8 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
 
             // 延遲重新載入頁面
             setTimeout(() => {
-                window.location.reload();
+                console.log('使用路由導航...');
+                window.location.href = '#/investment/history';
             }, 500);
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : '未知錯誤';
@@ -303,7 +304,8 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ investments }) => {
 
             // 延遲重新載入頁面
             setTimeout(() => {
-                window.location.reload();
+                console.log('使用路由導航...');
+                window.location.href = '#/investment/history';
             }, 500);
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : '未知錯誤';

@@ -186,10 +186,11 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
             await loadData();
             console.log('資料重新載入完成');
 
-            // 強制刷新頁面以確保所有資料正確顯示
+            // 改用路由導航代替強制刷新
             setTimeout(() => {
-                console.log('強制刷新頁面...');
-                window.location.reload();
+                console.log('使用路由導航...');
+                // 使用相對路徑而非絕對路徑
+                window.location.href = '#/investment/member-profit';
             }, 500);
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : '未知錯誤';
