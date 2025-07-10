@@ -400,10 +400,16 @@ export class ApiService {
     }
 
     static async getCompanies(): Promise<Company[]> {
-        if (ApiService.mockCompanies.length === 0) {
-            ApiService.loadCompaniesFromStorage();
+        const token = localStorage.getItem('token');
+        const response = await fetch('https://asset-mgmt-api.onrender.com/api/companies', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) {
+            throw new Error('載入公司資料失敗');
         }
-        return Promise.resolve([...(ApiService.mockCompanies as any)]);
+        return await response.json();
     }
 
     static async getCompany(id: string): Promise<Company | null> {
