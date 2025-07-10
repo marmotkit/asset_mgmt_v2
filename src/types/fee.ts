@@ -2,7 +2,7 @@ export interface FeeSetting {
     id: string;
     name: string;
     amount: number;
-    frequency: 'monthly' | 'quarterly' | 'yearly';
+    frequency: 'monthly' | 'quarterly' | 'yearly' | '5year' | 'forever';
     description: string;
     createdAt: string;
     updatedAt: string;
