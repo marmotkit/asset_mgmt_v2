@@ -102,7 +102,7 @@ const FeePaymentStatus: React.FC = () => {
         return window.location.pathname.includes('歷史記錄') ? '歷史記錄' : '收款狀況';
     });
     const [orderBy, setOrderBy] = useState<string>('dueDate');
-    const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+    const [order, setOrder] = useState<'asc' | 'desc'>('asc');
 
     const handleSort = (column: string) => {
         if (orderBy === column) {
