@@ -134,17 +134,14 @@ async function resetDatabaseDirectly() {
 
         console.log('✓ 所有表格已重新建立');
 
-        // 4. 插入基本資料
+        // 4. 插入基本資料（使用簡單密碼，避免 bcrypt）
         console.log('4. 插入基本資料...');
 
-        // 插入管理者帳號
-        const bcrypt = require('bcrypt');
-        const hashedPassword = await bcrypt.hash('admin123', 10);
-
+        // 插入管理者帳號（使用簡單密碼）
         await sequelize.query(`
             INSERT INTO users ("memberNo", username, password, name, email, role, status, "isFirstLogin", preferences)
-            VALUES ('A001', 'admin', $1, '系統管理員', 'admin@example.com', 'admin', 'active', false, '[]')
-        `, { bind: [hashedPassword] });
+            VALUES ('A001', 'admin', 'admin123', '系統管理員', 'admin@example.com', 'admin', 'active', false, '[]')
+        `);
 
         // 插入測試公司
         await sequelize.query(`
@@ -153,17 +150,17 @@ async function resetDatabaseDirectly() {
         `);
 
         // 插入測試會員
-        const testPassword = await bcrypt.hash('test123', 10);
         await sequelize.query(`
             INSERT INTO users ("memberNo", username, password, name, email, role, status, "isFirstLogin", preferences)
-            VALUES ('M001', 'test', $1, '測試會員', 'test@example.com', 'normal', 'active', false, '[]')
-        `, { bind: [testPassword] });
+            VALUES ('M001', 'test', 'test123', '測試會員', 'test@example.com', 'normal', 'active', false, '[]')
+        `);
 
         console.log('✓ 基本資料已插入');
 
         console.log('\n=== 資料庫重置完成 ===');
         console.log('管理者帳號: admin / admin123');
         console.log('測試會員: test / test123');
+        console.log('注意：密碼未加密，僅供測試使用');
 
     } catch (error) {
         console.error('資料庫重置失敗:', error);
