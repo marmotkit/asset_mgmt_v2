@@ -1,7 +1,4 @@
 // 資產管理系統配置檔案
-// 此檔案用於存放系統配置參數
-
-// 系統基本配置
 window.APP_CONFIG = {
     // API 基礎 URL
     API_BASE_URL: "https://asset-mgmt-api.onrender.com/api",
@@ -22,8 +19,3 @@ window.APP_CONFIG = {
     DEBUG_MODE: false,
     LOG_LEVEL: 'info'
 };
-
-// 導出配置（如果使用模組系統）
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = window.APP_CONFIG;
-} 
