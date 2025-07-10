@@ -29,7 +29,8 @@ import {
     Alert,
     Tooltip,
     Tabs,
-    Tab
+    Tab,
+    TableSortLabel
 } from '@mui/material';
 import { Search as SearchIcon, Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import { PaymentStatus, PaymentStatusRecord, FeeSetting, FeePaymentFilter, PaymentMethod } from '../../../types/fee';
@@ -99,6 +100,41 @@ const FeePaymentStatus: React.FC = () => {
     const [currentTab, setCurrentTab] = useState<string>(() => {
         // 根據當前 URL 判斷是否在歷史記錄頁面
         return window.location.pathname.includes('歷史記錄') ? '歷史記錄' : '收款狀況';
+    });
+    const [orderBy, setOrderBy] = useState<string>('dueDate');
+    const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+
+    const handleSort = (column: string) => {
+        if (orderBy === column) {
+            setOrder(order === 'asc' ? 'desc' : 'asc');
+        } else {
+            setOrderBy(column);
+            setOrder('asc');
+        }
+    };
+
+    const sortedPayments = [...payments].sort((a, b) => {
+        let aValue = a[orderBy as keyof PaymentStatusRecord];
+        let bValue = b[orderBy as keyof PaymentStatusRecord];
+        // 金額排序
+        if (orderBy === 'amount') {
+            aValue = Number(aValue);
+            bValue = Number(bValue);
+        }
+        // 到期日排序
+        if (orderBy === 'dueDate') {
+            aValue = new Date(aValue as string).getTime();
+            bValue = new Date(bValue as string).getTime();
+        }
+        // 狀態排序
+        if (orderBy === 'status') {
+            aValue = aValue || '';
+            bValue = bValue || '';
+        }
+        if (aValue === undefined || bValue === undefined) return 0;
+        if (aValue < bValue) return order === 'asc' ? -1 : 1;
+        if (aValue > bValue) return order === 'asc' ? 1 : -1;
+        return 0;
     });
 
     // 載入資料
@@ -378,20 +414,56 @@ const FeePaymentStatus: React.FC = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>會員編號</TableCell>
-                            <TableCell>姓名</TableCell>
-                            <TableCell>會員類型</TableCell>
-                            <TableCell align="right">金額</TableCell>
-                            <TableCell>到期日</TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'memberId'}
+                                    direction={orderBy === 'memberId' ? order : 'asc'}
+                                    onClick={() => handleSort('memberId')}
+                                >會員編號</TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'memberName'}
+                                    direction={orderBy === 'memberName' ? order : 'asc'}
+                                    onClick={() => handleSort('memberName')}
+                                >姓名</TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'memberType'}
+                                    direction={orderBy === 'memberType' ? order : 'asc'}
+                                    onClick={() => handleSort('memberType')}
+                                >會員類型</TableSortLabel>
+                            </TableCell>
+                            <TableCell align="right">
+                                <TableSortLabel
+                                    active={orderBy === 'amount'}
+                                    direction={orderBy === 'amount' ? order : 'asc'}
+                                    onClick={() => handleSort('amount')}
+                                >金額</TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'dueDate'}
+                                    direction={orderBy === 'dueDate' ? order : 'asc'}
+                                    onClick={() => handleSort('dueDate')}
+                                >到期日</TableSortLabel>
+                            </TableCell>
                             <TableCell>繳費日期</TableCell>
                             <TableCell>收款方式</TableCell>
-                            <TableCell>狀態</TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'status'}
+                                    direction={orderBy === 'status' ? order : 'asc'}
+                                    onClick={() => handleSort('status')}
+                                >狀態</TableSortLabel>
+                            </TableCell>
                             <TableCell>備註</TableCell>
                             <TableCell>操作</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {filteredPayments.map((payment) => (
+                        {sortedPayments.map((payment) => (
                             <TableRow key={payment.id}>
                                 <TableCell>{payment.memberId}</TableCell>
                                 <TableCell>{payment.memberName}</TableCell>
