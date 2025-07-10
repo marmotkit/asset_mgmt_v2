@@ -4,9 +4,7 @@
 // 系統基本配置
 window.APP_CONFIG = {
     // API 基礎 URL
-    API_BASE_URL: process.env.NODE_ENV === 'production'
-        ? 'https://asset-mgmt-api.onrender.com/api'
-        : 'http://localhost:3001/api',
+    API_BASE_URL: "https://asset-mgmt-api.onrender.com/api",
 
     // 系統名稱
     APP_NAME: '資產管理系統',
@@ -15,7 +13,7 @@ window.APP_CONFIG = {
     VERSION: '2.0.0',
 
     // 是否為開發環境
-    IS_DEV: process.env.NODE_ENV !== 'production',
+    IS_DEV: false,
 
     // 是否在 Render 環境
     IS_RENDER: window.location.hostname.includes('onrender.com'),
