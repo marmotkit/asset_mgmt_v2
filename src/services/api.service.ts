@@ -159,10 +159,16 @@ export class ApiService {
 
     // User related methods
     static async getUsers(): Promise<User[]> {
-        if (ApiService.mockUsers.length === 0) {
-            ApiService.loadUsersFromStorage();
+        const token = localStorage.getItem('token');
+        const response = await fetch('https://asset-mgmt-api.onrender.com/api/users', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) {
+            throw new Error('載入會員資料失敗');
         }
-        return Promise.resolve([...(ApiService.mockUsers as any)]);
+        return await response.json();
     }
 
     static async createUser(user: User): Promise<User> {
