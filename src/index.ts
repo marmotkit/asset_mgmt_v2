@@ -35,7 +35,7 @@ sequelize.authenticate()
     .then(() => {
         console.log('資料庫連接成功');
         app.listen(PORT, () => {
-            console.log(`服務器運行在 http://localhost:${PORT}`);
+            console.log(`服務器運行在 port ${PORT}`);
         });
     })
     .catch((error) => {
