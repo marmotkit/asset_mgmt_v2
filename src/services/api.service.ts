@@ -1813,6 +1813,21 @@ export class ApiService {
             return {}; // 模擬數據
         }
     }
+
+    static async changeUserPassword(userId: string, newPassword: string): Promise<void> {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`https://asset-mgmt-api.onrender.com/api/users/${userId}/password`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ password: newPassword }),
+        });
+        if (!response.ok) {
+            throw new Error('重設密碼失敗');
+        }
+    }
 }
 
 export const ApiServiceInstance = ApiService.getInstance();

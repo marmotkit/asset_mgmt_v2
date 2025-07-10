@@ -17,6 +17,12 @@ import {
     Tooltip,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import LockResetIcon from '@mui/icons-material/LockReset';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
 import { User, UserRole, UserStatus } from '../../../types/user';
 import { ApiService } from '../../../services/api.service';
 import UserDetailDialog from './UserDetailDialog';
@@ -32,6 +38,10 @@ const UserManagement: React.FC = () => {
     const [selectedRole, setSelectedRole] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [companies, setCompanies] = useState<Company[]>([]);
+    const [resetPwdDialogOpen, setResetPwdDialogOpen] = useState(false);
+    const [resetPwdUser, setResetPwdUser] = useState<User | null>(null);
+    const [resetPwd, setResetPwd] = useState('');
+    const [resetPwdError, setResetPwdError] = useState('');
 
     const loadUsers = async () => {
         try {
@@ -99,6 +109,46 @@ const UserManagement: React.FC = () => {
         } catch (err) {
             console.error('保存會員資料失敗:', err);
             setError(err instanceof Error ? err.message : '保存會員資料失敗');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOpenResetPwd = (user: User) => {
+        setResetPwdUser(user);
+        setResetPwdDialogOpen(true);
+        setResetPwd('');
+        setResetPwdError('');
+    };
+    const handleCloseResetPwd = () => {
+        setResetPwdDialogOpen(false);
+        setResetPwdUser(null);
+        setResetPwd('');
+        setResetPwdError('');
+    };
+    const handleResetPwd = async () => {
+        // 驗證密碼
+        if (!resetPwd) {
+            setResetPwdError('請輸入新密碼');
+            return;
+        } else if (resetPwd.length < 6) {
+            setResetPwdError('密碼至少6碼');
+            return;
+        } else if (!/(?=.*[A-Za-z])(?=.*\d)/.test(resetPwd)) {
+            setResetPwdError('密碼需包含英文與數字');
+            return;
+        }
+        setResetPwdError('');
+        try {
+            setLoading(true);
+            setError(null);
+            await ApiService.changeUserPassword(resetPwdUser!.id, resetPwd);
+            setResetPwdDialogOpen(false);
+            setResetPwdUser(null);
+            setResetPwd('');
+            await loadUsers();
+        } catch (err) {
+            setError('重設密碼失敗');
         } finally {
             setLoading(false);
         }
@@ -267,6 +317,9 @@ const UserManagement: React.FC = () => {
                                             <EditIcon />
                                         </IconButton>
                                     </Tooltip>
+                                    <IconButton size="small" color="primary" onClick={() => handleOpenResetPwd(user)}>
+                                        <LockResetIcon />
+                                    </IconButton>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -287,6 +340,26 @@ const UserManagement: React.FC = () => {
                 onSave={handleSaveUser}
                 user={selectedUser}
             />
+
+            <Dialog open={resetPwdDialogOpen} onClose={handleCloseResetPwd}>
+                <DialogTitle>重設密碼</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        label="新密碼"
+                        type="password"
+                        value={resetPwd}
+                        onChange={e => setResetPwd(e.target.value)}
+                        error={!!resetPwdError}
+                        helperText={resetPwdError || '密碼至少6碼，需包含英文與數字'}
+                        fullWidth
+                        required
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseResetPwd}>取消</Button>
+                    <Button onClick={handleResetPwd} variant="contained">儲存</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };
