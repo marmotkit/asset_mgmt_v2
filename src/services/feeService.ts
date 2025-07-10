@@ -182,19 +182,19 @@ class FeeService {
                 },
                 {
                     id: '2',
-                    name: '商務會員年費',
-                    description: '商務會員年費',
+                    name: '永久會員5年費用',
+                    description: '永久會員5年費用',
                     amount: 300000,
-                    frequency: 'yearly',
+                    frequency: '5year',
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 },
                 {
                     id: '3',
-                    name: '永久會員5年費用',
-                    description: '永久會員5年費用',
+                    name: '商務會員5年費用',
+                    description: '商務會員5年費用',
                     amount: 3000000,
-                    frequency: 'yearly',
+                    frequency: '5year',
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 },
@@ -203,7 +203,7 @@ class FeeService {
                     name: '管理員免費',
                     description: '管理員免費',
                     amount: 0,
-                    frequency: 'yearly',
+                    frequency: 'forever',
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 }

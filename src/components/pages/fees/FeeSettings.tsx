@@ -37,17 +37,17 @@ const initialFeeSettings: FeeSettingType[] = [
     },
     {
         id: '2',
-        memberType: '商務會員',
+        memberType: '永久會員',
         amount: 300000,
-        period: '年',
-        description: '商務會員年費'
+        period: '5年',
+        description: '永久會員5年費用'
     },
     {
         id: '3',
-        memberType: '永久會員',
+        memberType: '商務會員',
         amount: 3000000,
         period: '5年',
-        description: '永久會員5年費用'
+        description: '商務會員5年費用'
     },
     {
         id: '4',
