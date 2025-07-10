@@ -40,6 +40,8 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
   user
 }) => {
   const [formData, setFormData] = useState<Partial<User>>(defaultFormData);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -52,10 +54,11 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
     if (user) {
       setFormData(user);
     } else {
-      // 清空表單資料
       setFormData({ ...defaultFormData });
     }
     setErrors({});
+    setPassword('');
+    setPasswordError('');
   };
 
   // 當對話框開啟或傳入的使用者變更時，重設表單資料
@@ -88,8 +91,24 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
     } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
       newErrors.email = '請輸入有效的電子郵件地址';
     }
-
+    // 新增會員時檢查密碼
+    if (!user) {
+      if (!password) {
+        setPasswordError('請輸入密碼');
+      } else if (password.length < 6) {
+        setPasswordError('密碼至少6碼');
+      } else if (!/(?=.*[A-Za-z])(?=.*\d)/.test(password)) {
+        setPasswordError('密碼需包含英文與數字');
+      } else {
+        setPasswordError('');
+      }
+      if (passwordError) {
+        newErrors.password = passwordError;
+      }
+    }
     setErrors(newErrors);
+    // 修正: 只要是編輯模式(user存在)就不檢查密碼錯誤
+    if (!user && passwordError) return false;
     return Object.keys(newErrors).length === 0;
   };
 
@@ -110,7 +129,6 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
     if (!validateForm()) {
       return;
     }
-
     const userData: Partial<User> = {
       ...user,
       username: formData.username!,
@@ -121,7 +139,10 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
       companyId: formData.companyId,
       updatedAt: new Date().toISOString()
     };
-
+    // 新增會員時帶入密碼
+    if (!user) {
+      (userData as any).password = password;
+    }
     await onSave(userData as Partial<User>);
     onClose();
   };
@@ -178,6 +199,21 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
               required
             />
           </Grid>
+
+          {!user && (
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="密碼"
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                error={!!passwordError}
+                helperText={passwordError || '密碼至少6碼，需包含英文與數字'}
+                required
+              />
+            </Grid>
+          )}
 
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
