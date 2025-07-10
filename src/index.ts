@@ -36,8 +36,8 @@ sequelize
     .then(() => {
         console.log('資料庫連接成功');
 
-        // 同步數據庫模型
-        return sequelize.sync({ alter: true });
+        // 同步數據庫模型 - 使用 force 重新建立所有表格
+        return sequelize.sync({ force: true });
     })
     .then(() => {
         console.log('資料庫模型同步完成');

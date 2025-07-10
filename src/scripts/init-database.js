@@ -1,9 +1,27 @@
 const bcrypt = require('bcrypt');
 const { User, Company, sequelize } = require('../models');
 
+// 確保模型已同步
+async function ensureModelsSynced() {
+    try {
+        await sequelize.authenticate();
+        console.log('資料庫連接成功');
+
+        // 同步模型
+        await sequelize.sync({ force: true });
+        console.log('模型同步完成');
+    } catch (error) {
+        console.error('模型同步失敗:', error);
+        throw error;
+    }
+}
+
 async function initializeDatabase() {
     try {
         console.log('開始初始化資料庫...');
+
+        // 確保模型已同步
+        await ensureModelsSynced();
 
         // 1. 建立預設管理者帳號
         console.log('1. 建立管理者帳號...');
