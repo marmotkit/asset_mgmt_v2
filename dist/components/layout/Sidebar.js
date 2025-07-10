@@ -65,7 +65,7 @@ const Sidebar = () => {
             path: '/services'
         },
         {
-            text: '交易支付',
+            text: '帳務管理',
             icon: (0, jsx_runtime_1.jsx)(icons_material_1.Payment, {}),
             path: '/payment'
         },

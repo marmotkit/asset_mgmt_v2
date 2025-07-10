@@ -63,6 +63,43 @@ const FeePaymentStatus = () => {
         // 根據當前 URL 判斷是否在歷史記錄頁面
         return window.location.pathname.includes('歷史記錄') ? '歷史記錄' : '收款狀況';
     });
+    const [orderBy, setOrderBy] = (0, react_1.useState)('dueDate');
+    const [order, setOrder] = (0, react_1.useState)('asc');
+    const handleSort = (column) => {
+        if (orderBy === column) {
+            setOrder(order === 'asc' ? 'desc' : 'asc');
+        }
+        else {
+            setOrderBy(column);
+            setOrder('asc');
+        }
+    };
+    const sortedPayments = [...payments].sort((a, b) => {
+        let aValue = a[orderBy];
+        let bValue = b[orderBy];
+        // 金額排序
+        if (orderBy === 'amount') {
+            aValue = Number(aValue);
+            bValue = Number(bValue);
+        }
+        // 到期日排序
+        if (orderBy === 'dueDate') {
+            aValue = new Date(aValue).getTime();
+            bValue = new Date(bValue).getTime();
+        }
+        // 狀態排序
+        if (orderBy === 'status') {
+            aValue = aValue || '';
+            bValue = bValue || '';
+        }
+        if (aValue === undefined || bValue === undefined)
+            return 0;
+        if (aValue < bValue)
+            return order === 'asc' ? -1 : 1;
+        if (aValue > bValue)
+            return order === 'asc' ? 1 : -1;
+        return 0;
+    });
     // 載入資料
     (0, react_1.useEffect)(() => {
         const loadData = async () => {
@@ -179,24 +216,59 @@ const FeePaymentStatus = () => {
         if (!member || !feeSetting)
             return;
         try {
-            const newPayment = {
-                memberId: member.id,
-                memberName: member.name,
-                memberType: member.type,
-                amount: feeSetting.amount,
-                dueDate: `${selectedYear}-12-31`,
-                status: '待收款',
-                note: `${selectedYear}年度會費`,
-                feeSettingId: feeSetting.id
-            };
-            const created = await feeService_1.feeService.createPayment(newPayment);
-            if (created) {
-                setPayments(prev => [...prev, created]);
-                setSnackbar({
-                    open: true,
-                    message: '成功建立年度應收項目',
-                    severity: 'success'
-                });
+            // 判斷是否為5年期
+            if (feeSetting.frequency === '5year') {
+                const perYearAmount = Math.round(feeSetting.amount / 5);
+                const paymentsToCreate = [];
+                for (let i = 0; i < 5; i++) {
+                    const year = Number(selectedYear) + i;
+                    paymentsToCreate.push({
+                        memberId: member.id,
+                        memberName: member.name,
+                        memberType: member.type,
+                        amount: perYearAmount,
+                        dueDate: `${year}-12-31`,
+                        status: '待收款',
+                        note: `${year}年度會費（5年期分攤）`,
+                        feeSettingId: feeSetting.id
+                    });
+                }
+                const createdList = [];
+                for (const payment of paymentsToCreate) {
+                    const created = await feeService_1.feeService.createPayment(payment);
+                    if (created)
+                        createdList.push(created);
+                }
+                if (createdList.length > 0) {
+                    setPayments(prev => [...prev, ...createdList]);
+                    setSnackbar({
+                        open: true,
+                        message: '成功建立5年期年度應收項目',
+                        severity: 'success'
+                    });
+                }
+            }
+            else {
+                // 原本邏輯：只產生單一年度
+                const newPayment = {
+                    memberId: member.id,
+                    memberName: member.name,
+                    memberType: member.type,
+                    amount: feeSetting.amount,
+                    dueDate: `${selectedYear}-12-31`,
+                    status: '待收款',
+                    note: `${selectedYear}年度會費`,
+                    feeSettingId: feeSetting.id
+                };
+                const created = await feeService_1.feeService.createPayment(newPayment);
+                if (created) {
+                    setPayments(prev => [...prev, created]);
+                    setSnackbar({
+                        open: true,
+                        message: '成功建立年度應收項目',
+                        severity: 'success'
+                    });
+                }
             }
         }
         catch (error) {
@@ -220,22 +292,15 @@ const FeePaymentStatus = () => {
         setSelectedMember(memberId);
         const member = availableMembers.find(m => m.id === memberId);
         if (member) {
-            console.log('選擇的會員:', member);
             // 根據會員類型自動選擇對應的會費標準
             const memberTypeMap = {
                 '一般會員': '一般會員年費',
-                '商務會員': '商務會員年費',
+                '商務會員': '商務會員5年費用',
                 '永久會員': '永久會員5年費用',
                 '管理員': '管理員免費'
             };
             const expectedFeeName = memberTypeMap[member.type];
-            console.log('預期的會費名稱:', expectedFeeName);
-            console.log('可用的會費設定:', feeSettings);
-            const matchingFeeSetting = feeSettings.find(setting => {
-                console.log('比對:', setting.name, expectedFeeName);
-                return setting.name === expectedFeeName;
-            });
-            console.log('匹配的會費設定:', matchingFeeSetting);
+            const matchingFeeSetting = feeSettings.find(setting => setting.name === expectedFeeName);
             if (matchingFeeSetting) {
                 setSelectedFeeSetting(matchingFeeSetting.id);
             }
@@ -268,7 +333,7 @@ const FeePaymentStatus = () => {
     };
     return ((0, jsx_runtime_1.jsxs)(material_1.Box, { children: [(0, jsx_runtime_1.jsxs)(material_1.Box, { sx: { mb: 3, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsx)(material_1.Button, { variant: "contained", startIcon: (0, jsx_runtime_1.jsx)(icons_material_1.Add, {}), onClick: () => setCreateAnnualOpen(true), sx: { mr: 2 }, children: "\u7522\u751F\u5E74\u5EA6\u61C9\u6536" }), (0, jsx_runtime_1.jsx)(material_1.TextField, { size: "small", placeholder: "\u641C\u5C0B\u6703\u54E1\u7DE8\u865F\u6216\u59D3\u540D", value: filter.search, onChange: (e) => handleFilterChange('search', e.target.value), InputProps: {
                             startAdornment: ((0, jsx_runtime_1.jsx)(material_1.InputAdornment, { position: "start", children: (0, jsx_runtime_1.jsx)(icons_material_1.Search, {}) })),
-                        }, sx: { width: 250 } })] }), (0, jsx_runtime_1.jsx)(material_1.TableContainer, { component: material_1.Paper, children: (0, jsx_runtime_1.jsxs)(material_1.Table, { children: [(0, jsx_runtime_1.jsx)(material_1.TableHead, { children: (0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6703\u54E1\u7DE8\u865F" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u59D3\u540D" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6703\u54E1\u985E\u578B" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { align: "right", children: "\u91D1\u984D" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u5230\u671F\u65E5" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u7E73\u8CBB\u65E5\u671F" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6536\u6B3E\u65B9\u5F0F" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u72C0\u614B" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u5099\u8A3B" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u64CD\u4F5C" })] }) }), (0, jsx_runtime_1.jsx)(material_1.TableBody, { children: filteredPayments.map((payment) => ((0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.memberId }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.memberName }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.memberType }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { align: "right", children: payment.amount.toLocaleString() }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.dueDate }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.paidDate || '-' }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getPaymentMethodLabel(payment.paymentMethod) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getStatusChip(payment.status) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.note || '-' }), (0, jsx_runtime_1.jsxs)(material_1.TableCell, { children: [(0, jsx_runtime_1.jsx)(material_1.Tooltip, { title: "\u7DE8\u8F2F", children: (0, jsx_runtime_1.jsx)(material_1.IconButton, { size: "small", onClick: () => handleEditClick(payment), children: (0, jsx_runtime_1.jsx)(icons_material_1.Edit, {}) }) }), (0, jsx_runtime_1.jsx)(material_1.Tooltip, { title: "\u522A\u9664", children: (0, jsx_runtime_1.jsx)(material_1.IconButton, { size: "small", onClick: () => handleDeleteClick(payment), color: "error", children: (0, jsx_runtime_1.jsx)(icons_material_1.Delete, {}) }) })] })] }, payment.id))) })] }) }), (0, jsx_runtime_1.jsxs)(material_1.Dialog, { open: !!editingPayment, onClose: () => setEditingPayment(null), maxWidth: "md", fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.DialogTitle, { children: "\u7DE8\u8F2F\u6536\u6B3E\u8CC7\u8A0A" }), (0, jsx_runtime_1.jsx)(material_1.DialogContent, { children: (0, jsx_runtime_1.jsxs)(material_1.Grid, { container: true, spacing: 2, sx: { pt: 2 }, children: [(0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u6703\u54E1\u7DE8\u865F", name: "memberId", value: (editingPayment === null || editingPayment === void 0 ? void 0 : editingPayment.memberId) || '', disabled: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u59D3\u540D", name: "memberName", value: (editingPayment === null || editingPayment === void 0 ? void 0 : editingPayment.memberName) || '', disabled: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u6703\u54E1\u985E\u578B", name: "memberType", value: (editingPayment === null || editingPayment === void 0 ? void 0 : editingPayment.memberType) || '', disabled: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u91D1\u984D", name: "amount", type: "number", value: (editingPayment === null || editingPayment === void 0 ? void 0 : editingPayment.amount) || '', onChange: (e) => handleFieldChange('amount', e.target.value) }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u5230\u671F\u65E5", name: "dueDate", type: "date", value: (editingPayment === null || editingPayment === void 0 ? void 0 : editingPayment.dueDate) || '', onChange: (e) => handleFieldChange('dueDate', e.target.value), InputLabelProps: { shrink: true } }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 6, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { children: "\u72C0\u614B" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { value: (editingPayment === null || editingPayment === void 0 ? void 0 : editingPayment.status) || '', onChange: (e) => {
+                        }, sx: { width: 250 } })] }), (0, jsx_runtime_1.jsx)(material_1.TableContainer, { component: material_1.Paper, children: (0, jsx_runtime_1.jsxs)(material_1.Table, { children: [(0, jsx_runtime_1.jsx)(material_1.TableHead, { children: (0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: (0, jsx_runtime_1.jsx)(material_1.TableSortLabel, { active: orderBy === 'memberId', direction: orderBy === 'memberId' ? order : 'asc', onClick: () => handleSort('memberId'), children: "\u6703\u54E1\u7DE8\u865F" }) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: (0, jsx_runtime_1.jsx)(material_1.TableSortLabel, { active: orderBy === 'memberName', direction: orderBy === 'memberName' ? order : 'asc', onClick: () => handleSort('memberName'), children: "\u59D3\u540D" }) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: (0, jsx_runtime_1.jsx)(material_1.TableSortLabel, { active: orderBy === 'memberType', direction: orderBy === 'memberType' ? order : 'asc', onClick: () => handleSort('memberType'), children: "\u6703\u54E1\u985E\u578B" }) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { align: "right", children: (0, jsx_runtime_1.jsx)(material_1.TableSortLabel, { active: orderBy === 'amount', direction: orderBy === 'amount' ? order : 'asc', onClick: () => handleSort('amount'), children: "\u91D1\u984D" }) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: (0, jsx_runtime_1.jsx)(material_1.TableSortLabel, { active: orderBy === 'dueDate', direction: orderBy === 'dueDate' ? order : 'asc', onClick: () => handleSort('dueDate'), children: "\u5230\u671F\u65E5" }) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u7E73\u8CBB\u65E5\u671F" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6536\u6B3E\u65B9\u5F0F" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: (0, jsx_runtime_1.jsx)(material_1.TableSortLabel, { active: orderBy === 'status', direction: orderBy === 'status' ? order : 'asc', onClick: () => handleSort('status'), children: "\u72C0\u614B" }) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u5099\u8A3B" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u64CD\u4F5C" })] }) }), (0, jsx_runtime_1.jsx)(material_1.TableBody, { children: sortedPayments.map((payment) => ((0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.memberId }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.memberName }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.memberType }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { align: "right", children: payment.amount.toLocaleString() }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.dueDate }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.paidDate || '-' }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getPaymentMethodLabel(payment.paymentMethod) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getStatusChip(payment.status) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.note || '-' }), (0, jsx_runtime_1.jsxs)(material_1.TableCell, { children: [(0, jsx_runtime_1.jsx)(material_1.Tooltip, { title: "\u7DE8\u8F2F", children: (0, jsx_runtime_1.jsx)(material_1.IconButton, { size: "small", onClick: () => handleEditClick(payment), children: (0, jsx_runtime_1.jsx)(icons_material_1.Edit, {}) }) }), (0, jsx_runtime_1.jsx)(material_1.Tooltip, { title: "\u522A\u9664", children: (0, jsx_runtime_1.jsx)(material_1.IconButton, { size: "small", onClick: () => handleDeleteClick(payment), color: "error", children: (0, jsx_runtime_1.jsx)(icons_material_1.Delete, {}) }) })] })] }, payment.id))) })] }) }), (0, jsx_runtime_1.jsxs)(material_1.Dialog, { open: !!editingPayment, onClose: () => setEditingPayment(null), maxWidth: "md", fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.DialogTitle, { children: "\u7DE8\u8F2F\u6536\u6B3E\u8CC7\u8A0A" }), (0, jsx_runtime_1.jsx)(material_1.DialogContent, { children: (0, jsx_runtime_1.jsxs)(material_1.Grid, { container: true, spacing: 2, sx: { pt: 2 }, children: [(0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u6703\u54E1\u7DE8\u865F", name: "memberId", value: (editingPayment === null || editingPayment === void 0 ? void 0 : editingPayment.memberId) || '', disabled: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u59D3\u540D", name: "memberName", value: (editingPayment === null || editingPayment === void 0 ? void 0 : editingPayment.memberName) || '', disabled: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u6703\u54E1\u985E\u578B", name: "memberType", value: (editingPayment === null || editingPayment === void 0 ? void 0 : editingPayment.memberType) || '', disabled: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u91D1\u984D", name: "amount", type: "number", value: (editingPayment === null || editingPayment === void 0 ? void 0 : editingPayment.amount) || '', onChange: (e) => handleFieldChange('amount', e.target.value) }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u5230\u671F\u65E5", name: "dueDate", type: "date", value: (editingPayment === null || editingPayment === void 0 ? void 0 : editingPayment.dueDate) || '', onChange: (e) => handleFieldChange('dueDate', e.target.value), InputLabelProps: { shrink: true } }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 6, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { children: "\u72C0\u614B" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { value: (editingPayment === null || editingPayment === void 0 ? void 0 : editingPayment.status) || '', onChange: (e) => {
                                                     if (editingPayment) {
                                                         const newStatus = e.target.value;
                                                         const newPayment = {
