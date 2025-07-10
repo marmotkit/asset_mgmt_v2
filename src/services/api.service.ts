@@ -18,7 +18,7 @@ import { AccountPayable, AccountReceivable, AccountRecord, MonthlyClosing } from
 
 // 設置一個axios實例
 const apiClient = axios.create({
-    baseURL: typeof window !== 'undefined' && window.ENV && window.ENV.API_URL ? window.ENV.API_URL : '/api',
+    baseURL: 'https://asset-mgmt-api.onrender.com/api',
     headers: {
         'Content-Type': 'application/json',
     },
