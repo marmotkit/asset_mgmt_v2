@@ -30,13 +30,10 @@ app.get('/', (req, res) => {
     res.send('資產管理系統 API 服務運行中');
 });
 
-// 數據庫連接與服務器啟動
-sequelize
-    .authenticate()
+// 僅驗證資料庫連線，不做自動同步
+sequelize.authenticate()
     .then(() => {
         console.log('資料庫連接成功');
-
-        // 啟動服務器
         app.listen(PORT, () => {
             console.log(`服務器運行在 http://localhost:${PORT}`);
         });
