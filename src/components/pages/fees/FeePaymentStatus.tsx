@@ -224,34 +224,57 @@ const FeePaymentStatus: React.FC = () => {
         if (!member || !feeSetting) return;
 
         try {
-            const newPayment = {
-                memberId: member.id,
-                memberName: member.name,
-                memberType: member.type,
-                amount: feeSetting.amount,
-                dueDate: `${selectedYear}-12-31`,
-                status: '待收款' as PaymentStatus,
-                note: `${selectedYear}年度會費`,
-                feeSettingId: feeSetting.id
-            } satisfies {
-                memberId: string;
-                memberName: string;
-                memberType: string;
-                amount: number;
-                dueDate: string;
-                status: PaymentStatus;
-                note: string;
-                feeSettingId: string;
-            };
-
-            const created = await feeService.createPayment(newPayment);
-            if (created) {
-                setPayments(prev => [...prev, created]);
-                setSnackbar({
-                    open: true,
-                    message: '成功建立年度應收項目',
-                    severity: 'success'
-                });
+            // 判斷是否為5年期
+            if (feeSetting.frequency === '5year') {
+                const perYearAmount = Math.round(feeSetting.amount / 5);
+                const paymentsToCreate = [];
+                for (let i = 0; i < 5; i++) {
+                    const year = Number(selectedYear) + i;
+                    paymentsToCreate.push({
+                        memberId: member.id,
+                        memberName: member.name,
+                        memberType: member.type,
+                        amount: perYearAmount,
+                        dueDate: `${year}-12-31`,
+                        status: '待收款' as PaymentStatus,
+                        note: `${year}年度會費（5年期分攤）`,
+                        feeSettingId: feeSetting.id
+                    });
+                }
+                const createdList = [];
+                for (const payment of paymentsToCreate) {
+                    const created = await feeService.createPayment(payment);
+                    if (created) createdList.push(created);
+                }
+                if (createdList.length > 0) {
+                    setPayments(prev => [...prev, ...createdList]);
+                    setSnackbar({
+                        open: true,
+                        message: '成功建立5年期年度應收項目',
+                        severity: 'success'
+                    });
+                }
+            } else {
+                // 原本邏輯：只產生單一年度
+                const newPayment = {
+                    memberId: member.id,
+                    memberName: member.name,
+                    memberType: member.type,
+                    amount: feeSetting.amount,
+                    dueDate: `${selectedYear}-12-31`,
+                    status: '待收款' as PaymentStatus,
+                    note: `${selectedYear}年度會費`,
+                    feeSettingId: feeSetting.id
+                };
+                const created = await feeService.createPayment(newPayment);
+                if (created) {
+                    setPayments(prev => [...prev, created]);
+                    setSnackbar({
+                        open: true,
+                        message: '成功建立年度應收項目',
+                        severity: 'success'
+                    });
+                }
             }
         } catch (error) {
             setSnackbar({
