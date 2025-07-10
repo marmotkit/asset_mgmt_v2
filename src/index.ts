@@ -42,6 +42,12 @@ sequelize
     .then(() => {
         console.log('資料庫模型同步完成');
 
+        // 初始化基本資料
+        return require('./scripts/init-database');
+    })
+    .then(() => {
+        console.log('資料庫初始化完成');
+
         // 啟動服務器
         app.listen(PORT, () => {
             console.log(`服務器運行在 http://localhost:${PORT}`);
