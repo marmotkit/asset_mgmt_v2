@@ -171,22 +171,20 @@ export class ApiService {
         return await response.json();
     }
 
-    static async createUser(user: User): Promise<User> {
-        console.log('Creating user:', user);
-        const newUser = {
-            ...(user as any),
-            id: user.id || crypto.randomUUID(),
-            memberNo: user.memberNo || await this.generateMemberNo(user.role),
-            createdAt: user.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            preferences: user.preferences || [],
-            isFirstLogin: user.isFirstLogin ?? true,
-            status: user.status || 'active'
-        };
-        console.log('New user to be created:', newUser);
-        ApiService.mockUsers.push(newUser);
-        ApiService.saveUsersToStorage();
-        return Promise.resolve(newUser);
+    static async createUser(user: Partial<User>): Promise<User> {
+        const token = localStorage.getItem('token');
+        const response = await fetch('https://asset-mgmt-api.onrender.com/api/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(user),
+        });
+        if (!response.ok) {
+            throw new Error('新增會員失敗');
+        }
+        return await response.json();
     }
 
     static async updateUser(user: User): Promise<User> {
