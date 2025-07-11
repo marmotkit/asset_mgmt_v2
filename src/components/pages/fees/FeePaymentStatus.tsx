@@ -337,7 +337,6 @@ const FeePaymentStatus: React.FC = () => {
         setSelectedMember(memberId);
         const member = availableMembers.find(m => m.id === memberId);
         if (member) {
-            // 根據會員類型自動選擇對應的會費標準
             const memberTypeMap = {
                 '一般會員': '一般會員年費',
                 '商務會員': '商務會員5年費用',
@@ -345,7 +344,11 @@ const FeePaymentStatus: React.FC = () => {
                 '管理員': '管理員免費'
             };
             const expectedFeeName = memberTypeMap[member.type as keyof typeof memberTypeMap];
+            console.log('member:', member);
+            console.log('feeSettings:', feeSettings);
+            console.log('expectedFeeName:', expectedFeeName);
             const matchingFeeSetting = feeSettings.find(setting => setting.name === expectedFeeName);
+            console.log('matchingFeeSetting:', matchingFeeSetting);
             if (matchingFeeSetting) {
                 setSelectedFeeSetting(matchingFeeSetting.id);
             }
