@@ -1,6 +1,7 @@
 
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const webpack = require('webpack');
 
 module.exports = {
@@ -48,6 +49,17 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './public/index.html',
             favicon: './public/favicon.ico'
+        }),
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: 'public',
+                    to: '.',
+                    globOptions: {
+                        ignore: ['**/index.html', '**/favicon.ico']
+                    }
+                }
+            ]
         }),
         new webpack.DefinePlugin({
             'process.env.NODE_ENV': JSON.stringify('production')

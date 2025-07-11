@@ -61,28 +61,31 @@ class ApiService {
     }
     // User related methods
     static async getUsers() {
-        if (ApiService.mockUsers.length === 0) {
-            ApiService.loadUsersFromStorage();
+        const token = localStorage.getItem('token');
+        const response = await fetch('https://asset-mgmt-api.onrender.com/api/users', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) {
+            throw new Error('載入會員資料失敗');
         }
-        return Promise.resolve([...ApiService.mockUsers]);
+        return await response.json();
     }
     static async createUser(user) {
-        var _a;
-        console.log('Creating user:', user);
-        const newUser = {
-            ...user,
-            id: user.id || crypto.randomUUID(),
-            memberNo: user.memberNo || await this.generateMemberNo(user.role),
-            createdAt: user.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            preferences: user.preferences || [],
-            isFirstLogin: (_a = user.isFirstLogin) !== null && _a !== void 0 ? _a : true,
-            status: user.status || 'active'
-        };
-        console.log('New user to be created:', newUser);
-        ApiService.mockUsers.push(newUser);
-        ApiService.saveUsersToStorage();
-        return Promise.resolve(newUser);
+        const token = localStorage.getItem('token');
+        const response = await fetch('https://asset-mgmt-api.onrender.com/api/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(user),
+        });
+        if (!response.ok) {
+            throw new Error('新增會員失敗');
+        }
+        return await response.json();
     }
     static async updateUser(user) {
         console.log('Updating user:', user);
@@ -277,10 +280,16 @@ class ApiService {
         localStorage.setItem('companies', JSON.stringify(ApiService.mockCompanies));
     }
     static async getCompanies() {
-        if (ApiService.mockCompanies.length === 0) {
-            ApiService.loadCompaniesFromStorage();
+        const token = localStorage.getItem('token');
+        const response = await fetch('https://asset-mgmt-api.onrender.com/api/companies', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) {
+            throw new Error('載入公司資料失敗');
         }
-        return Promise.resolve([...ApiService.mockCompanies]);
+        return await response.json();
     }
     static async getCompany(id) {
         if (ApiService.mockCompanies.length === 0) {
@@ -1502,6 +1511,20 @@ class ApiService {
         catch (error) {
             console.error('獲取現金流量表失敗:', error);
             return {}; // 模擬數據
+        }
+    }
+    static async changeUserPassword(userId, newPassword) {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`https://asset-mgmt-api.onrender.com/api/users/${userId}/password`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ password: newPassword }),
+        });
+        if (!response.ok) {
+            throw new Error('重設密碼失敗');
         }
     }
 }

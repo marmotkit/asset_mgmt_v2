@@ -14,6 +14,8 @@ const defaultFormData = {
 };
 const UserDetailDialog = ({ open, onClose, onSave, user }) => {
     const [formData, setFormData] = (0, react_1.useState)(defaultFormData);
+    const [password, setPassword] = (0, react_1.useState)('');
+    const [passwordError, setPasswordError] = (0, react_1.useState)('');
     const [errors, setErrors] = (0, react_1.useState)({});
     const [companies, setCompanies] = (0, react_1.useState)([]);
     (0, react_1.useEffect)(() => {
@@ -24,10 +26,11 @@ const UserDetailDialog = ({ open, onClose, onSave, user }) => {
             setFormData(user);
         }
         else {
-            // 清空表單資料
             setFormData({ ...defaultFormData });
         }
         setErrors({});
+        setPassword('');
+        setPasswordError('');
     };
     // 當對話框開啟或傳入的使用者變更時，重設表單資料
     (0, react_1.useEffect)(() => {
@@ -58,7 +61,28 @@ const UserDetailDialog = ({ open, onClose, onSave, user }) => {
         else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
             newErrors.email = '請輸入有效的電子郵件地址';
         }
+        // 新增會員時檢查密碼
+        if (!user) {
+            if (!password) {
+                setPasswordError('請輸入密碼');
+            }
+            else if (password.length < 6) {
+                setPasswordError('密碼至少6碼');
+            }
+            else if (!/(?=.*[A-Za-z])(?=.*\d)/.test(password)) {
+                setPasswordError('密碼需包含英文與數字');
+            }
+            else {
+                setPasswordError('');
+            }
+            if (passwordError) {
+                newErrors.password = passwordError;
+            }
+        }
         setErrors(newErrors);
+        // 修正: 只要是編輯模式(user存在)就不檢查密碼錯誤
+        if (!user && passwordError)
+            return false;
         return Object.keys(newErrors).length === 0;
     };
     const handleFieldChange = (field, value) => {
@@ -87,6 +111,10 @@ const UserDetailDialog = ({ open, onClose, onSave, user }) => {
             companyId: formData.companyId,
             updatedAt: new Date().toISOString()
         };
+        // 新增會員時帶入密碼
+        if (!user) {
+            userData.password = password;
+        }
         await onSave(userData);
         onClose();
     };
@@ -96,6 +124,6 @@ const UserDetailDialog = ({ open, onClose, onSave, user }) => {
         setFormData({ ...defaultFormData });
         onClose();
     };
-    return ((0, jsx_runtime_1.jsxs)(material_1.Dialog, { open: open, onClose: handleClose, maxWidth: "sm", fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.DialogTitle, { children: (0, jsx_runtime_1.jsx)(material_1.Typography, { children: user ? '編輯會員' : '新增會員' }) }), (0, jsx_runtime_1.jsx)(material_1.DialogContent, { children: (0, jsx_runtime_1.jsxs)(material_1.Grid, { container: true, spacing: 2, sx: { mt: 1 }, children: [(0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u6703\u54E1\u5E33\u865F", value: formData.username, onChange: (e) => handleFieldChange('username', e.target.value), error: !!errors.username, helperText: errors.username, required: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u59D3\u540D", value: formData.name, onChange: (e) => handleFieldChange('name', e.target.value), error: !!errors.name, helperText: errors.name, required: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u96FB\u5B50\u90F5\u4EF6", type: "email", value: formData.email, onChange: (e) => handleFieldChange('email', e.target.value), error: !!errors.email, helperText: errors.email, required: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { children: "\u89D2\u8272" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { value: formData.role, onChange: (e) => handleFieldChange('role', e.target.value), label: "\u89D2\u8272", children: [(0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "admin", children: "\u7BA1\u7406\u54E1" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "normal", children: "\u4E00\u822C\u6703\u54E1" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "business", children: "\u5546\u52D9\u6703\u54E1" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "lifetime", children: "\u6C38\u4E45\u6703\u54E1" })] })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { children: "\u72C0\u614B" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { value: formData.status, onChange: (e) => handleFieldChange('status', e.target.value), label: "\u72C0\u614B", children: [(0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "active", children: "\u555F\u7528" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "inactive", children: "\u505C\u7528" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "suspended", children: "\u66AB\u505C" })] })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { children: "\u6240\u5C6C\u516C\u53F8" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { value: formData.companyId || '', onChange: (e) => handleFieldChange('companyId', e.target.value), label: "\u6240\u5C6C\u516C\u53F8", children: [(0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "", children: "\u7121" }), companies.map((company) => ((0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: company.id, children: company.name }, company.id)))] })] }) })] }) }), (0, jsx_runtime_1.jsxs)(material_1.DialogActions, { children: [(0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleClose, children: "\u53D6\u6D88" }), (0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleSave, variant: "contained", color: "primary", children: "\u4FDD\u5B58" })] })] }));
+    return ((0, jsx_runtime_1.jsxs)(material_1.Dialog, { open: open, onClose: handleClose, maxWidth: "sm", fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.DialogTitle, { children: (0, jsx_runtime_1.jsx)(material_1.Typography, { children: user ? '編輯會員' : '新增會員' }) }), (0, jsx_runtime_1.jsx)(material_1.DialogContent, { children: (0, jsx_runtime_1.jsxs)(material_1.Grid, { container: true, spacing: 2, sx: { mt: 1 }, children: [(0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u6703\u54E1\u5E33\u865F", value: formData.username, onChange: (e) => handleFieldChange('username', e.target.value), error: !!errors.username, helperText: errors.username, required: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u59D3\u540D", value: formData.name, onChange: (e) => handleFieldChange('name', e.target.value), error: !!errors.name, helperText: errors.name, required: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u96FB\u5B50\u90F5\u4EF6", type: "email", value: formData.email, onChange: (e) => handleFieldChange('email', e.target.value), error: !!errors.email, helperText: errors.email, required: true }) }), !user && ((0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u5BC6\u78BC", type: "password", value: password, onChange: e => setPassword(e.target.value), error: !!passwordError, helperText: passwordError || '密碼至少6碼，需包含英文與數字', required: true }) })), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { children: "\u89D2\u8272" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { value: formData.role, onChange: (e) => handleFieldChange('role', e.target.value), label: "\u89D2\u8272", children: [(0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "admin", children: "\u7BA1\u7406\u54E1" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "normal", children: "\u4E00\u822C\u6703\u54E1" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "business", children: "\u5546\u52D9\u6703\u54E1" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "lifetime", children: "\u6C38\u4E45\u6703\u54E1" })] })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { children: "\u72C0\u614B" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { value: formData.status, onChange: (e) => handleFieldChange('status', e.target.value), label: "\u72C0\u614B", children: [(0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "active", children: "\u555F\u7528" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "inactive", children: "\u505C\u7528" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "suspended", children: "\u66AB\u505C" })] })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { children: "\u6240\u5C6C\u516C\u53F8" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { value: formData.companyId || '', onChange: (e) => handleFieldChange('companyId', e.target.value), label: "\u6240\u5C6C\u516C\u53F8", children: [(0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "", children: "\u7121" }), companies.map((company) => ((0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: company.id, children: company.name }, company.id)))] })] }) })] }) }), (0, jsx_runtime_1.jsxs)(material_1.DialogActions, { children: [(0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleClose, children: "\u53D6\u6D88" }), (0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleSave, variant: "contained", color: "primary", children: "\u4FDD\u5B58" })] })] }));
 };
 exports.default = UserDetailDialog;
