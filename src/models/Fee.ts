@@ -42,4 +42,6 @@ Fee.init({
     underscored: true,
 });
 
+console.log('Fee model initialized:', typeof Fee.create, typeof Fee.findAll);
+
 export default Fee; 

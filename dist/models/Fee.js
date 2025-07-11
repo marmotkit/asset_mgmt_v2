@@ -45,4 +45,5 @@ Fee.init({
     timestamps: true,
     underscored: true,
 });
+console.log('Fee model initialized:', typeof Fee.create, typeof Fee.findAll);
 exports.default = Fee;
