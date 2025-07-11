@@ -1,7 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const models_1 = require("../models");
+const Fee_1 = __importDefault(require("../models/Fee"));
 const auth_middleware_1 = require("../middlewares/auth.middleware");
 const router = (0, express_1.Router)();
 // 獲取所有費用記錄
@@ -52,7 +55,7 @@ router.get('/', auth_middleware_1.authMiddleware, async (req, res) => {
             ];
             return res.json(feeSettings);
         }
-        const fees = await models_1.Fee.findAll({
+        const fees = await Fee_1.default.findAll({
             where: whereClause,
             order: [['createdAt', 'DESC']]
         });
@@ -66,7 +69,7 @@ router.get('/', auth_middleware_1.authMiddleware, async (req, res) => {
 // 獲取單一費用記錄
 router.get('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
-        const fee = await models_1.Fee.findByPk(req.params.id);
+        const fee = await Fee_1.default.findByPk(req.params.id);
         if (!fee) {
             return res.status(404).json({ error: '費用記錄不存在' });
         }
@@ -81,7 +84,7 @@ router.get('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
 router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
         const feeData = req.body;
-        const fee = await models_1.Fee.create(feeData);
+        const fee = await Fee_1.default.create(feeData);
         res.status(201).json(fee);
     }
     catch (error) {
@@ -92,7 +95,7 @@ router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
 // 更新費用記錄
 router.put('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
-        const fee = await models_1.Fee.findByPk(req.params.id);
+        const fee = await Fee_1.default.findByPk(req.params.id);
         if (!fee) {
             return res.status(404).json({ error: '費用記錄不存在' });
         }
@@ -107,7 +110,7 @@ router.put('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
 // 刪除費用記錄
 router.delete('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
-        const fee = await models_1.Fee.findByPk(req.params.id);
+        const fee = await Fee_1.default.findByPk(req.params.id);
         if (!fee) {
             return res.status(404).json({ error: '費用記錄不存在' });
         }
@@ -123,7 +126,7 @@ router.delete('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
 router.post('/batch', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
         const feesData = req.body;
-        const fees = await models_1.Fee.bulkCreate(feesData);
+        const fees = await Fee_1.default.bulkCreate(feesData);
         res.status(201).json(fees);
     }
     catch (error) {
