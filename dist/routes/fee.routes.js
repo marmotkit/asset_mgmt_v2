@@ -1,24 +1,22 @@
-import { Router } from 'express';
-import { Fee } from '../models';
-import { authMiddleware } from '../middlewares/auth.middleware';
-
-const router = Router();
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const models_1 = require("../models");
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const router = (0, express_1.Router)();
 // 獲取所有費用記錄
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
         const { isHistoryPage, type } = req.query;
-
-        let whereClause: any = {};
-
+        let whereClause = {};
         // 如果是歷史記錄頁面，顯示所有記錄
         if (isHistoryPage === 'true') {
             // 顯示所有記錄
-        } else {
+        }
+        else {
             // 只顯示未付款的記錄
             whereClause.status = 'pending';
         }
-
         // 如果是設定類型，返回費用設定
         if (type === 'setting') {
             // 返回費用設定資料
@@ -54,87 +52,83 @@ router.get('/', authMiddleware, async (req, res) => {
             ];
             return res.json(feeSettings);
         }
-
-        const fees = await Fee.findAll({
+        const fees = await models_1.Fee.findAll({
             where: whereClause,
             order: [['createdAt', 'DESC']]
         });
-
         res.json(fees);
-    } catch (error) {
+    }
+    catch (error) {
         console.error('獲取費用記錄失敗:', error);
         res.status(500).json({ error: '獲取費用記錄失敗' });
     }
 });
-
 // 獲取單一費用記錄
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
-        const fee = await Fee.findByPk(req.params.id);
+        const fee = await models_1.Fee.findByPk(req.params.id);
         if (!fee) {
             return res.status(404).json({ error: '費用記錄不存在' });
         }
         res.json(fee);
-    } catch (error) {
+    }
+    catch (error) {
         console.error('獲取費用記錄失敗:', error);
         res.status(500).json({ error: '獲取費用記錄失敗' });
     }
 });
-
 // 創建費用記錄
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
         const feeData = req.body;
-        const fee = await Fee.create(feeData);
+        const fee = await models_1.Fee.create(feeData);
         res.status(201).json(fee);
-    } catch (error) {
+    }
+    catch (error) {
         console.error('創建費用記錄失敗:', error);
         res.status(500).json({ error: '創建費用記錄失敗' });
     }
 });
-
 // 更新費用記錄
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
-        const fee = await Fee.findByPk(req.params.id);
+        const fee = await models_1.Fee.findByPk(req.params.id);
         if (!fee) {
             return res.status(404).json({ error: '費用記錄不存在' });
         }
-
         await fee.update(req.body);
         res.json(fee);
-    } catch (error) {
+    }
+    catch (error) {
         console.error('更新費用記錄失敗:', error);
         res.status(500).json({ error: '更新費用記錄失敗' });
     }
 });
-
 // 刪除費用記錄
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
-        const fee = await Fee.findByPk(req.params.id);
+        const fee = await models_1.Fee.findByPk(req.params.id);
         if (!fee) {
             return res.status(404).json({ error: '費用記錄不存在' });
         }
-
         await fee.destroy();
         res.json({ message: '費用記錄已刪除' });
-    } catch (error) {
+    }
+    catch (error) {
         console.error('刪除費用記錄失敗:', error);
         res.status(500).json({ error: '刪除費用記錄失敗' });
     }
 });
-
 // 批量創建費用記錄
-router.post('/batch', authMiddleware, async (req, res) => {
+router.post('/batch', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
         const feesData = req.body;
-        const fees = await Fee.bulkCreate(feesData);
+        const fees = await models_1.Fee.bulkCreate(feesData);
         res.status(201).json(fees);
-    } catch (error) {
+    }
+    catch (error) {
         console.error('批量創建費用記錄失敗:', error);
         res.status(500).json({ error: '批量創建費用記錄失敗' });
     }
 });
-
-export default router; 
+exports.default = router;

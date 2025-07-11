@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InvoiceType = exports.Invoice = exports.ProfitSharingType = exports.MemberProfit = exports.ProfitSharingStandard = exports.PaymentMethod = exports.PaymentStatus = exports.RentalPayment = exports.RentalStandard = exports.InvestmentType = exports.InvestmentStatus = exports.Investment = exports.IndustryType = exports.Company = exports.UserStatus = exports.UserRole = exports.User = exports.sequelize = void 0;
+exports.Fee = exports.InvoiceType = exports.Invoice = exports.ProfitSharingType = exports.MemberProfit = exports.ProfitSharingStandard = exports.PaymentMethod = exports.PaymentStatus = exports.RentalPayment = exports.RentalStandard = exports.InvestmentType = exports.InvestmentStatus = exports.Investment = exports.IndustryType = exports.Company = exports.UserStatus = exports.UserRole = exports.User = exports.sequelize = void 0;
 const User_1 = __importStar(require("./User"));
 exports.User = User_1.default;
 Object.defineProperty(exports, "UserRole", { enumerable: true, get: function () { return User_1.UserRole; } });
@@ -60,6 +60,8 @@ Object.defineProperty(exports, "ProfitSharingType", { enumerable: true, get: fun
 const Invoice_1 = __importStar(require("./Invoice"));
 exports.Invoice = Invoice_1.default;
 Object.defineProperty(exports, "InvoiceType", { enumerable: true, get: function () { return Invoice_1.InvoiceType; } });
+const Fee_1 = __importDefault(require("./Fee"));
+exports.Fee = Fee_1.default;
 const connection_1 = __importDefault(require("../db/connection"));
 exports.sequelize = connection_1.default;
 // 設置模型關聯

@@ -4,7 +4,7 @@ const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = require("react");
 const material_1 = require("@mui/material");
 const icons_material_1 = require("@mui/icons-material");
-const feeService_1 = require("../../../services/feeService");
+const feeApi_1 = require("../../../services/feeApi");
 const api_service_1 = require("../../../services/api.service");
 const getStatusChip = (status) => {
     const statusConfig = {
@@ -106,8 +106,8 @@ const FeePaymentStatus = () => {
             setLoading(true);
             try {
                 const [paymentData, settingsData] = await Promise.all([
-                    feeService_1.feeService.getPayments({ isHistoryPage: window.location.pathname.includes('歷史記錄') }),
-                    feeService_1.feeService.getFeeSettings()
+                    feeApi_1.FeeApi.getFees({ isHistoryPage: window.location.pathname.includes('歷史記錄') }),
+                    feeApi_1.FeeApi.getFees({ type: 'setting' })
                 ]);
                 setPayments(paymentData || []);
                 setFeeSettings(settingsData || []);
@@ -144,7 +144,7 @@ const FeePaymentStatus = () => {
         if (deletePayment) {
             try {
                 // 刪除付款記錄
-                const success = await feeService_1.feeService.deletePayment(deletePayment.id);
+                const success = await feeApi_1.FeeApi.deleteFee(deletePayment.id);
                 if (success) {
                     // 從本地狀態中移除記錄
                     setPayments(prev => prev.filter(p => p.id !== deletePayment.id));
@@ -173,7 +173,7 @@ const FeePaymentStatus = () => {
     const handleEditSave = async () => {
         if (editingPayment) {
             try {
-                const updated = await feeService_1.feeService.updatePayment(editingPayment.id, editingPayment);
+                const updated = await feeApi_1.FeeApi.updateFee(editingPayment.id, editingPayment);
                 if (updated) {
                     setPayments(prev => prev.map(p => p.id === updated.id ? updated : p));
                 }
@@ -235,7 +235,7 @@ const FeePaymentStatus = () => {
                 }
                 const createdList = [];
                 for (const payment of paymentsToCreate) {
-                    const created = await feeService_1.feeService.createPayment(payment);
+                    const created = await feeApi_1.FeeApi.createFees([payment]);
                     if (created)
                         createdList.push(created);
                 }
@@ -260,7 +260,7 @@ const FeePaymentStatus = () => {
                     note: `${selectedYear}年度會費`,
                     feeSettingId: feeSetting.id
                 };
-                const created = await feeService_1.feeService.createPayment(newPayment);
+                const created = await feeApi_1.FeeApi.createFees([newPayment]);
                 if (created) {
                     setPayments(prev => [...prev, created]);
                     setSnackbar({
