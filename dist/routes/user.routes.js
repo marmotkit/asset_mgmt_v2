@@ -44,6 +44,7 @@ const router = (0, express_1.Router)();
 // 創建新用戶
 router.post('/', async (req, res) => {
     try {
+        console.log('收到創建用戶請求:', req.body);
         const { username, password, name, email, role, companyId } = req.body;
         // 基本驗證
         if (!username || !password || !name || !email) {
@@ -63,10 +64,23 @@ router.post('/', async (req, res) => {
         const currentCount = await User_1.default.count();
         // 生成會員編號
         const memberNo = await (0, memberNoGenerator_1.generateMemberNo)((role || 'normal'), currentCount);
+        console.log('生成的會員編號:', memberNo);
         // 密碼加密
         const salt = await bcrypt_1.default.genSalt(10);
         const hashedPassword = await bcrypt_1.default.hash(password, salt);
+        console.log('密碼加密完成');
         // 創建用戶
+        console.log('準備創建用戶，數據:', {
+            username,
+            name,
+            email,
+            role: role || 'normal',
+            memberNo,
+            companyId,
+            isFirstLogin: true,
+            preferences: '[]',
+            status: User_1.UserStatus.ACTIVE
+        });
         const newUser = await User_1.default.create({
             username,
             password: hashedPassword,
@@ -82,6 +96,7 @@ router.post('/', async (req, res) => {
         // 移除密碼後返回用戶信息
         const userWithoutPassword = newUser.toJSON();
         delete userWithoutPassword.password;
+        console.log('用戶創建成功:', userWithoutPassword);
         res.status(201).json({
             message: '用戶創建成功',
             user: userWithoutPassword
@@ -89,6 +104,7 @@ router.post('/', async (req, res) => {
     }
     catch (error) {
         console.error('創建用戶錯誤:', error);
+        console.error('錯誤詳情:', error instanceof Error ? error.message : '未知錯誤');
         res.status(500).json({ message: '伺服器錯誤，請稍後再試' });
     }
 });
