@@ -62,7 +62,7 @@ router.post('/', async (req, res) => {
         // 獲取當前用戶數量以生成會員編號
         const currentCount = await User_1.default.count();
         // 生成會員編號
-        const memberNo = await (0, memberNoGenerator_1.generateMemberNo)(role || 'normal', currentCount);
+        const memberNo = await (0, memberNoGenerator_1.generateMemberNo)((role || 'normal'), currentCount);
         // 密碼加密
         const salt = await bcrypt_1.default.genSalt(10);
         const hashedPassword = await bcrypt_1.default.hash(password, salt);

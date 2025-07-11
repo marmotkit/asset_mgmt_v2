@@ -2,6 +2,7 @@ import { Router } from 'express';
 import User, { UserStatus } from '../models/User';
 import bcrypt from 'bcrypt';
 import { generateMemberNo } from '../utils/memberNoGenerator';
+import { UserRole } from '../types/user';
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.post('/', async (req, res) => {
         const currentCount = await User.count();
 
         // 生成會員編號
-        const memberNo = await generateMemberNo(role || 'normal', currentCount);
+        const memberNo = await generateMemberNo((role || 'normal') as UserRole, currentCount);
 
         // 密碼加密
         const salt = await bcrypt.genSalt(10);
