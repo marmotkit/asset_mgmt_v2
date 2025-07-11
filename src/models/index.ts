@@ -4,6 +4,7 @@ import Investment, { InvestmentStatus, InvestmentType } from './Investment';
 import { RentalStandard, RentalPayment, PaymentStatus, PaymentMethod } from './Rental';
 import { ProfitSharingStandard, MemberProfit, ProfitSharingType } from './ProfitSharing';
 import Invoice, { InvoiceType } from './Invoice';
+import Fee from './Fee';
 import sequelize from '../db/connection';
 
 // 設置模型關聯
@@ -32,5 +33,6 @@ export {
     MemberProfit,
     ProfitSharingType,
     Invoice,
-    InvoiceType
+    InvoiceType,
+    Fee
 }; 
