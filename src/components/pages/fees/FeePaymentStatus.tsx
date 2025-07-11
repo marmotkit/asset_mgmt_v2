@@ -35,7 +35,7 @@ import {
 import { Search as SearchIcon, Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import { PaymentStatus, PaymentStatusRecord, FeeSetting, FeePaymentFilter, PaymentMethod } from '../../../types/fee';
 import { User } from '../../../types/user';
-import { feeService } from '../../../services/feeService';
+import { FeeApi } from '../../../services/feeApi';
 import { ApiService } from '../../../services/api.service';
 
 const getStatusChip = (status: PaymentStatus) => {
@@ -143,8 +143,8 @@ const FeePaymentStatus: React.FC = () => {
             setLoading(true);
             try {
                 const [paymentData, settingsData] = await Promise.all([
-                    feeService.getPayments({ isHistoryPage: window.location.pathname.includes('歷史記錄') }),
-                    feeService.getFeeSettings()
+                    FeeApi.getFees({ isHistoryPage: window.location.pathname.includes('歷史記錄') }),
+                    FeeApi.getFees({ type: 'setting' })
                 ]);
 
                 setPayments(paymentData || []);
@@ -183,7 +183,7 @@ const FeePaymentStatus: React.FC = () => {
         if (deletePayment) {
             try {
                 // 刪除付款記錄
-                const success = await feeService.deletePayment(deletePayment.id);
+                const success = await FeeApi.deleteFee(deletePayment.id);
                 if (success) {
                     // 從本地狀態中移除記錄
                     setPayments(prev => prev.filter(p => p.id !== deletePayment.id));
@@ -213,7 +213,7 @@ const FeePaymentStatus: React.FC = () => {
     const handleEditSave = async () => {
         if (editingPayment) {
             try {
-                const updated = await feeService.updatePayment(editingPayment.id, editingPayment);
+                const updated = await FeeApi.updateFee(editingPayment.id, editingPayment);
                 if (updated) {
                     setPayments(prev => prev.map(p => p.id === updated.id ? updated : p));
                 }
@@ -279,7 +279,7 @@ const FeePaymentStatus: React.FC = () => {
                 }
                 const createdList = [];
                 for (const payment of paymentsToCreate) {
-                    const created = await feeService.createPayment(payment);
+                    const created = await FeeApi.createFees([payment]);
                     if (created) createdList.push(created);
                 }
                 if (createdList.length > 0) {
@@ -302,7 +302,7 @@ const FeePaymentStatus: React.FC = () => {
                     note: `${selectedYear}年度會費`,
                     feeSettingId: feeSetting.id
                 };
-                const created = await feeService.createPayment(newPayment);
+                const created = await FeeApi.createFees([newPayment]);
                 if (created) {
                     setPayments(prev => [...prev, created]);
                     setSnackbar({
