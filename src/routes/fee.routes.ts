@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Fee } from '../models';
+import Fee from '../models/Fee';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
