@@ -41,6 +41,9 @@ router.post('/', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
         console.log('密碼加密完成');
 
+        // 處理 companyId，如果是空字符串則設為 null
+        const processedCompanyId = companyId && companyId.trim() !== '' ? companyId : null;
+
         // 創建用戶
         console.log('準備創建用戶，數據:', {
             username,
@@ -48,7 +51,7 @@ router.post('/', async (req, res) => {
             email,
             role: role || 'normal',
             memberNo,
-            companyId,
+            companyId: processedCompanyId,
             isFirstLogin: true,
             preferences: '[]',
             status: UserStatus.ACTIVE
@@ -61,7 +64,7 @@ router.post('/', async (req, res) => {
             email,
             role: role || 'normal',
             memberNo,
-            companyId,
+            companyId: processedCompanyId,
             isFirstLogin: true,
             preferences: '[]',
             status: UserStatus.ACTIVE
