@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import Fee from '../models/Fee';
+import Fee from '../models/Fee'; // <--- 這裡只能這樣寫
 import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
