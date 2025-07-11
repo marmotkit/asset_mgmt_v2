@@ -6,7 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const models_1 = require("./models");
+const connection_1 = __importDefault(require("./db/connection"));
+// 初始化模型
+require("./models");
 // 路由
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
@@ -31,7 +33,7 @@ app.get('/', (req, res) => {
     res.send('資產管理系統 API 服務運行中');
 });
 // 僅驗證資料庫連線，不做自動同步
-models_1.sequelize.authenticate()
+connection_1.default.authenticate()
     .then(() => {
     console.log('資料庫連接成功');
     app.listen(PORT, () => {

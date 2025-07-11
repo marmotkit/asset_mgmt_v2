@@ -1,7 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { sequelize } from './models';
+import sequelize from './db/connection';
+
+// 初始化模型
+import './models';
 
 // 路由
 import authRoutes from './routes/auth.routes';
