@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const Fee_1 = __importDefault(require("../models/Fee"));
+const Fee_1 = __importDefault(require("../models/Fee")); // <--- 這裡只能這樣寫
 const auth_middleware_1 = require("../middlewares/auth.middleware");
 const router = (0, express_1.Router)();
 // 獲取所有費用記錄

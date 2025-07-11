@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
 import sequelize from '../db/connection';
 
-class Fee extends Model { }
+class Fee extends Model<any, any> { }
 
 Fee.init({
     id: {
