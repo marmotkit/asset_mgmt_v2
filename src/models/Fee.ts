@@ -36,7 +36,7 @@ Fee.init({
         field: 'updated_at',
     },
 }, {
-    sequelize,
+    sequelize: sequelize,
     tableName: 'fees',
     timestamps: true,
     underscored: true,
