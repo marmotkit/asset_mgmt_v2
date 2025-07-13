@@ -14,16 +14,28 @@ Fee.init({
         allowNull: false,
         field: 'member_id',
     },
-    memberNo: DataTypes.STRING,
-    memberName: DataTypes.STRING,
-    memberType: DataTypes.STRING,
+    memberNo: {
+        type: DataTypes.STRING,
+        field: 'member_no',
+    },
+    memberName: {
+        type: DataTypes.STRING,
+        field: 'member_name',
+    },
+    memberType: {
+        type: DataTypes.STRING,
+        field: 'member_type',
+    },
     amount: DataTypes.DECIMAL(12, 2),
     dueDate: {
         type: DataTypes.DATEONLY,
         allowNull: false,
         field: 'due_date',
     },
-    status: DataTypes.STRING,
+    status: {
+        type: DataTypes.STRING,
+        field: 'status',
+    },
     note: DataTypes.TEXT,
     createdAt: {
         type: DataTypes.DATE,

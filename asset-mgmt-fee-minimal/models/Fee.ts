@@ -9,8 +9,17 @@ Fee.init({
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
     },
-    memberName: DataTypes.STRING,
+    member_id: {
+        type: DataTypes.UUID,
+        field: 'member_id',
+    },
+    memberName: {
+        type: DataTypes.STRING,
+        field: 'member_name',
+    },
     amount: DataTypes.INTEGER,
+    due_date: DataTypes.DATEONLY,
+    status: DataTypes.STRING,
 }, {
     sequelize,
     tableName: 'fees',
