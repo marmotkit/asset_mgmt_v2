@@ -77,7 +77,7 @@ if (!fs.existsSync(packageJsonPath)) {
     }
 
     // 檢查依賴
-    const requiredDeps = ['express', 'sequelize', 'pg', 'jsonwebtoken', 'bcrypt', 'dotenv', 'cors'];
+    const requiredDeps = ['express', 'sequelize', 'pg', 'jsonwebtoken', 'bcryptjs', 'dotenv', 'cors'];
     const missingDeps = [];
 
     for (const dep of requiredDeps) {

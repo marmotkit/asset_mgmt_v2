@@ -38,7 +38,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const User_1 = __importStar(require("../models/User"));
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const memberNoGenerator_1 = require("../utils/memberNoGenerator");
 const router = (0, express_1.Router)();
 // 創建新用戶
@@ -66,8 +66,8 @@ router.post('/', async (req, res) => {
         const memberNo = await (0, memberNoGenerator_1.generateMemberNo)((role || 'normal'), currentCount);
         console.log('生成的會員編號:', memberNo);
         // 密碼加密
-        const salt = await bcrypt_1.default.genSalt(10);
-        const hashedPassword = await bcrypt_1.default.hash(password, salt);
+        const salt = await bcryptjs_1.default.genSalt(10);
+        const hashedPassword = await bcryptjs_1.default.hash(password, salt);
         console.log('密碼加密完成');
         // 處理 companyId，如果是空字符串則設為 null
         const processedCompanyId = companyId && companyId.trim() !== '' ? companyId : null;

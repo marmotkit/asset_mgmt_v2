@@ -37,7 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.register = exports.login = void 0;
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importStar(require("../models/User"));
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -57,7 +57,7 @@ const login = async (req, res) => {
         if (!user.password) {
             return res.status(401).json({ message: '用戶帳號設置錯誤' });
         }
-        const passwordMatch = await bcrypt_1.default.compare(password, user.password);
+        const passwordMatch = await bcryptjs_1.default.compare(password, user.password);
         if (!passwordMatch) {
             return res.status(401).json({ message: '用戶名或密碼不正確' });
         }
@@ -98,8 +98,8 @@ const register = async (req, res) => {
         // 生成會員編號
         const memberNo = await generateMemberNo(role);
         // 密碼加密
-        const salt = await bcrypt_1.default.genSalt(10);
-        const hashedPassword = await bcrypt_1.default.hash(password, salt);
+        const salt = await bcryptjs_1.default.genSalt(10);
+        const hashedPassword = await bcryptjs_1.default.hash(password, salt);
         // 創建用戶
         const newUser = await User_1.default.create({
             username,

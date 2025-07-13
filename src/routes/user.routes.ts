@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import User, { UserStatus } from '../models/User';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { generateMemberNo } from '../utils/memberNoGenerator';
 import { UserRole } from '../types/user';
 

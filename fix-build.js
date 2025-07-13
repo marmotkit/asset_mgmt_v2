@@ -198,6 +198,21 @@ console.log('✅ 已更新 webpack 生產配置');
 try {
     console.log('更新 package.json 構建腳本...');
     const packageJsonPath = path.join(__dirname, 'package.json');
+
+    // 確保 webpack-cli 已安裝
+    console.log('檢查 webpack-cli 是否已安裝...');
+    try {
+        require.resolve('webpack-cli');
+        console.log('✅ webpack-cli 已安裝');
+    } catch (e) {
+        console.log('⚠️ webpack-cli 未安裝，嘗試安裝...');
+        try {
+            execSync('npm install --save-dev webpack-cli', { stdio: 'inherit' });
+            console.log('✅ webpack-cli 安裝成功');
+        } catch (installError) {
+            console.log('❌ webpack-cli 安裝失敗，請手動安裝');
+        }
+    }
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
     packageJson.scripts = packageJson.scripts || {};
