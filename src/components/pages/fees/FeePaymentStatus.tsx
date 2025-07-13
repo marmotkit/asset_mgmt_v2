@@ -261,7 +261,7 @@ const FeePaymentStatus: React.FC = () => {
 
         try {
             // 判斷是否為5年期
-            if (feeSetting.frequency === '5year') {
+            if (feeSetting.period && feeSetting.period.includes('5年')) {
                 const perYearAmount = Math.round(feeSetting.amount / 5);
                 const paymentsToCreate = [];
                 for (let i = 0; i < 5; i++) {
