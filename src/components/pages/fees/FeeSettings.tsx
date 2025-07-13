@@ -17,7 +17,11 @@ import {
     IconButton,
     Typography,
     Alert,
-    CircularProgress
+    CircularProgress,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem
 } from '@mui/material';
 import { Edit as EditIcon } from '@mui/icons-material';
 import { ArrowUpward, ArrowDownward, DragIndicator } from '@mui/icons-material';
@@ -34,6 +38,12 @@ interface FeeSettingType {
     createdAt?: string;
     updatedAt?: string;
 }
+
+const MEMBER_TYPE_OPTIONS = [
+    '一般會員',
+    '商務會員',
+    '永久會員'
+];
 
 const FeeSettings: React.FC = () => {
     const [feeSettings, setFeeSettings] = useState<FeeSettingType[]>([]);
@@ -266,15 +276,19 @@ const FeeSettings: React.FC = () => {
                 <DialogTitle>編輯會費標準</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2 }}>
-                        <TextField
-                            fullWidth
-                            margin="dense"
-                            label="會員類型"
-                            name="memberType"
-                            value={editingFee?.memberType || ''}
-                            onChange={handleChange}
-                            disabled
-                        />
+                        <FormControl fullWidth margin="dense" disabled>
+                            <InputLabel>會員類型</InputLabel>
+                            <Select
+                                name="memberType"
+                                value={editingFee?.memberType || ''}
+                                label="會員類型"
+                                onChange={handleChange}
+                            >
+                                {MEMBER_TYPE_OPTIONS.map(type => (
+                                    <MenuItem key={type} value={type}>{type}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
                         <TextField
                             fullWidth
                             margin="dense"
@@ -319,14 +333,19 @@ const FeeSettings: React.FC = () => {
                 <DialogTitle>新增會費標準</DialogTitle>
                 <DialogContent>
                     <Box sx={{ pt: 2 }}>
-                        <TextField
-                            fullWidth
-                            margin="dense"
-                            label="會員類型"
-                            name="memberType"
-                            value={newFee.memberType || ''}
-                            onChange={handleAddChange}
-                        />
+                        <FormControl fullWidth margin="dense">
+                            <InputLabel>會員類型</InputLabel>
+                            <Select
+                                name="memberType"
+                                value={newFee.memberType || ''}
+                                label="會員類型"
+                                onChange={handleAddChange}
+                            >
+                                {MEMBER_TYPE_OPTIONS.map(type => (
+                                    <MenuItem key={type} value={type}>{type}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
                         <TextField
                             fullWidth
                             margin="dense"
