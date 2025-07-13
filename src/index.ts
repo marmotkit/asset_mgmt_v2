@@ -12,6 +12,7 @@ import userRoutes from './routes/user.routes';
 import companyRoutes from './routes/company.routes';
 import investmentRoutes from './routes/investment.routes';
 import feeRoutes from './routes/fee.routes';
+import feeSettingsRoutes from './routes/fee-settings.routes';
 
 // 加載環境變量
 dotenv.config();
@@ -29,6 +30,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/investments', investmentRoutes);
 app.use('/api/fees', feeRoutes);
+app.use('/api/fee-settings', feeSettingsRoutes);
 
 // 基本路由測試
 app.get('/', (req, res) => {

@@ -5,6 +5,7 @@ import { RentalStandard, RentalPayment, PaymentStatus, PaymentMethod } from './R
 import { ProfitSharingStandard, MemberProfit, ProfitSharingType } from './ProfitSharing';
 import Invoice, { InvoiceType } from './Invoice';
 import Fee from './Fee';
+import FeeSetting, { FeeSettingAttributes } from './FeeSetting';
 import sequelize from '../db/connection';
 
 // 設置模型關聯
@@ -34,5 +35,7 @@ export {
     ProfitSharingType,
     Invoice,
     InvoiceType,
-    Fee
+    Fee,
+    FeeSetting,
+    FeeSettingAttributes
 }; 

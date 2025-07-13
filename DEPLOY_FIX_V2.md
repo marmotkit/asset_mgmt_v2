@@ -5,6 +5,7 @@
 1. **API 部署錯誤**: `bcrypt` 模組的 native binding 問題
 2. **前端部署錯誤**: 缺少 `webpack-cli` 和 Node.js 版本問題
 3. **前端構建互動式提示問題**: webpack-cli 安裝時的 yes/no 提示
+4. **webpack-cli 依賴問題**: 在部署環境中 webpack-cli 仍然出現互動式提示
 
 ## 已修復的問題
 
@@ -15,8 +16,8 @@
 
 ### 2. webpack-cli 問題
 - ✅ 將 `webpack-cli` 從 `dependencies` 移到 `devDependencies`
-- ✅ 創建非互動式構建腳本 `scripts/build-frontend.js`
-- ✅ 使用 `npx webpack` 避免直接依賴 webpack-cli
+- ✅ 創建直接使用 webpack API 的構建腳本 `scripts/webpack-build.js`
+- ✅ 完全避免 webpack-cli 的依賴和互動式提示
 
 ### 3. Node.js 版本問題
 - ✅ 更新 `.nvmrc` 到受支援的版本 `20.11.0`
@@ -24,8 +25,8 @@
 
 ### 4. 非互動式構建問題
 - ✅ 創建 `.npmrc` 文件設定 `yes=true` 和 `ci=true`
-- ✅ 更新構建腳本使用 `--yes` 參數
-- ✅ 使用 `npx` 執行 webpack 避免安裝問題
+- ✅ 使用 webpack API 直接構建，避免 CLI 工具
+- ✅ 設定環境變數 `CI=true` 和 `NODE_ENV=production`
 
 ## 部署步驟
 
@@ -74,10 +75,11 @@ CI=true
 
 ## 新增文件說明
 
-### scripts/build-frontend.js
-- 非互動式前端構建腳本
-- 自動處理 webpack-cli 安裝問題
-- 使用 npx 執行 webpack 構建
+### scripts/webpack-build.js
+- 直接使用 webpack API 的構建腳本
+- 完全避免 webpack-cli 依賴
+- 設定非互動式環境變數
+- 使用 webpack compiler.run() 方法
 
 ### .npmrc
 - 設定 npm 使用非互動式模式
@@ -102,6 +104,7 @@ CI=true
 3. 確認 `CI=true` 環境變數已設定
 4. 嘗試清除 Render build cache 後重新部署
 5. 檢查是否還有互動式提示問題
+6. 確認使用新的 `scripts/webpack-build.js` 腳本
 
 ### 如果數據庫連接失敗
 1. 確認 PostgreSQL 服務已完全啟動（可能需要 5-10 分鐘）
@@ -122,4 +125,5 @@ CI=true
 - 首次訪問可能需要等待服務啟動
 - 確保使用強密碼和安全的 JWT 密鑰
 - 定期備份數據庫數據
-- 新的構建腳本會自動處理 webpack-cli 問題 
+- 新的構建腳本完全避免 webpack-cli 問題
+- 使用 webpack API 直接構建，更穩定可靠 
