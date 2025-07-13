@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "webpack-dev-server --mode development --hot",
     "build": "tsc",
-    "build:frontend": "node scripts/build-frontend.js",
+    "build:frontend": "node scripts/webpack-build.js",
     "build:deploy": "node scripts/build-for-deploy.js",
     "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
