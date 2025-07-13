@@ -90,11 +90,12 @@ const FeePaymentStatus: React.FC = () => {
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [availableMembers, setAvailableMembers] = useState<Array<{
         id: string;
+        memberNo: string;
         name: string;
         type: string;
     }>>([
-        { id: 'M001', name: '張三', type: '一般會員' },
-        { id: 'M002', name: '李四', type: '商務會員' },
+        { id: 'M001', memberNo: 'M001', name: '張三', type: '一般會員' },
+        { id: 'M002', memberNo: 'M002', name: '李四', type: '商務會員' },
         // 這裡應該從 API 獲取會員列表
     ]);
     const [currentTab, setCurrentTab] = useState<string>(() => {
@@ -154,6 +155,7 @@ const FeePaymentStatus: React.FC = () => {
                 const users = await ApiService.getUsers();
                 const members = users.map((user: User) => ({
                     id: user.memberNo,
+                    memberNo: user.memberNo,
                     name: user.name,
                     type: user.role === 'lifetime' ? '永久會員' :
                         user.role === 'admin' ? '管理員' :
