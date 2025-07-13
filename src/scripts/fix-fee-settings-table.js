@@ -17,11 +17,17 @@ const sequelize = new Sequelize(DATABASE_URL, {
     }
 });
 
-async function createFeeSettingsTable() {
+async function fixFeeSettingsTable() {
     try {
-        console.log('【開始建立 fee_settings 資料表...】');
+        console.log('【開始修正 fee_settings 資料表...】');
+
+        // 先刪除舊的資料表（如果存在）
+        await sequelize.query('DROP TABLE IF EXISTS fee_settings;');
+        console.log('【舊的 fee_settings 資料表已刪除】');
+
+        // 重新建立資料表，加入 UNIQUE 約束
         await sequelize.query(`
-            CREATE TABLE IF NOT EXISTS fee_settings (
+            CREATE TABLE fee_settings (
                 id SERIAL PRIMARY KEY,
                 member_type VARCHAR(50) NOT NULL UNIQUE,
                 amount INTEGER NOT NULL,
@@ -31,7 +37,7 @@ async function createFeeSettingsTable() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
-        console.log('【fee_settings 資料表建立成功！】');
+        console.log('【fee_settings 資料表重新建立成功！】');
 
         // 插入預設資料
         console.log('【插入預設會費標準資料...】');
@@ -40,8 +46,7 @@ async function createFeeSettingsTable() {
             ('一般會員', 30000, '年', '一般會員年費'),
             ('永久會員', 300000, '5年', '永久會員5年費用'),
             ('商務會員', 3000000, '5年', '商務會員5年費用'),
-            ('管理員', 0, '永久', '管理員免費')
-            ON CONFLICT (member_type) DO NOTHING;
+            ('管理員', 0, '永久', '管理員免費');
         `);
         console.log('【預設會費標準資料插入成功！】');
 
@@ -49,8 +54,9 @@ async function createFeeSettingsTable() {
         const [results] = await sequelize.query('SELECT * FROM fee_settings ORDER BY id;');
         console.log('【fee_settings 資料表內容如下】');
         console.table(results);
+
     } catch (error) {
-        console.error('【建立 fee_settings 資料表失敗】:', error);
+        console.error('【修正 fee_settings 資料表失敗】:', error);
         console.error('【請檢查 DATABASE_URL 是否正確，以及 Render 資料庫權限】');
     } finally {
         await sequelize.close();
@@ -58,4 +64,4 @@ async function createFeeSettingsTable() {
     }
 }
 
-createFeeSettingsTable(); 
+fixFeeSettingsTable(); 
