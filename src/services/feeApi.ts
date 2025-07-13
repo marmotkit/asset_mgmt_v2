@@ -27,10 +27,10 @@ const getApiBaseUrl = () => {
     const hostname = window.location.hostname;
     const isRender = hostname.includes('render.com') || hostname.includes('onrender.com');
     const baseUrl = isRender
-        ? 'https://asset-mgmt-api.onrender.com/api'  // 雲端後端 API 地址
+        ? 'https://asset-mgmt-api-test.onrender.com/api'  // 雲端後端 API 地址
         : (hostname === 'localhost' || hostname === '127.0.0.1'
             ? '/api'  // 本地開發環境
-            : 'https://asset-mgmt-api.onrender.com/api'); // 其他環境也用雲端地址
+            : 'https://asset-mgmt-api-test.onrender.com/api'); // 其他環境也用雲端地址
 
     return baseUrl;
 };
