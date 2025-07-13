@@ -86,6 +86,7 @@ router.post('/', authMiddleware, async (req, res) => {
     try {
         const feeData = req.body;
         console.log('收到創建費用請求:', feeData);
+        console.log('Fee 型別:', typeof Fee, Fee?.name, typeof Fee.create, typeof Fee.findAll);
         const fee = await Fee.create(feeData);
         res.status(201).json(fee);
     } catch (error) {
