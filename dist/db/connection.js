@@ -9,12 +9,12 @@ dotenv_1.default.config();
 const DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/asset_mgmt';
 const sequelize = new sequelize_1.Sequelize(DATABASE_URL, {
     dialect: 'postgres',
-    ssl: process.env.NODE_ENV === 'production',
+    logging: false,
     dialectOptions: {
-        ssl: process.env.NODE_ENV === 'production' ? {
+        ssl: {
             require: true,
-            rejectUnauthorized: false
-        } : false
-    }
+            rejectUnauthorized: false,
+        },
+    },
 });
 exports.default = sequelize;
