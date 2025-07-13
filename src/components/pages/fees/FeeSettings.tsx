@@ -30,6 +30,7 @@ interface FeeSettingType {
     amount: number;
     period: string;
     description: string;
+    order: number;
     createdAt?: string;
     updatedAt?: string;
 }
