@@ -335,8 +335,8 @@ const FeePaymentStatus: React.FC = () => {
         setSelectedMember(memberId);
         const member = availableMembers.find(m => m.id === memberId);
         if (member) {
-            // 用會員類型對應 feeSettings.name
-            const matchingFeeSetting = feeSettings.find(setting => setting.name === member.type);
+            // 正確用 memberType 對應
+            const matchingFeeSetting = feeSettings.find(setting => setting.memberType === member.type);
             if (matchingFeeSetting) {
                 setSelectedFeeSetting(matchingFeeSetting.id.toString());
             } else {
@@ -691,7 +691,7 @@ const FeePaymentStatus: React.FC = () => {
                                 >
                                     {(feeSettings || []).map((setting) => (
                                         <MenuItem key={setting.id} value={setting.id}>
-                                            {setting.name} - {setting.amount.toLocaleString()} 元
+                                            {setting.memberType} {setting.period} {Number(setting.amount).toLocaleString()}元
                                         </MenuItem>
                                     ))}
                                 </Select>
