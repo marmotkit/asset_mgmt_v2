@@ -7,6 +7,7 @@ interface FeeSettingAttributes {
     amount: number;
     period: string;
     description?: string;
+    order: number;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -17,6 +18,7 @@ class FeeSetting extends Model<FeeSettingAttributes> implements FeeSettingAttrib
     public amount!: number;
     public period!: string;
     public description?: string;
+    public order!: number;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 }
@@ -43,6 +45,12 @@ FeeSetting.init({
     description: {
         type: DataTypes.TEXT,
         allowNull: true,
+    },
+    order: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'order',
     },
     createdAt: {
         type: DataTypes.DATE,

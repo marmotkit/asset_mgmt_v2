@@ -8,7 +8,7 @@ const router = Router();
 router.get('/', authMiddleware, async (req, res) => {
     try {
         const feeSettings = await FeeSetting.findAll({
-            order: [['createdAt', 'ASC']]
+            order: [["order", "ASC"], ["id", "ASC"]]
         });
         res.json(feeSettings);
     } catch (error) {
@@ -34,7 +34,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // 創建會費標準
 router.post('/', authMiddleware, async (req, res) => {
     try {
-        const { memberType, amount, period, description } = req.body;
+        const { memberType, amount, period, description, order } = req.body;
 
         // 驗證必填欄位
         if (!memberType || !amount || !period) {
@@ -58,7 +58,8 @@ router.post('/', authMiddleware, async (req, res) => {
             memberType,
             amount,
             period,
-            description
+            description,
+            order: order || 0
         });
 
         res.status(201).json(feeSetting);
@@ -71,7 +72,7 @@ router.post('/', authMiddleware, async (req, res) => {
 // 更新會費標準
 router.put('/:id', authMiddleware, async (req, res) => {
     try {
-        const { memberType, amount, period, description } = req.body;
+        const { memberType, amount, period, description, order } = req.body;
 
         const feeSetting = await FeeSetting.findByPk(req.params.id);
         if (!feeSetting) {
@@ -98,7 +99,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
             memberType: memberType || feeSetting.memberType,
             amount: amount || feeSetting.amount,
             period: period || feeSetting.period,
-            description: description !== undefined ? description : feeSetting.description
+            description: description !== undefined ? description : feeSetting.description,
+            order: order !== undefined ? order : feeSetting.order
         });
 
         res.json(feeSetting);
@@ -121,6 +123,40 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('刪除會費標準失敗:', error);
         res.status(500).json({ error: '刪除會費標準失敗' });
+    }
+});
+
+// 單筆排序（上下箭頭）
+router.patch('/:id/order', authMiddleware, async (req, res) => {
+    try {
+        const { order } = req.body;
+        const feeSetting = await FeeSetting.findByPk(req.params.id);
+        if (!feeSetting) {
+            return res.status(404).json({ error: '會費標準不存在' });
+        }
+        await feeSetting.update({ order });
+        res.json(feeSetting);
+    } catch (error) {
+        console.error('更新排序失敗:', error);
+        res.status(500).json({ error: '更新排序失敗' });
+    }
+});
+
+// 批次排序（拖曳）
+router.patch('/reorder', authMiddleware, async (req, res) => {
+    try {
+        const { orders } = req.body; // [{id, order}]
+        if (!Array.isArray(orders)) {
+            return res.status(400).json({ error: 'orders 必須為陣列' });
+        }
+        const updatePromises = orders.map(item =>
+            FeeSetting.update({ order: item.order }, { where: { id: item.id } })
+        );
+        await Promise.all(updatePromises);
+        res.json({ message: '排序已更新' });
+    } catch (error) {
+        console.error('批次更新排序失敗:', error);
+        res.status(500).json({ error: '批次更新排序失敗' });
     }
 });
 

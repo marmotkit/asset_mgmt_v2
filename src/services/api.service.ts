@@ -1846,6 +1846,7 @@ export class ApiService {
         amount: number;
         period: string;
         description?: string;
+        order?: number;
     }): Promise<any> {
         const token = localStorage.getItem('token');
         const response = await fetch(`${ApiService.API_BASE_URL}/fee-settings`, {
@@ -1896,6 +1897,22 @@ export class ApiService {
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.error || '刪除會費標準失敗');
+        }
+    }
+
+    static async patchFeeSettingsOrder(orders: { id: number, order: number }[]): Promise<void> {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${ApiService.API_BASE_URL}/fee-settings/reorder`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ orders }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || '批次排序失敗');
         }
     }
 }
