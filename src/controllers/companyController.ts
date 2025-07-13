@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Company } from '../models';
+import Company from '../models/Company';
 import { v4 as uuidv4 } from 'uuid';
 
 // 生成公司編號

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { FeeSetting } from '../models';
+import FeeSetting from '../models/FeeSetting';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();

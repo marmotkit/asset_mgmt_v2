@@ -34,14 +34,14 @@ app.use('/api/fee-settings', fee_settings_routes_1.default);
 app.get('/', (req, res) => {
     res.send('資產管理系統 API 服務運行中');
 });
-// 僅驗證資料庫連線，不做自動同步
-connection_1.default.authenticate()
+// 啟動時同步所有 Sequelize model，確保 model 註冊正確
+connection_1.default.sync({ alter: false })
     .then(() => {
-    console.log('資料庫連接成功');
+    console.log('資料庫同步成功');
     app.listen(PORT, () => {
         console.log(`服務器運行在 port ${PORT}`);
     });
 })
     .catch((error) => {
-    console.error('資料庫連接錯誤:', error);
+    console.error('資料庫同步錯誤:', error);
 });

@@ -1,13 +1,16 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const models_1 = require("../models");
+const FeeSetting_1 = __importDefault(require("../models/FeeSetting"));
 const auth_middleware_1 = require("../middlewares/auth.middleware");
 const router = (0, express_1.Router)();
 // 獲取所有會費標準
 router.get('/', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
-        const feeSettings = await models_1.FeeSetting.findAll({
+        const feeSettings = await FeeSetting_1.default.findAll({
             order: [["order", "ASC"], ["id", "ASC"]]
         });
         res.json(feeSettings);
@@ -20,7 +23,7 @@ router.get('/', auth_middleware_1.authMiddleware, async (req, res) => {
 // 獲取單一會費標準
 router.get('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
-        const feeSetting = await models_1.FeeSetting.findByPk(req.params.id);
+        const feeSetting = await FeeSetting_1.default.findByPk(req.params.id);
         if (!feeSetting) {
             return res.status(404).json({ error: '會費標準不存在' });
         }
@@ -42,7 +45,7 @@ router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
             });
         }
         // 檢查是否已存在相同會員類型
-        const existingSetting = await models_1.FeeSetting.findOne({
+        const existingSetting = await FeeSetting_1.default.findOne({
             where: { memberType }
         });
         if (existingSetting) {
@@ -50,7 +53,7 @@ router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
                 error: '該會員類型已存在會費標準'
             });
         }
-        const feeSetting = await models_1.FeeSetting.create({
+        const feeSetting = await FeeSetting_1.default.create({
             memberType,
             amount,
             period,
@@ -68,13 +71,13 @@ router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
 router.put('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
         const { memberType, amount, period, description, order } = req.body;
-        const feeSetting = await models_1.FeeSetting.findByPk(req.params.id);
+        const feeSetting = await FeeSetting_1.default.findByPk(req.params.id);
         if (!feeSetting) {
             return res.status(404).json({ error: '會費標準不存在' });
         }
         // 如果修改了會員類型，檢查是否與其他記錄衝突
         if (memberType && memberType !== feeSetting.memberType) {
-            const existingSetting = await models_1.FeeSetting.findOne({
+            const existingSetting = await FeeSetting_1.default.findOne({
                 where: {
                     memberType,
                     id: { [require('sequelize').Op.ne]: req.params.id }
@@ -103,7 +106,7 @@ router.put('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
 // 刪除會費標準
 router.delete('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
-        const feeSetting = await models_1.FeeSetting.findByPk(req.params.id);
+        const feeSetting = await FeeSetting_1.default.findByPk(req.params.id);
         if (!feeSetting) {
             return res.status(404).json({ error: '會費標準不存在' });
         }
@@ -119,7 +122,7 @@ router.delete('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
 router.patch('/:id/order', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
         const { order } = req.body;
-        const feeSetting = await models_1.FeeSetting.findByPk(req.params.id);
+        const feeSetting = await FeeSetting_1.default.findByPk(req.params.id);
         if (!feeSetting) {
             return res.status(404).json({ error: '會費標準不存在' });
         }
@@ -138,7 +141,7 @@ router.patch('/reorder', auth_middleware_1.authMiddleware, async (req, res) => {
         if (!Array.isArray(orders)) {
             return res.status(400).json({ error: 'orders 必須為陣列' });
         }
-        const updatePromises = orders.map(item => models_1.FeeSetting.update({ order: item.order }, { where: { id: item.id } }));
+        const updatePromises = orders.map(item => FeeSetting_1.default.update({ order: item.order }, { where: { id: item.id } }));
         await Promise.all(updatePromises);
         res.json({ message: '排序已更新' });
     }

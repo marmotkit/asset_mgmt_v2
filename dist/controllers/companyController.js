@@ -1,12 +1,15 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteCompany = exports.updateCompany = exports.createCompany = exports.getCompanyById = exports.getAllCompanies = void 0;
-const models_1 = require("../models");
+const Company_1 = __importDefault(require("../models/Company"));
 const uuid_1 = require("uuid");
 // 生成公司編號
 const generateCompanyNo = async () => {
     // 查找所有公司數量
-    const companies = await models_1.Company.findAll();
+    const companies = await Company_1.default.findAll();
     const count = companies.length;
     // 生成新的公司編號 A001, A002, ...
     const paddedCount = String(count + 1).padStart(3, '0');
@@ -15,7 +18,7 @@ const generateCompanyNo = async () => {
 // 獲取所有公司
 const getAllCompanies = async (req, res) => {
     try {
-        const companies = await models_1.Company.findAll();
+        const companies = await Company_1.default.findAll();
         res.status(200).json(companies);
     }
     catch (error) {
@@ -27,7 +30,7 @@ exports.getAllCompanies = getAllCompanies;
 // 獲取單個公司
 const getCompanyById = async (req, res) => {
     try {
-        const company = await models_1.Company.findByPk(req.params.id);
+        const company = await Company_1.default.findByPk(req.params.id);
         if (!company) {
             return res.status(404).json({ message: '公司不存在' });
         }
@@ -48,7 +51,7 @@ const createCompany = async (req, res) => {
             return res.status(400).json({ message: '統一編號、公司名稱和地址為必填項' });
         }
         // 檢查統一編號是否已存在
-        const existingCompany = await models_1.Company.findOne({ where: { taxId } });
+        const existingCompany = await Company_1.default.findOne({ where: { taxId } });
         if (existingCompany) {
             return res.status(400).json({ message: '此統一編號已存在' });
         }
@@ -57,7 +60,7 @@ const createCompany = async (req, res) => {
         // 將聯絡人資訊轉為 JSON 字符串
         const contactString = typeof contact === 'string' ? contact : JSON.stringify(contact);
         // 創建公司
-        const newCompany = await models_1.Company.create({
+        const newCompany = await Company_1.default.create({
             id: (0, uuid_1.v4)(),
             companyNo,
             taxId,
@@ -86,13 +89,13 @@ const updateCompany = async (req, res) => {
         const { id } = req.params;
         const { taxId, name, nameEn, industry, address, contact, fax, note } = req.body;
         // 查找公司
-        const company = await models_1.Company.findByPk(id);
+        const company = await Company_1.default.findByPk(id);
         if (!company) {
             return res.status(404).json({ message: '公司不存在' });
         }
         // 檢查統一編號是否已被其他公司使用
         if (taxId && taxId !== company.taxId) {
-            const existingCompany = await models_1.Company.findOne({ where: { taxId } });
+            const existingCompany = await Company_1.default.findOne({ where: { taxId } });
             if (existingCompany && existingCompany.id !== id) {
                 return res.status(400).json({ message: '此統一編號已被其他公司使用' });
             }
@@ -112,7 +115,7 @@ const updateCompany = async (req, res) => {
         });
         res.status(200).json({
             message: '公司更新成功',
-            company: await models_1.Company.findByPk(id)
+            company: await Company_1.default.findByPk(id)
         });
     }
     catch (error) {
@@ -126,7 +129,7 @@ const deleteCompany = async (req, res) => {
     try {
         const { id } = req.params;
         // 查找公司
-        const company = await models_1.Company.findByPk(id);
+        const company = await Company_1.default.findByPk(id);
         if (!company) {
             return res.status(404).json({ message: '公司不存在' });
         }
