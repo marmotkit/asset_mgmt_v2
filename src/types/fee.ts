@@ -1,11 +1,12 @@
 export interface FeeSetting {
     id: string;
-    name: string;
+    memberType: string;
     amount: number;
-    frequency: 'monthly' | 'quarterly' | 'yearly' | '5year' | 'forever';
+    period: string;
     description: string;
-    createdAt: string;
-    updatedAt: string;
+    order?: number;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface FeeRecord {
