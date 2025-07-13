@@ -273,8 +273,7 @@ const FeePaymentStatus: React.FC = () => {
                         amount: perYearAmount,
                         dueDate: `${year}-12-31`,
                         status: '待收款' as PaymentStatus,
-                        note: `${year}年度會費（5年期分攤）`,
-                        feeSettingId: feeSetting.id
+                        note: `${year}年度會費（5年期分攤）`
                     });
                 }
                 const createdList = [];
@@ -299,8 +298,7 @@ const FeePaymentStatus: React.FC = () => {
                     amount: feeSetting.amount,
                     dueDate: `${selectedYear}-12-31`,
                     status: '待收款' as PaymentStatus,
-                    note: `${selectedYear}年度會費`,
-                    feeSettingId: feeSetting.id
+                    note: `${selectedYear}年度會費`
                 };
                 const created = await FeeApi.createFees([newPayment]);
                 if (created) {
