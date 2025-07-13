@@ -84,12 +84,13 @@ router.get('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
 router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
         const feeData = req.body;
+        console.log('收到創建費用請求:', feeData);
         const fee = await Fee_1.default.create(feeData);
         res.status(201).json(fee);
     }
     catch (error) {
         console.error('創建費用記錄失敗:', error);
-        res.status(500).json({ error: '創建費用記錄失敗' });
+        res.status(500).json({ error: '創建費用記錄失敗', detail: error.message, stack: error.stack });
     }
 });
 // 更新費用記錄
