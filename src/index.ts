@@ -37,14 +37,14 @@ app.get('/', (req, res) => {
     res.send('資產管理系統 API 服務運行中');
 });
 
-// 僅驗證資料庫連線，不做自動同步
-sequelize.authenticate()
+// 啟動時同步所有 Sequelize model，確保 model 註冊正確
+sequelize.sync({ alter: false })
     .then(() => {
-        console.log('資料庫連接成功');
+        console.log('資料庫同步成功');
         app.listen(PORT, () => {
             console.log(`服務器運行在 port ${PORT}`);
         });
     })
     .catch((error) => {
-        console.error('資料庫連接錯誤:', error);
+        console.error('資料庫同步錯誤:', error);
     }); 
