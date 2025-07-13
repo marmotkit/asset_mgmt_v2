@@ -217,7 +217,7 @@ const FeePaymentStatus = () => {
             return;
         try {
             // 判斷是否為5年期
-            if (feeSetting.frequency === '5year') {
+            if (feeSetting.period && feeSetting.period.includes('5年')) {
                 const perYearAmount = Math.round(feeSetting.amount / 5);
                 const paymentsToCreate = [];
                 for (let i = 0; i < 5; i++) {
@@ -229,8 +229,7 @@ const FeePaymentStatus = () => {
                         amount: perYearAmount,
                         dueDate: `${year}-12-31`,
                         status: '待收款',
-                        note: `${year}年度會費（5年期分攤）`,
-                        feeSettingId: feeSetting.id
+                        note: `${year}年度會費（5年期分攤）`
                     });
                 }
                 const createdList = [];
@@ -257,8 +256,7 @@ const FeePaymentStatus = () => {
                     amount: feeSetting.amount,
                     dueDate: `${selectedYear}-12-31`,
                     status: '待收款',
-                    note: `${selectedYear}年度會費`,
-                    feeSettingId: feeSetting.id
+                    note: `${selectedYear}年度會費`
                 };
                 const created = await feeApi_1.FeeApi.createFees([newPayment]);
                 if (created) {
@@ -292,20 +290,13 @@ const FeePaymentStatus = () => {
         setSelectedMember(memberId);
         const member = availableMembers.find(m => m.id === memberId);
         if (member) {
-            const memberTypeMap = {
-                '一般會員': '一般會員年費',
-                '商務會員': '商務會員5年費用',
-                '永久會員': '永久會員5年費用',
-                '管理員': '管理員免費'
-            };
-            const expectedFeeName = memberTypeMap[member.type];
-            console.log('member:', member);
-            console.log('feeSettings:', feeSettings);
-            console.log('expectedFeeName:', expectedFeeName);
-            const matchingFeeSetting = feeSettings.find(setting => setting.name === expectedFeeName);
-            console.log('matchingFeeSetting:', matchingFeeSetting);
+            // 正確用 memberType 對應
+            const matchingFeeSetting = feeSettings.find(setting => setting.memberType === member.type);
             if (matchingFeeSetting) {
-                setSelectedFeeSetting(matchingFeeSetting.id);
+                setSelectedFeeSetting(matchingFeeSetting.id.toString());
+            }
+            else {
+                setSelectedFeeSetting('');
             }
         }
     };
@@ -363,6 +354,6 @@ const FeePaymentStatus = () => {
                                             }
                                         }, InputProps: {
                                             inputProps: { min: 1911 }
-                                        } }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { children: "\u9078\u64C7\u6703\u54E1" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { value: selectedMember || '', onChange: (e) => handleMemberSelect(e.target.value), fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "", children: "\u8ACB\u9078\u64C7\u6703\u54E1" }), filteredAvailableMembers.map((member) => ((0, jsx_runtime_1.jsxs)(material_1.MenuItem, { value: member.id, children: [member.name, " (", member.type, ")"] }, member.id)))] })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { children: "\u6703\u8CBB\u6A19\u6E96" }), (0, jsx_runtime_1.jsx)(material_1.Select, { value: selectedFeeSetting, label: "\u6703\u8CBB\u6A19\u6E96", onChange: (e) => setSelectedFeeSetting(e.target.value), children: (feeSettings || []).map((setting) => ((0, jsx_runtime_1.jsxs)(material_1.MenuItem, { value: setting.id, children: [setting.name, " - ", setting.amount.toLocaleString(), " \u5143"] }, setting.id))) })] }) })] }) }), (0, jsx_runtime_1.jsxs)(material_1.DialogActions, { children: [(0, jsx_runtime_1.jsx)(material_1.Button, { onClick: () => setCreateAnnualOpen(false), children: "\u53D6\u6D88" }), (0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleCreateAnnual, variant: "contained", disabled: !selectedMember || !selectedFeeSetting, children: "\u5EFA\u7ACB" })] })] }), (0, jsx_runtime_1.jsx)(material_1.Snackbar, { open: snackbar.open, autoHideDuration: 3000, onClose: () => setSnackbar(prev => ({ ...prev, open: false })), anchorOrigin: { vertical: 'top', horizontal: 'center' }, children: (0, jsx_runtime_1.jsx)(material_1.Alert, { onClose: () => setSnackbar(prev => ({ ...prev, open: false })), severity: snackbar.severity, children: snackbar.message }) })] }));
+                                        } }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { children: "\u9078\u64C7\u6703\u54E1" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { value: selectedMember || '', onChange: (e) => handleMemberSelect(e.target.value), fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "", children: "\u8ACB\u9078\u64C7\u6703\u54E1" }), filteredAvailableMembers.map((member) => ((0, jsx_runtime_1.jsxs)(material_1.MenuItem, { value: member.id, children: [member.name, " (", member.type, ")"] }, member.id)))] })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { children: "\u6703\u8CBB\u6A19\u6E96" }), (0, jsx_runtime_1.jsx)(material_1.Select, { value: selectedFeeSetting, label: "\u6703\u8CBB\u6A19\u6E96", onChange: (e) => setSelectedFeeSetting(e.target.value), children: (feeSettings || []).map((setting) => ((0, jsx_runtime_1.jsxs)(material_1.MenuItem, { value: setting.id, children: [setting.memberType, " ", setting.period, " ", Number(setting.amount).toLocaleString(), "\u5143"] }, setting.id))) })] }) })] }) }), (0, jsx_runtime_1.jsxs)(material_1.DialogActions, { children: [(0, jsx_runtime_1.jsx)(material_1.Button, { onClick: () => setCreateAnnualOpen(false), children: "\u53D6\u6D88" }), (0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleCreateAnnual, variant: "contained", disabled: !selectedMember || !selectedFeeSetting, children: "\u5EFA\u7ACB" })] })] }), (0, jsx_runtime_1.jsx)(material_1.Snackbar, { open: snackbar.open, autoHideDuration: 3000, onClose: () => setSnackbar(prev => ({ ...prev, open: false })), anchorOrigin: { vertical: 'top', horizontal: 'center' }, children: (0, jsx_runtime_1.jsx)(material_1.Alert, { onClose: () => setSnackbar(prev => ({ ...prev, open: false })), severity: snackbar.severity, children: snackbar.message }) })] }));
 };
 exports.default = FeePaymentStatus;

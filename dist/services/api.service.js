@@ -1527,6 +1527,79 @@ class ApiService {
             throw new Error('重設密碼失敗');
         }
     }
+    // Fee Settings API methods
+    static async getFeeSettings() {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${ApiService.API_BASE_URL}/fee-settings`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) {
+            throw new Error('載入會費標準失敗');
+        }
+        return await response.json();
+    }
+    static async createFeeSetting(data) {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${ApiService.API_BASE_URL}/fee-settings`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || '新增會費標準失敗');
+        }
+        return await response.json();
+    }
+    static async updateFeeSetting(id, data) {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${ApiService.API_BASE_URL}/fee-settings/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || '更新會費標準失敗');
+        }
+        return await response.json();
+    }
+    static async deleteFeeSetting(id) {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${ApiService.API_BASE_URL}/fee-settings/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || '刪除會費標準失敗');
+        }
+    }
+    static async patchFeeSettingsOrder(orders) {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${ApiService.API_BASE_URL}/fee-settings/reorder`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ orders }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || '批次排序失敗');
+        }
+    }
 }
 exports.ApiService = ApiService;
 ApiService.API_BASE_URL = (() => {

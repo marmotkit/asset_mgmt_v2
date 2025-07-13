@@ -5,16 +5,16 @@ exports.mockFeeData = {
     settings: [
         {
             id: "1",
-            name: "年費",
+            memberType: "一般會員",
             amount: 1000,
-            frequency: "yearly",
+            period: "年",
             description: "基本會員年費"
         },
         {
             id: "2",
-            name: "月費",
+            memberType: "進階會員",
             amount: 100,
-            frequency: "monthly",
+            period: "月",
             description: "進階會員月費"
         }
     ],
