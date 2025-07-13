@@ -268,6 +268,7 @@ const FeePaymentStatus: React.FC = () => {
                     const year = Number(selectedYear) + i;
                     paymentsToCreate.push({
                         memberId: member.id,
+                        memberNo: member.memberNo, // <--- 補上這行
                         memberName: member.name,
                         memberType: member.type,
                         amount: perYearAmount,
@@ -293,6 +294,7 @@ const FeePaymentStatus: React.FC = () => {
                 // 原本邏輯：只產生單一年度
                 const newPayment = {
                     memberId: member.id,
+                    memberNo: member.memberNo, // <--- 補上這行
                     memberName: member.name,
                     memberType: member.type,
                     amount: feeSetting.amount,
