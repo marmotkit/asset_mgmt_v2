@@ -10,12 +10,15 @@ const router = Router();
 router.get('/', authMiddleware, async (req, res) => {
     try {
         console.log('收到 /api/fees 請求:', req.query);
+        // 查詢 current_schema
+        const [schemaInfo] = await sequelize.query('SELECT current_schema();', { type: QueryTypes.SELECT });
+        console.log('API 查詢時的 current_schema:', schemaInfo);
         // 依據 isHistoryPage 決定查詢條件
         const isHistoryPage = req.query.isHistoryPage === 'true';
 
         const sql = `
             SELECT id, member_id, member_no, member_name, member_type, amount, due_date, status, note, created_at, updated_at, payment_method, paid_date
-            FROM fees
+            FROM public.fees
             ${!isHistoryPage ? "WHERE status IN ('待收款', '已收款')" : ''}
             ORDER BY created_at DESC
         `;
