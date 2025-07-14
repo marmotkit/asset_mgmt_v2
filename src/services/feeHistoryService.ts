@@ -265,4 +265,18 @@ const exportToExcel = async (filter: FeeHistoryFilter): Promise<Blob> => {
     const csvContentWithBOM = BOM + csvContent;
 
     return new Blob([csvContentWithBOM], { type: 'text/csv;charset=utf-8' });
-}; 
+};
+
+export async function getHistoriesFromApi(filter?: FeeHistoryFilter): Promise<FeeHistory[]> {
+    const histories = await getHistories(filter);
+
+    return histories.filter((history: FeeHistory) => {
+        const matchStatus = !filter.status || history.action.includes(filter.status);
+        const matchMember = !filter.memberId || history.memberId === filter.memberId;
+        const matchUser = !filter.userId || history.memberId === filter.userId;
+        const matchDate = (!filter.startDate || history.date >= filter.startDate) &&
+            (!filter.endDate || history.date <= filter.endDate);
+
+        return matchStatus && matchMember && matchUser && matchDate;
+    });
+} 
