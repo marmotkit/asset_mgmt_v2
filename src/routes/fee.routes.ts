@@ -147,7 +147,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
-        // 動態組合可更新欄位，支援 camelCase 轉 snake_case
+        // 動態組合可更新欄位，支援 camelCase 轉 snake_case，且每個欄位只出現一次
         const fields = [];
         const values = [];
         let idx = 1;
@@ -165,12 +165,14 @@ router.put('/:id', authMiddleware, async (req, res) => {
             memberName: 'member_name',
             memberType: 'member_type',
         };
+        const usedDbFields = new Set<string>();
         for (const key in updateData) {
             let dbField = key;
             if (camelToSnake[key]) dbField = camelToSnake[key];
-            if (allowedFields.includes(dbField)) {
+            if (allowedFields.includes(dbField) && !usedDbFields.has(dbField)) {
                 fields.push(`${dbField} = $${idx++}`);
                 values.push(updateData[key]);
+                usedDbFields.add(dbField);
             }
         }
         fields.push(`updated_at = NOW()`);
