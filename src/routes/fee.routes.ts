@@ -119,7 +119,22 @@ router.post('/', authMiddleware, async (req, res) => {
         });
 
         console.log('費用記錄建立成功:', results);
-        res.status(201).json(results[0]);
+
+        // 格式化回傳資料
+        const createdFee = results[0][0];
+        const formattedFee = {
+            ...createdFee,
+            amount: parseFloat(createdFee.amount),
+            memberId: createdFee.member_id, // 轉換為前端期望的格式
+            memberNo: createdFee.member_no,
+            memberName: createdFee.member_name,
+            memberType: createdFee.member_type,
+            dueDate: createdFee.due_date,
+            createdAt: createdFee.created_at,
+            updatedAt: createdFee.updated_at
+        };
+
+        res.status(201).json(formattedFee);
     } catch (error) {
         console.error('創建費用記錄失敗:', error);
         res.status(500).json({ error: '創建費用記錄失敗', detail: error.message, stack: error.stack });
