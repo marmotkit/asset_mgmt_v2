@@ -10,23 +10,29 @@ Fee.init({
         primaryKey: true,
     },
     memberId: {
-        type: DataTypes.UUID,
+        type: DataTypes.STRING,
         allowNull: false,
         field: 'member_id',
     },
     memberNo: {
         type: DataTypes.STRING,
+        allowNull: false,
         field: 'member_no',
     },
     memberName: {
         type: DataTypes.STRING,
+        allowNull: false,
         field: 'member_name',
     },
     memberType: {
         type: DataTypes.STRING,
+        allowNull: false,
         field: 'member_type',
     },
-    amount: DataTypes.DECIMAL(12, 2),
+    amount: {
+        type: DataTypes.DECIMAL(12, 2),
+        allowNull: false,
+    },
     dueDate: {
         type: DataTypes.DATEONLY,
         allowNull: false,
@@ -34,9 +40,13 @@ Fee.init({
     },
     status: {
         type: DataTypes.STRING,
-        field: 'status',
+        allowNull: false,
+        defaultValue: 'pending',
     },
-    note: DataTypes.TEXT,
+    note: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    },
     createdAt: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
