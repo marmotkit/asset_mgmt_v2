@@ -89,17 +89,13 @@ router.post('/', authMiddleware, async (req, res) => {
         console.log('typeof Fee:', typeof Fee);
         console.log('typeof Fee.create:', typeof Fee.create);
         console.log('typeof Fee.build:', typeof Fee.build);
-        // console.log('typeof Fee.save:', typeof Fee.save); // Fee.save 是 instance method
         console.log('Fee.create:', Fee.create);
         console.log('Fee.build:', Fee.build);
-        // 嘗試用 build + save 方式
-        const fee = Fee.build(feeData);
-        console.log('fee instanceof Fee:', fee instanceof Fee);
-        console.log('fee:', fee);
-        // console.log('fee.__proto__:', fee.__proto__); // __proto__ 不是型別安全屬性
-        console.log('Object.getPrototypeOf(fee):', Object.getPrototypeOf(fee));
-        console.log('Object.getOwnPropertyNames(fee):', Object.getOwnPropertyNames(fee));
-        await fee.save();
+
+        // 直接使用 create 方法
+        console.log('開始建立費用記錄...');
+        const fee = await Fee.create(feeData);
+        console.log('費用記錄建立成功:', fee);
         res.status(201).json(fee);
     } catch (error) {
         console.error('創建費用記錄失敗:', error);
