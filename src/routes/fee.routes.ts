@@ -147,7 +147,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
-        // 動態組合可更新欄位
+        // 動態組合可更新欄位，支援 camelCase 轉 snake_case
         const fields = [];
         const values = [];
         let idx = 1;
@@ -155,10 +155,20 @@ router.put('/:id', authMiddleware, async (req, res) => {
             'status', 'amount', 'due_date', 'note', 'paid_date', 'payment_method',
             'member_id', 'member_no', 'member_name', 'member_type'
         ];
-        for (const key of allowedFields) {
-            if (updateData[key] !== undefined) {
-                // 資料庫欄位為 snake_case
-                const dbField = key;
+        // camelCase 對應表
+        const camelToSnake: Record<string, string> = {
+            paymentMethod: 'payment_method',
+            paidDate: 'paid_date',
+            dueDate: 'due_date',
+            memberId: 'member_id',
+            memberNo: 'member_no',
+            memberName: 'member_name',
+            memberType: 'member_type',
+        };
+        for (const key in updateData) {
+            let dbField = key;
+            if (camelToSnake[key]) dbField = camelToSnake[key];
+            if (allowedFields.includes(dbField)) {
                 fields.push(`${dbField} = $${idx++}`);
                 values.push(updateData[key]);
             }
