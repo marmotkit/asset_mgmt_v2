@@ -55,8 +55,8 @@ const FeePaymentStatus = () => {
     const [selectedFeeSetting, setSelectedFeeSetting] = (0, react_1.useState)('');
     const [selectedYear, setSelectedYear] = (0, react_1.useState)(new Date().getFullYear());
     const [availableMembers, setAvailableMembers] = (0, react_1.useState)([
-        { id: 'M001', name: '張三', type: '一般會員' },
-        { id: 'M002', name: '李四', type: '商務會員' },
+        { id: 'M001', memberNo: 'M001', name: '張三', type: '一般會員' },
+        { id: 'M002', memberNo: 'M002', name: '李四', type: '商務會員' },
         // 這裡應該從 API 獲取會員列表
     ]);
     const [currentTab, setCurrentTab] = (0, react_1.useState)(() => {
@@ -115,6 +115,7 @@ const FeePaymentStatus = () => {
                 const users = await api_service_1.ApiService.getUsers();
                 const members = users.map((user) => ({
                     id: user.memberNo,
+                    memberNo: user.memberNo,
                     name: user.name,
                     type: user.role === 'lifetime' ? '永久會員' :
                         user.role === 'admin' ? '管理員' :
@@ -224,6 +225,7 @@ const FeePaymentStatus = () => {
                     const year = Number(selectedYear) + i;
                     paymentsToCreate.push({
                         memberId: member.id,
+                        memberNo: member.memberNo, // <--- 補上這行
                         memberName: member.name,
                         memberType: member.type,
                         amount: perYearAmount,
@@ -251,6 +253,7 @@ const FeePaymentStatus = () => {
                 // 原本邏輯：只產生單一年度
                 const newPayment = {
                     memberId: member.id,
+                    memberNo: member.memberNo, // <--- 補上這行
                     memberName: member.name,
                     memberType: member.type,
                     amount: feeSetting.amount,

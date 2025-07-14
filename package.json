@@ -11,7 +11,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate": "node scripts/migration.js",
     "export-data": "node scripts/export-data.js",
-    "deploy-prep": "node scripts/deploy-prep.js"
+    "deploy-prep": "node scripts/deploy-prep.js",
+    "create-fees-table": "node src/scripts/create-fees-table.js"
   },
   "keywords": [],
   "author": "",
