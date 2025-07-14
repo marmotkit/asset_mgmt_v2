@@ -145,16 +145,56 @@ router.post('/', authMiddleware, async (req, res) => {
 // 更新費用記錄
 router.put('/:id', authMiddleware, async (req, res) => {
     try {
-        const fee = await Fee.findByPk(req.params.id);
-        if (!fee) {
+        const { id } = req.params;
+        const updateData = req.body;
+        // 動態組合可更新欄位
+        const fields = [];
+        const values = [];
+        let idx = 1;
+        if (updateData.status !== undefined) {
+            fields.push(`status = $${idx++}`);
+            values.push(updateData.status);
+        }
+        if (updateData.amount !== undefined) {
+            fields.push(`amount = $${idx++}`);
+            values.push(updateData.amount);
+        }
+        if (updateData.dueDate !== undefined) {
+            fields.push(`due_date = $${idx++}`);
+            values.push(updateData.dueDate);
+        }
+        if (updateData.note !== undefined) {
+            fields.push(`note = $${idx++}`);
+            values.push(updateData.note);
+        }
+        // 其他欄位可依需求擴充
+        fields.push(`updated_at = NOW()`);
+        const sql = `UPDATE fees SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`;
+        values.push(id);
+        const [result] = await sequelize.query(sql, {
+            bind: values,
+            type: QueryTypes.UPDATE
+        });
+        if (!result || !result[0]) {
             return res.status(404).json({ error: '費用記錄不存在' });
         }
-
-        await fee.update(req.body);
-        res.json(fee);
+        // 格式化回傳資料
+        const updatedFee: any = result[0];
+        const formattedFee = {
+            ...updatedFee,
+            amount: parseFloat(updatedFee.amount),
+            memberId: updatedFee.member_id,
+            memberNo: updatedFee.member_no,
+            memberName: updatedFee.member_name,
+            memberType: updatedFee.member_type,
+            dueDate: updatedFee.due_date,
+            createdAt: updatedFee.created_at,
+            updatedAt: updatedFee.updated_at
+        };
+        res.json(formattedFee);
     } catch (error) {
         console.error('更新費用記錄失敗:', error);
-        res.status(500).json({ error: '更新費用記錄失敗' });
+        res.status(500).json({ error: '更新費用記錄失敗', detail: error.message, stack: error.stack });
     }
 });
 
