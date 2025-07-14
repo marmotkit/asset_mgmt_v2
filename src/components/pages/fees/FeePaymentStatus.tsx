@@ -67,6 +67,12 @@ const getPaymentMethodLabel = (method: PaymentMethod | undefined | string) => {
     return methodConfig[method.toLowerCase()] || method;
 };
 
+// 日期格式化工具
+const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    return dateStr.split('T')[0];
+};
+
 const FeePaymentStatus: React.FC = () => {
     const [payments, setPayments] = useState<PaymentStatusRecord[]>([]);
     const [feeSettings, setFeeSettings] = useState<FeeSetting[]>([]);
@@ -465,9 +471,9 @@ const FeePaymentStatus: React.FC = () => {
                                 <TableCell>{payment.memberId}</TableCell>
                                 <TableCell>{payment.memberName}</TableCell>
                                 <TableCell>{payment.memberType}</TableCell>
-                                <TableCell align="right">{payment.amount.toLocaleString()}</TableCell>
-                                <TableCell>{payment.dueDate}</TableCell>
-                                <TableCell>{payment.paidDate || '-'}</TableCell>
+                                <TableCell align="right">{payment.amount?.toLocaleString?.() ?? payment.amount}</TableCell>
+                                <TableCell>{formatDate(payment.dueDate)}</TableCell>
+                                <TableCell>{formatDate(payment.paidDate)}</TableCell>
                                 <TableCell>{getPaymentMethodLabel(payment.paymentMethod)}</TableCell>
                                 <TableCell>{getStatusChip(payment.status)}</TableCell>
                                 <TableCell>{payment.note || '-'}</TableCell>
