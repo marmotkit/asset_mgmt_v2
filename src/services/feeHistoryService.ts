@@ -75,7 +75,8 @@ class FeeHistoryService {
     }
 
     async exportToExcel(filter?: FeeHistoryFilter): Promise<Blob> {
-        const histories = await this.getHistories(filter);
+        // 直接從雲端 API 取得資料
+        const histories = await getHistoriesFromApi(filter);
 
         // 建立 CSV 內容
         const headers = [
@@ -96,7 +97,7 @@ class FeeHistoryService {
             h.memberName,
             h.memberType,
             h.action,
-            h.amount.toString(),
+            h.amount?.toString?.() ?? '',
             h.date,
             h.dueDate,
             h.paymentDate || '',

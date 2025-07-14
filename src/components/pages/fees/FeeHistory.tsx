@@ -26,7 +26,8 @@ import {
     DialogActions,
     Tooltip,
     Alert,
-    Snackbar
+    Snackbar,
+    TableSortLabel
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import {
@@ -87,6 +88,26 @@ export const FeeHistory: React.FC = () => {
         open: false,
         message: '',
         severity: 'success' as 'success' | 'error'
+    });
+    const [orderBy, setOrderBy] = useState<string>('dueDate');
+    const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+
+    const handleSort = (property: string) => {
+        const isAsc = orderBy === property && order === 'asc';
+        setOrder(isAsc ? 'desc' : 'asc');
+        setOrderBy(property);
+    };
+
+    const sortedHistories = [...histories].sort((a, b) => {
+        const aValue = a[orderBy as keyof FeeHistoryType];
+        const bValue = b[orderBy as keyof FeeHistoryType];
+        if (aValue === undefined || bValue === undefined) return 0;
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+            return order === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+        return order === 'asc'
+            ? String(aValue).localeCompare(String(bValue))
+            : String(bValue).localeCompare(String(aValue));
     });
 
     const loadFeeHistory = async () => {
@@ -299,27 +320,99 @@ export const FeeHistory: React.FC = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>會員編號</TableCell>
-                            <TableCell>姓名</TableCell>
-                            <TableCell>會員類型</TableCell>
-                            <TableCell align="right">金額</TableCell>
-                            <TableCell>到期日</TableCell>
-                            <TableCell>繳費日期</TableCell>
-                            <TableCell>繳費方式</TableCell>
-                            <TableCell>狀態</TableCell>
-                            <TableCell>備註</TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'userId'}
+                                    direction={orderBy === 'userId' ? order : 'asc'}
+                                    onClick={() => handleSort('userId')}
+                                >
+                                    會員編號
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'userName'}
+                                    direction={orderBy === 'userName' ? order : 'asc'}
+                                    onClick={() => handleSort('userName')}
+                                >
+                                    姓名
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'memberType'}
+                                    direction={orderBy === 'memberType' ? order : 'asc'}
+                                    onClick={() => handleSort('memberType')}
+                                >
+                                    會員類型
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell align="right">
+                                <TableSortLabel
+                                    active={orderBy === 'amount'}
+                                    direction={orderBy === 'amount' ? order : 'asc'}
+                                    onClick={() => handleSort('amount')}
+                                >
+                                    金額
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'dueDate'}
+                                    direction={orderBy === 'dueDate' ? order : 'asc'}
+                                    onClick={() => handleSort('dueDate')}
+                                >
+                                    到期日
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'paymentDate'}
+                                    direction={orderBy === 'paymentDate' ? order : 'asc'}
+                                    onClick={() => handleSort('paymentDate')}
+                                >
+                                    繳費日期
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'paymentMethod'}
+                                    direction={orderBy === 'paymentMethod' ? order : 'asc'}
+                                    onClick={() => handleSort('paymentMethod')}
+                                >
+                                    繳費方式
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'status'}
+                                    direction={orderBy === 'status' ? order : 'asc'}
+                                    onClick={() => handleSort('status')}
+                                >
+                                    狀態
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'note'}
+                                    direction={orderBy === 'note' ? order : 'asc'}
+                                    onClick={() => handleSort('note')}
+                                >
+                                    備註
+                                </TableSortLabel>
+                            </TableCell>
                             <TableCell>操作</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {histories.length === 0 ? (
+                        {sortedHistories.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={11} align="center">
                                     目前沒有符合條件的歷史記錄
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            histories.map((record) => (
+                            sortedHistories.map((record) => (
                                 <TableRow key={record.id}>
                                     <TableCell>{record.userId}</TableCell>
                                     <TableCell>{record.userName}</TableCell>
