@@ -62,7 +62,25 @@ router.get('/', authMiddleware, async (req, res) => {
             order: [['createdAt', 'DESC']]
         });
 
-        res.json(fees);
+        // 統一格式化，補上 camelCase 欄位
+        const formattedFees = fees.map(fee => {
+            const f: any = fee;
+            return {
+                ...f.toJSON(),
+                amount: parseFloat(f.amount),
+                memberId: f.member_id,
+                memberNo: f.member_no,
+                memberName: f.member_name,
+                memberType: f.member_type,
+                dueDate: f.due_date,
+                paidDate: f.paid_date,
+                paymentMethod: f.payment_method,
+                createdAt: f.created_at,
+                updatedAt: f.updated_at
+            };
+        });
+
+        res.json(formattedFees);
     } catch (error) {
         console.error('獲取費用記錄失敗:', error);
         res.status(500).json({ error: '獲取費用記錄失敗' });
