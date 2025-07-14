@@ -66,7 +66,7 @@ router.get('/', authMiddleware, async (req, res) => {
         const formattedFees = fees.map(fee => {
             const f: any = fee;
             return {
-                ...f.toJSON(),
+                id: f.id,
                 amount: parseFloat(f.amount),
                 memberId: f.member_id,
                 memberNo: f.member_no,
@@ -75,6 +75,8 @@ router.get('/', authMiddleware, async (req, res) => {
                 dueDate: f.due_date,
                 paidDate: f.paid_date,
                 paymentMethod: f.payment_method,
+                status: f.status,
+                note: f.note,
                 createdAt: f.created_at,
                 updatedAt: f.updated_at
             };
