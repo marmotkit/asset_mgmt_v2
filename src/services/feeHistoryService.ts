@@ -267,16 +267,40 @@ const exportToExcel = async (filter: FeeHistoryFilter): Promise<Blob> => {
     return new Blob([csvContentWithBOM], { type: 'text/csv;charset=utf-8' });
 };
 
+// 取得 API_BASE_URL
+function getApiBaseUrl() {
+    // @ts-ignore
+    return (ApiService as any).API_BASE_URL || '';
+}
+
+// 取得 API 資料的工具
+export async function apiGet<T>(url: string, params?: any): Promise<T> {
+    const axios = (window as any).axios || (await import('axios')).default;
+    const baseURL = getApiBaseUrl();
+    const response = await axios.get(baseURL + url, { params });
+    return response.data;
+}
+
 export async function getHistoriesFromApi(filter?: FeeHistoryFilter): Promise<FeeHistory[]> {
-    const histories = await getHistories(filter);
-
-    return histories.filter((history: FeeHistory) => {
-        const matchStatus = !filter.status || history.action.includes(filter.status);
-        const matchMember = !filter.memberId || history.memberId === filter.memberId;
-        const matchUser = !filter.userId || history.memberId === filter.userId;
-        const matchDate = (!filter.startDate || history.date >= filter.startDate) &&
-            (!filter.endDate || history.date <= filter.endDate);
-
-        return matchStatus && matchMember && matchUser && matchDate;
-    });
+    const params: any = { isHistoryPage: true };
+    const data = await apiGet<any[]>('/fees', params);
+    return (data || []).map((item: any) => ({
+        id: item.id,
+        memberId: item.memberId,
+        memberName: item.memberName,
+        memberType: item.memberType,
+        amount: item.amount,
+        dueDate: item.dueDate,
+        paymentDate: item.paidDate,
+        paymentMethod: item.paymentMethod,
+        status: item.status,
+        note: item.note,
+        action: item.status,
+        date: item.paidDate || item.dueDate,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        userId: item.memberId || '',
+        userName: item.memberName || '',
+        paymentId: item.id || ''
+    }));
 } 
