@@ -9,61 +9,17 @@ const router = Router();
 // 獲取所有費用記錄
 router.get('/', authMiddleware, async (req, res) => {
     try {
-        const { isHistoryPage, type } = req.query;
+        // 依據 isHistoryPage 決定查詢條件
+        const isHistoryPage = req.query.isHistoryPage === 'true';
 
-        let whereClause: any = {};
-
-        // 如果是歷史記錄頁面，顯示所有記錄
-        if (isHistoryPage === 'true') {
-            // 顯示所有記錄
-        } else {
-            // 顯示待收款與已收款
-            whereClause.status = ['待收款', '已收款'];
-        }
-
-        // 如果是設定類型，返回費用設定
-        if (type === 'setting') {
-            // 返回費用設定資料
-            const feeSettings = [
-                {
-                    id: '1',
-                    memberType: '一般會員',
-                    amount: 30000,
-                    period: '年',
-                    description: '一般會員年費'
-                },
-                {
-                    id: '2',
-                    memberType: '永久會員',
-                    amount: 300000,
-                    period: '5年',
-                    description: '永久會員5年費用'
-                },
-                {
-                    id: '3',
-                    memberType: '商務會員',
-                    amount: 3000000,
-                    period: '5年',
-                    description: '商務會員5年費用'
-                },
-                {
-                    id: '4',
-                    memberType: '管理員',
-                    amount: 0,
-                    period: '永久',
-                    description: '管理員免費'
-                }
-            ];
-            return res.json(feeSettings);
-        }
-
-        // 改用原生 SQL 查詢所有欄位
-        const [fees] = await sequelize.query(`
+        const sql = `
             SELECT id, member_id, member_no, member_name, member_type, amount, due_date, status, note, created_at, updated_at, payment_method, paid_date
             FROM fees
-            ${whereClause.status ? "WHERE status IN ('待收款', '已收款')" : ''}
+            ${!isHistoryPage ? "WHERE status IN ('待收款', '已收款')" : ''}
             ORDER BY created_at DESC
-        `, { type: QueryTypes.SELECT });
+        `;
+
+        const [fees] = await sequelize.query(sql, { type: QueryTypes.SELECT });
         const feeList: any[] = Array.isArray(fees) ? fees : [];
 
         // 統一格式化，補上 camelCase 欄位
