@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { FeeHistory, FeeHistoryFilter } from '../types/fee';
 import { storageService } from './storageService';
+import { ApiService } from './api.service';
 
 const STORAGE_KEY = 'fee_history';
 
