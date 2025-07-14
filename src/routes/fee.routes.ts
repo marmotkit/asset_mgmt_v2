@@ -102,7 +102,8 @@ router.post('/', authMiddleware, async (req, res) => {
                 id, member_id, member_no, member_name, member_type, 
                 amount, due_date, status, note, created_at, updated_at
             ) VALUES (
-                gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()
+                gen_random_uuid(), $1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, 
+                $5::DECIMAL, $6::DATE, $7::VARCHAR, $8::TEXT, NOW(), NOW()
             ) RETURNING *
         `, {
             bind: [
