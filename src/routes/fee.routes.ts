@@ -151,24 +151,22 @@ router.put('/:id', authMiddleware, async (req, res) => {
         const fields = [];
         const values = [];
         let idx = 1;
-        if (updateData.status !== undefined) {
-            fields.push(`status = $${idx++}`);
-            values.push(updateData.status);
+        const allowedFields = [
+            'status', 'amount', 'due_date', 'note', 'paid_date', 'payment_method',
+            'member_id', 'member_no', 'member_name', 'member_type'
+        ];
+        for (const key of allowedFields) {
+            if (updateData[key] !== undefined) {
+                // 資料庫欄位為 snake_case
+                const dbField = key;
+                fields.push(`${dbField} = $${idx++}`);
+                values.push(updateData[key]);
+            }
         }
-        if (updateData.amount !== undefined) {
-            fields.push(`amount = $${idx++}`);
-            values.push(updateData.amount);
-        }
-        if (updateData.dueDate !== undefined) {
-            fields.push(`due_date = $${idx++}`);
-            values.push(updateData.dueDate);
-        }
-        if (updateData.note !== undefined) {
-            fields.push(`note = $${idx++}`);
-            values.push(updateData.note);
-        }
-        // 其他欄位可依需求擴充
         fields.push(`updated_at = NOW()`);
+        if (fields.length === 1) {
+            return res.status(400).json({ error: '沒有可更新的欄位' });
+        }
         const sql = `UPDATE fees SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`;
         values.push(id);
         const [result] = await sequelize.query(sql, {
@@ -178,7 +176,6 @@ router.put('/:id', authMiddleware, async (req, res) => {
         if (!result || !result[0]) {
             return res.status(404).json({ error: '費用記錄不存在' });
         }
-        // 格式化回傳資料
         const updatedFee: any = result[0];
         const formattedFee = {
             ...updatedFee,
@@ -188,6 +185,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
             memberName: updatedFee.member_name,
             memberType: updatedFee.member_type,
             dueDate: updatedFee.due_date,
+            paidDate: updatedFee.paid_date,
+            paymentMethod: updatedFee.payment_method,
             createdAt: updatedFee.created_at,
             updatedAt: updatedFee.updated_at
         };
