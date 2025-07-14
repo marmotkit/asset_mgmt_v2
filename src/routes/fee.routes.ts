@@ -13,6 +13,9 @@ router.get('/', authMiddleware, async (req, res) => {
         // 查詢 current_schema
         const [schemaInfo] = await sequelize.query('SELECT current_schema();', { type: QueryTypes.SELECT });
         console.log('API 查詢時的 current_schema:', schemaInfo);
+        // 查詢 current_user
+        const [userInfo] = await sequelize.query('SELECT current_user;', { type: QueryTypes.SELECT });
+        console.log('API 查詢時的 current_user:', userInfo);
         // 依據 isHistoryPage 決定查詢條件
         const isHistoryPage = req.query.isHistoryPage === 'true';
 
