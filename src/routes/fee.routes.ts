@@ -9,6 +9,7 @@ const router = Router();
 // 獲取所有費用記錄
 router.get('/', authMiddleware, async (req, res) => {
     try {
+        console.log('收到 /api/fees 請求:', req.query);
         // 依據 isHistoryPage 決定查詢條件
         const isHistoryPage = req.query.isHistoryPage === 'true';
 
@@ -18,9 +19,12 @@ router.get('/', authMiddleware, async (req, res) => {
             ${!isHistoryPage ? "WHERE status IN ('待收款', '已收款')" : ''}
             ORDER BY created_at DESC
         `;
+        console.log('執行 SQL:', sql);
+        console.log('資料庫連線:', sequelize.config.host, sequelize.config.database);
 
         const [fees] = await sequelize.query(sql, { type: QueryTypes.SELECT });
         const feeList: any[] = Array.isArray(fees) ? fees : [];
+        console.log('SQL 查詢結果:', feeList);
 
         // 統一格式化，補上 camelCase 欄位
         const formattedFees = feeList.map((f: any) => ({
@@ -38,6 +42,7 @@ router.get('/', authMiddleware, async (req, res) => {
             createdAt: f.created_at,
             updatedAt: f.updated_at
         }));
+        console.log('API 回傳資料:', formattedFees);
 
         res.json(formattedFees);
     } catch (error) {
