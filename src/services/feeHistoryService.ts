@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { FeeHistory, FeeHistoryFilter } from '../types/fee';
 import { storageService } from './storageService';
 import { ApiService } from './api.service';
+import axios from 'axios';
 
 const STORAGE_KEY = 'fee_history';
 
@@ -276,9 +277,14 @@ function getApiBaseUrl() {
 
 // 取得 API 資料的工具
 export async function apiGet<T>(url: string, params?: any): Promise<T> {
-    const axios = (window as any).axios || (await import('axios')).default;
+    const token = localStorage.getItem('token');
     const baseURL = getApiBaseUrl();
-    const response = await axios.get(baseURL + url, { params });
+    const response = await axios.get(baseURL + url, {
+        params,
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
     return response.data;
 }
 
