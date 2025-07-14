@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import Fee from '../models/Fee'; // <--- 這裡只能這樣寫
 import { authMiddleware } from '../middlewares/auth.middleware';
+import sequelize from '../db/connection';
+import { QueryTypes } from 'sequelize';
 
 const router = Router();
 
@@ -86,17 +88,33 @@ router.post('/', authMiddleware, async (req, res) => {
     try {
         const feeData = req.body;
         console.log('收到創建費用請求:', feeData);
-        console.log('typeof Fee:', typeof Fee);
-        console.log('typeof Fee.create:', typeof Fee.create);
-        console.log('typeof Fee.build:', typeof Fee.build);
-        console.log('Fee.create:', Fee.create);
-        console.log('Fee.build:', Fee.build);
 
-        // 直接使用 create 方法
-        console.log('開始建立費用記錄...');
-        const fee = await Fee.create(feeData);
-        console.log('費用記錄建立成功:', fee);
-        res.status(201).json(fee);
+        // 使用原生 SQL 建立費用記錄
+        console.log('開始使用原生 SQL 建立費用記錄...');
+
+        const results = await sequelize.query(`
+            INSERT INTO fees (
+                id, member_id, member_no, member_name, member_type, 
+                amount, due_date, status, note, created_at, updated_at
+            ) VALUES (
+                gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()
+            ) RETURNING *
+        `, {
+            bind: [
+                feeData.memberId,
+                feeData.memberNo,
+                feeData.memberName,
+                feeData.memberType,
+                feeData.amount,
+                feeData.dueDate,
+                feeData.status,
+                feeData.note
+            ],
+            type: QueryTypes.INSERT
+        });
+
+        console.log('費用記錄建立成功:', results);
+        res.status(201).json(results[0]);
     } catch (error) {
         console.error('創建費用記錄失敗:', error);
         res.status(500).json({ error: '創建費用記錄失敗', detail: error.message, stack: error.stack });
