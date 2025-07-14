@@ -64,21 +64,21 @@ router.get('/', authMiddleware, async (req, res) => {
 
         // 統一格式化，補上 camelCase 欄位
         const formattedFees = fees.map(fee => {
-            const f: any = fee;
+            const f = fee.get({ plain: true });
             return {
                 id: f.id,
                 amount: parseFloat(f.amount),
-                memberId: f.member_id,
-                memberNo: f.member_no,
-                memberName: f.member_name,
-                memberType: f.member_type,
-                dueDate: f.due_date,
-                paidDate: f.paid_date,
-                paymentMethod: f.payment_method,
+                memberId: f.memberId,
+                memberNo: f.memberNo,
+                memberName: f.memberName,
+                memberType: f.memberType,
+                dueDate: f.dueDate,
+                paidDate: f.paidDate,
+                paymentMethod: f.paymentMethod,
                 status: f.status,
                 note: f.note,
-                createdAt: f.created_at,
-                updatedAt: f.updated_at
+                createdAt: f.createdAt,
+                updatedAt: f.updatedAt
             };
         });
 
