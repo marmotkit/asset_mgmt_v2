@@ -92,16 +92,22 @@ export const FeeHistory: React.FC = () => {
     const [orderBy, setOrderBy] = useState<string>('dueDate');
     const [order, setOrder] = useState<'asc' | 'desc'>('asc');
 
+    // 排序功能防呆
     const handleSort = (property: string) => {
-        const isAsc = orderBy === property && order === 'asc';
-        setOrder(isAsc ? 'desc' : 'asc');
-        setOrderBy(property);
+        if (orderBy === property) {
+            setOrder(order === 'asc' ? 'desc' : 'asc');
+        } else {
+            setOrder('asc');
+            setOrderBy(property);
+        }
     };
 
+    // 排序時防呆處理 undefined/null
     const sortedHistories = [...histories].sort((a, b) => {
-        const aValue = a[orderBy as keyof FeeHistoryType];
-        const bValue = b[orderBy as keyof FeeHistoryType];
-        if (aValue === undefined || bValue === undefined) return 0;
+        let aValue = a[orderBy as keyof FeeHistoryType];
+        let bValue = b[orderBy as keyof FeeHistoryType];
+        if (aValue === undefined || aValue === null) aValue = '';
+        if (bValue === undefined || bValue === null) bValue = '';
         if (typeof aValue === 'number' && typeof bValue === 'number') {
             return order === 'asc' ? aValue - bValue : bValue - aValue;
         }
@@ -109,6 +115,8 @@ export const FeeHistory: React.FC = () => {
             ? String(aValue).localeCompare(String(bValue))
             : String(bValue).localeCompare(String(aValue));
     });
+    // 除錯用 log
+    console.log('sortedHistories', sortedHistories);
 
     const loadFeeHistory = async () => {
         console.log('loadFeeHistory called', filter, dateRange);
@@ -320,7 +328,7 @@ export const FeeHistory: React.FC = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>
+                            <TableCell sortDirection={orderBy === 'userId' ? order : false}>
                                 <TableSortLabel
                                     active={orderBy === 'userId'}
                                     direction={orderBy === 'userId' ? order : 'asc'}
@@ -329,7 +337,7 @@ export const FeeHistory: React.FC = () => {
                                     會員編號
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell>
+                            <TableCell sortDirection={orderBy === 'userName' ? order : false}>
                                 <TableSortLabel
                                     active={orderBy === 'userName'}
                                     direction={orderBy === 'userName' ? order : 'asc'}
@@ -338,7 +346,7 @@ export const FeeHistory: React.FC = () => {
                                     姓名
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell>
+                            <TableCell sortDirection={orderBy === 'memberType' ? order : false}>
                                 <TableSortLabel
                                     active={orderBy === 'memberType'}
                                     direction={orderBy === 'memberType' ? order : 'asc'}
@@ -347,7 +355,7 @@ export const FeeHistory: React.FC = () => {
                                     會員類型
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell align="right">
+                            <TableCell align="right" sortDirection={orderBy === 'amount' ? order : false}>
                                 <TableSortLabel
                                     active={orderBy === 'amount'}
                                     direction={orderBy === 'amount' ? order : 'asc'}
@@ -356,7 +364,7 @@ export const FeeHistory: React.FC = () => {
                                     金額
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell>
+                            <TableCell sortDirection={orderBy === 'dueDate' ? order : false}>
                                 <TableSortLabel
                                     active={orderBy === 'dueDate'}
                                     direction={orderBy === 'dueDate' ? order : 'asc'}
@@ -365,7 +373,7 @@ export const FeeHistory: React.FC = () => {
                                     到期日
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell>
+                            <TableCell sortDirection={orderBy === 'paymentDate' ? order : false}>
                                 <TableSortLabel
                                     active={orderBy === 'paymentDate'}
                                     direction={orderBy === 'paymentDate' ? order : 'asc'}
@@ -374,7 +382,7 @@ export const FeeHistory: React.FC = () => {
                                     繳費日期
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell>
+                            <TableCell sortDirection={orderBy === 'paymentMethod' ? order : false}>
                                 <TableSortLabel
                                     active={orderBy === 'paymentMethod'}
                                     direction={orderBy === 'paymentMethod' ? order : 'asc'}
@@ -383,7 +391,7 @@ export const FeeHistory: React.FC = () => {
                                     繳費方式
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell>
+                            <TableCell sortDirection={orderBy === 'status' ? order : false}>
                                 <TableSortLabel
                                     active={orderBy === 'status'}
                                     direction={orderBy === 'status' ? order : 'asc'}
@@ -392,7 +400,7 @@ export const FeeHistory: React.FC = () => {
                                     狀態
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell>
+                            <TableCell sortDirection={orderBy === 'note' ? order : false}>
                                 <TableSortLabel
                                     active={orderBy === 'note'}
                                     direction={orderBy === 'note' ? order : 'asc'}
