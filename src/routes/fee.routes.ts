@@ -91,6 +91,11 @@ router.post('/', authMiddleware, async (req, res) => {
 
         // 使用原生 SQL 建立費用記錄
         console.log('開始使用原生 SQL 建立費用記錄...');
+        console.log('feeData 內容:', JSON.stringify(feeData, null, 2));
+
+        // 檢查 feeData 是否為陣列
+        const dataToInsert = Array.isArray(feeData) ? feeData[0] : feeData;
+        console.log('要插入的資料:', JSON.stringify(dataToInsert, null, 2));
 
         const results = await sequelize.query(`
             INSERT INTO fees (
@@ -101,14 +106,14 @@ router.post('/', authMiddleware, async (req, res) => {
             ) RETURNING *
         `, {
             bind: [
-                feeData.memberId,
-                feeData.memberNo,
-                feeData.memberName,
-                feeData.memberType,
-                feeData.amount,
-                feeData.dueDate,
-                feeData.status,
-                feeData.note
+                dataToInsert.memberId,
+                dataToInsert.memberNo,
+                dataToInsert.memberName,
+                dataToInsert.memberType,
+                dataToInsert.amount,
+                dataToInsert.dueDate,
+                dataToInsert.status,
+                dataToInsert.note
             ],
             type: QueryTypes.INSERT
         });
