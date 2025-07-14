@@ -37,7 +37,7 @@ import {
 import { FeeHistory as FeeHistoryType, FeeHistoryFilter, PaymentStatus } from '../../../types/fee';
 import { formatDate } from '../../../utils/dateUtils';
 import { formatCurrency } from '../../../utils/numberUtils';
-import { feeHistoryService } from '../../../services/feeHistoryService';
+import { feeHistoryService, getHistoriesFromApi } from '../../../services/feeHistoryService';
 
 type StatusOption = {
     value: '' | PaymentStatus;
@@ -90,6 +90,7 @@ export const FeeHistory: React.FC = () => {
     });
 
     const loadFeeHistory = async () => {
+        console.log('loadFeeHistory called', filter, dateRange);
         setLoading(true);
         try {
             const historyFilter: FeeHistoryFilter = {
@@ -97,7 +98,9 @@ export const FeeHistory: React.FC = () => {
                 startDate: dateRange.startDate ? dateRange.startDate.toISOString().split('T')[0] : undefined,
                 endDate: dateRange.endDate ? dateRange.endDate.toISOString().split('T')[0] : undefined
             };
-            const data = await feeHistoryService.getHistories(historyFilter);
+            console.log('before getHistoriesFromApi', historyFilter);
+            const data = await getHistoriesFromApi(historyFilter);
+            console.log('after getHistoriesFromApi', data);
             setHistories(data);
         } catch (error) {
             console.error('載入會費歷史記錄失敗:', error);
