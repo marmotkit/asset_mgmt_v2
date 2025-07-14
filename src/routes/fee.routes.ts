@@ -18,7 +18,7 @@ router.get('/', authMiddleware, async (req, res) => {
             // 顯示所有記錄
         } else {
             // 只顯示未付款的記錄
-            whereClause.status = 'pending';
+            whereClause.status = '待收款';
         }
 
         // 如果是設定類型，返回費用設定
