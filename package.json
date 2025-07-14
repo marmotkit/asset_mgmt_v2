@@ -18,6 +18,9 @@
   "author": "",
   "license": "ISC",
   "description": "這是一個基於 React 的資產管理系統，提供會員管理、投資組合追蹤、資產配置等功能的網頁應用程式。",
+  "engines": {
+    "node": "18.x"
+  },
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",

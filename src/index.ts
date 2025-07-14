@@ -2,6 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import sequelize from './db/connection';
+import Fee from './models/Fee';
+// @ts-ignore
+const sequelizePkg = require('sequelize');
+
+console.log('Sequelize version:', sequelizePkg.version);
+console.log('Node version:', process.version);
+console.log('Fee prototype:', Object.getOwnPropertyNames(Fee.prototype));
 
 // 初始化模型
 import './models';
