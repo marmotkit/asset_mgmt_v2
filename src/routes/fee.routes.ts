@@ -57,30 +57,31 @@ router.get('/', authMiddleware, async (req, res) => {
             return res.json(feeSettings);
         }
 
-        const fees = await Fee.findAll({
-            where: whereClause,
-            order: [['createdAt', 'DESC']]
-        });
+        // 改用原生 SQL 查詢所有欄位
+        const [fees] = await sequelize.query(`
+            SELECT id, member_id, member_no, member_name, member_type, amount, due_date, status, note, created_at, updated_at, payment_method, paid_date
+            FROM fees
+            ${whereClause.status ? "WHERE status IN ('待收款', '已收款')" : ''}
+            ORDER BY created_at DESC
+        `, { type: QueryTypes.SELECT });
+        const feeList: any[] = Array.isArray(fees) ? fees : [];
 
         // 統一格式化，補上 camelCase 欄位
-        const formattedFees = fees.map(fee => {
-            const f = fee.get({ plain: true });
-            return {
-                id: f.id,
-                amount: parseFloat(f.amount),
-                memberId: f.memberId,
-                memberNo: f.memberNo,
-                memberName: f.memberName,
-                memberType: f.memberType,
-                dueDate: f.dueDate,
-                paidDate: f.paidDate,
-                paymentMethod: f.paymentMethod,
-                status: f.status,
-                note: f.note,
-                createdAt: f.createdAt,
-                updatedAt: f.updatedAt
-            };
-        });
+        const formattedFees = feeList.map((f: any) => ({
+            id: f.id,
+            amount: parseFloat(f.amount),
+            memberId: f.member_id,
+            memberNo: f.member_no,
+            memberName: f.member_name,
+            memberType: f.member_type,
+            dueDate: f.due_date,
+            paidDate: f.paid_date,
+            paymentMethod: f.payment_method,
+            status: f.status,
+            note: f.note,
+            createdAt: f.created_at,
+            updatedAt: f.updated_at
+        }));
 
         res.json(formattedFees);
     } catch (error) {
