@@ -2,7 +2,7 @@ import { Router } from 'express';
 import Fee from '../models/Fee'; // <--- 這裡只能這樣寫
 import { authMiddleware } from '../middlewares/auth.middleware';
 import sequelize from '../db/connection';
-import { QueryTypes } from 'sequelize';
+import { QueryTypes, Op } from 'sequelize';
 
 const router = Router();
 
@@ -17,8 +17,8 @@ router.get('/', authMiddleware, async (req, res) => {
         if (isHistoryPage === 'true') {
             // 顯示所有記錄
         } else {
-            // 只顯示未付款的記錄
-            whereClause.status = '待收款';
+            // 顯示待收款與已收款
+            whereClause.status = ['待收款', '已收款'];
         }
 
         // 如果是設定類型，返回費用設定
