@@ -67,6 +67,12 @@ const getPaymentMethodLabel = (method: PaymentMethod | undefined | string) => {
     return methodConfig[method.toLowerCase()] || method;
 };
 
+// 日期格式化工具
+const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    return dateStr.split('T')[0];
+};
+
 const FeePaymentStatus: React.FC = () => {
     const [payments, setPayments] = useState<PaymentStatusRecord[]>([]);
     const [feeSettings, setFeeSettings] = useState<FeeSetting[]>([]);
@@ -90,11 +96,12 @@ const FeePaymentStatus: React.FC = () => {
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [availableMembers, setAvailableMembers] = useState<Array<{
         id: string;
+        memberNo: string;
         name: string;
         type: string;
     }>>([
-        { id: 'M001', name: '張三', type: '一般會員' },
-        { id: 'M002', name: '李四', type: '商務會員' },
+        { id: 'M001', memberNo: 'M001', name: '張三', type: '一般會員' },
+        { id: 'M002', memberNo: 'M002', name: '李四', type: '商務會員' },
         // 這裡應該從 API 獲取會員列表
     ]);
     const [currentTab, setCurrentTab] = useState<string>(() => {
@@ -154,6 +161,7 @@ const FeePaymentStatus: React.FC = () => {
                 const users = await ApiService.getUsers();
                 const members = users.map((user: User) => ({
                     id: user.memberNo,
+                    memberNo: user.memberNo,
                     name: user.name,
                     type: user.role === 'lifetime' ? '永久會員' :
                         user.role === 'admin' ? '管理員' :
@@ -268,6 +276,7 @@ const FeePaymentStatus: React.FC = () => {
                     const year = Number(selectedYear) + i;
                     paymentsToCreate.push({
                         memberId: member.id,
+                        memberNo: member.memberNo, // <--- 補上這行
                         memberName: member.name,
                         memberType: member.type,
                         amount: perYearAmount,
@@ -293,6 +302,7 @@ const FeePaymentStatus: React.FC = () => {
                 // 原本邏輯：只產生單一年度
                 const newPayment = {
                     memberId: member.id,
+                    memberNo: member.memberNo, // <--- 補上這行
                     memberName: member.name,
                     memberType: member.type,
                     amount: feeSetting.amount,
@@ -461,9 +471,9 @@ const FeePaymentStatus: React.FC = () => {
                                 <TableCell>{payment.memberId}</TableCell>
                                 <TableCell>{payment.memberName}</TableCell>
                                 <TableCell>{payment.memberType}</TableCell>
-                                <TableCell align="right">{payment.amount.toLocaleString()}</TableCell>
-                                <TableCell>{payment.dueDate}</TableCell>
-                                <TableCell>{payment.paidDate || '-'}</TableCell>
+                                <TableCell align="right">{payment.amount?.toLocaleString?.() ?? payment.amount}</TableCell>
+                                <TableCell>{formatDate(payment.dueDate)}</TableCell>
+                                <TableCell>{formatDate(payment.paidDate)}</TableCell>
                                 <TableCell>{getPaymentMethodLabel(payment.paymentMethod)}</TableCell>
                                 <TableCell>{getStatusChip(payment.status)}</TableCell>
                                 <TableCell>{payment.note || '-'}</TableCell>

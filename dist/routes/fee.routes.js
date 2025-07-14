@@ -85,7 +85,20 @@ router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
         const feeData = req.body;
         console.log('收到創建費用請求:', feeData);
-        const fee = await Fee_1.default.create(feeData);
+        console.log('typeof Fee:', typeof Fee_1.default);
+        console.log('typeof Fee.create:', typeof Fee_1.default.create);
+        console.log('typeof Fee.build:', typeof Fee_1.default.build);
+        // console.log('typeof Fee.save:', typeof Fee.save); // Fee.save 是 instance method
+        console.log('Fee.create:', Fee_1.default.create);
+        console.log('Fee.build:', Fee_1.default.build);
+        // 嘗試用 build + save 方式
+        const fee = Fee_1.default.build(feeData);
+        console.log('fee instanceof Fee:', fee instanceof Fee_1.default);
+        console.log('fee:', fee);
+        // console.log('fee.__proto__:', fee.__proto__); // __proto__ 不是型別安全屬性
+        console.log('Object.getPrototypeOf(fee):', Object.getPrototypeOf(fee));
+        console.log('Object.getOwnPropertyNames(fee):', Object.getOwnPropertyNames(fee));
+        await fee.save();
         res.status(201).json(fee);
     }
     catch (error) {

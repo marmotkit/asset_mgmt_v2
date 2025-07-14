@@ -7,6 +7,12 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const connection_1 = __importDefault(require("./db/connection"));
+const Fee_1 = __importDefault(require("./models/Fee"));
+// @ts-ignore
+const sequelizePkg = require('sequelize');
+console.log('Sequelize version:', sequelizePkg.version);
+console.log('Node version:', process.version);
+console.log('Fee prototype:', Object.getOwnPropertyNames(Fee_1.default.prototype));
 // 初始化模型
 require("./models");
 // 路由
@@ -36,8 +42,42 @@ app.get('/', (req, res) => {
 });
 // 啟動時同步所有 Sequelize model，確保 model 註冊正確
 connection_1.default.sync({ alter: false })
-    .then(() => {
+    .then(async () => {
     console.log('資料庫同步成功');
+    // 檢查並建立 fees 表（如果不存在）
+    try {
+        const [results] = await connection_1.default.query(`
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'fees';
+            `);
+        if (results.length === 0) {
+            console.log('建立 fees 資料表...');
+            await connection_1.default.query(`
+                    CREATE TABLE fees (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        member_id VARCHAR(255) NOT NULL,
+                        member_no VARCHAR(255) NOT NULL,
+                        member_name VARCHAR(255) NOT NULL,
+                        member_type VARCHAR(255) NOT NULL,
+                        amount DECIMAL(12,2) NOT NULL,
+                        due_date DATE NOT NULL,
+                        status VARCHAR(255) NOT NULL DEFAULT 'pending',
+                        note TEXT,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    );
+                `);
+            console.log('fees 資料表建立成功');
+        }
+        else {
+            console.log('fees 資料表已存在');
+        }
+    }
+    catch (error) {
+        console.error('檢查/建立 fees 表時發生錯誤:', error);
+    }
     app.listen(PORT, () => {
         console.log(`服務器運行在 port ${PORT}`);
     });

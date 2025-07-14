@@ -1,7 +1,7 @@
 // 資產管理系統配置檔案
 window.APP_CONFIG = {
     // API 基礎 URL
-    API_BASE_URL: "https://asset-mgmt-api.onrender.com/api",
+    API_BASE_URL: "https://asset-mgmt-api-clean.onrender.com/api",
 
     // 系統名稱
     APP_NAME: '資產管理系統',

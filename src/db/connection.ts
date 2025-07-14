@@ -7,13 +7,13 @@ const DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:postgres@l
 
 const sequelize = new Sequelize(DATABASE_URL, {
     dialect: 'postgres',
-    ssl: process.env.NODE_ENV === 'production',
+    logging: false,
     dialectOptions: {
-        ssl: process.env.NODE_ENV === 'production' ? {
+        ssl: {
             require: true,
-            rejectUnauthorized: false
-        } : false
-    }
+            rejectUnauthorized: false,
+        },
+    },
 });
 
 export default sequelize; 

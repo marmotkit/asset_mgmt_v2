@@ -14,21 +14,43 @@ Fee.init({
         primaryKey: true,
     },
     memberId: {
-        type: sequelize_1.DataTypes.UUID,
+        type: sequelize_1.DataTypes.STRING,
         allowNull: false,
         field: 'member_id',
     },
-    memberNo: sequelize_1.DataTypes.STRING,
-    memberName: sequelize_1.DataTypes.STRING,
-    memberType: sequelize_1.DataTypes.STRING,
-    amount: sequelize_1.DataTypes.DECIMAL(12, 2),
+    memberNo: {
+        type: sequelize_1.DataTypes.STRING,
+        allowNull: false,
+        field: 'member_no',
+    },
+    memberName: {
+        type: sequelize_1.DataTypes.STRING,
+        allowNull: false,
+        field: 'member_name',
+    },
+    memberType: {
+        type: sequelize_1.DataTypes.STRING,
+        allowNull: false,
+        field: 'member_type',
+    },
+    amount: {
+        type: sequelize_1.DataTypes.DECIMAL(12, 2),
+        allowNull: false,
+    },
     dueDate: {
         type: sequelize_1.DataTypes.DATEONLY,
         allowNull: false,
         field: 'due_date',
     },
-    status: sequelize_1.DataTypes.STRING,
-    note: sequelize_1.DataTypes.TEXT,
+    status: {
+        type: sequelize_1.DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'pending',
+    },
+    note: {
+        type: sequelize_1.DataTypes.TEXT,
+        allowNull: true,
+    },
     createdAt: {
         type: sequelize_1.DataTypes.DATE,
         defaultValue: sequelize_1.DataTypes.NOW,

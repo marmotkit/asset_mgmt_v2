@@ -18,7 +18,7 @@ import { AccountPayable, AccountReceivable, AccountRecord, MonthlyClosing } from
 
 // 設置一個axios實例
 const apiClient = axios.create({
-    baseURL: 'https://asset-mgmt-api-test.onrender.com/api',
+    baseURL: 'https://asset-mgmt-api-clean.onrender.com/api',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -60,10 +60,10 @@ export class ApiService {
         const hostname = window.location.hostname;
         const isRender = hostname.includes('render.com') || hostname.includes('onrender.com');
         const baseUrl = isRender
-            ? 'https://asset-mgmt-api-test.onrender.com/api'  // 雲端後端 API 地址
+            ? 'https://asset-mgmt-api-clean.onrender.com/api'  // 雲端後端 API 地址
             : (hostname === 'localhost' || hostname === '127.0.0.1'
                 ? '/api'  // 本地開發環境
-                : 'https://asset-mgmt-api-test.onrender.com/api'); // 其他環境也用雲端地址
+                : 'https://asset-mgmt-api-clean.onrender.com/api'); // 其他環境也用雲端地址
 
         console.log(`API 服務初始化 - 主機名稱: ${hostname}, 基礎 URL: ${baseUrl}, 是否在 Render: ${isRender}`);
         return baseUrl;
