@@ -7,6 +7,12 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const connection_1 = __importDefault(require("./db/connection"));
+const Fee_1 = __importDefault(require("./models/Fee"));
+// @ts-ignore
+const sequelizePkg = require('sequelize');
+console.log('Sequelize version:', sequelizePkg.version);
+console.log('Node version:', process.version);
+console.log('Fee prototype:', Object.getOwnPropertyNames(Fee_1.default.prototype));
 // 初始化模型
 require("./models");
 // 路由

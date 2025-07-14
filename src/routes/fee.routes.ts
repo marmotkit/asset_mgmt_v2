@@ -94,6 +94,11 @@ router.post('/', authMiddleware, async (req, res) => {
         console.log('Fee.build:', Fee.build);
         // 嘗試用 build + save 方式
         const fee = Fee.build(feeData);
+        console.log('fee instanceof Fee:', fee instanceof Fee);
+        console.log('fee:', fee);
+        // console.log('fee.__proto__:', fee.__proto__); // __proto__ 不是型別安全屬性
+        console.log('Object.getPrototypeOf(fee):', Object.getPrototypeOf(fee));
+        console.log('Object.getOwnPropertyNames(fee):', Object.getOwnPropertyNames(fee));
         await fee.save();
         res.status(201).json(fee);
     } catch (error) {
