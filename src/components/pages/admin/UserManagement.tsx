@@ -24,7 +24,8 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import { User, UserRole, UserStatus } from '../../../types/user';
-import { ApiService } from '../../../services/api.service';
+import { userService } from '../../../services/userService';
+import { companyService } from '../../../services/companyService';
 import UserDetailDialog from './UserDetailDialog';
 import { Company } from '../../../types/company';
 
@@ -47,7 +48,7 @@ const UserManagement: React.FC = () => {
         try {
             setLoading(true);
             setError(null);
-            const data = await ApiService.getUsers();
+            const data = await userService.getUsers();
             setUsers(data || []);
         } catch (err) {
             setError('載入會員資料失敗');
@@ -59,7 +60,7 @@ const UserManagement: React.FC = () => {
 
     const loadCompanies = async () => {
         try {
-            const data = await ApiService.getCompanies();
+            const data = await companyService.getCompanies();
             setCompanies(data);
         } catch (error) {
             console.error('載入公司資料失敗:', error);
@@ -95,11 +96,11 @@ const UserManagement: React.FC = () => {
             let savedUser: User;
             if (userData.id) {
                 // 更新現有會員
-                savedUser = await ApiService.updateUser(userData as User);
+                savedUser = await userService.updateUser(userData.id, userData);
                 console.log('Updated user result:', savedUser);
             } else {
                 // 建立新會員
-                savedUser = await ApiService.createUser(userData as User);
+                savedUser = await userService.createUser(userData);
                 console.log('Created user result:', savedUser);
             }
 
@@ -142,7 +143,7 @@ const UserManagement: React.FC = () => {
         try {
             setLoading(true);
             setError(null);
-            await ApiService.changeUserPassword(resetPwdUser!.id, resetPwd);
+            await userService.resetUserPassword(resetPwdUser!.id, resetPwd);
             setResetPwdDialogOpen(false);
             setResetPwdUser(null);
             setResetPwd('');

@@ -19,7 +19,43 @@ const generateCompanyNo = async () => {
 const getAllCompanies = async (req, res) => {
     try {
         const companies = await Company_1.default.findAll();
-        res.status(200).json(companies);
+        // 處理聯絡人資訊格式，確保返回正確的格式
+        const processedCompanies = companies.map(company => {
+            const companyData = company.toJSON();
+            // 處理聯絡人資訊
+            if (companyData.contact) {
+                try {
+                    // 如果已經是物件，直接使用
+                    if (typeof companyData.contact === 'object') {
+                        return companyData;
+                    }
+                    // 如果是字串，嘗試解析 JSON
+                    if (typeof companyData.contact === 'string') {
+                        const parsedContact = JSON.parse(companyData.contact);
+                        companyData.contact = parsedContact;
+                    }
+                }
+                catch (error) {
+                    console.error('解析聯絡人資訊失敗:', error);
+                    // 如果解析失敗，提供預設值
+                    companyData.contact = {
+                        name: '',
+                        phone: '',
+                        email: ''
+                    };
+                }
+            }
+            else {
+                // 如果沒有聯絡人資訊，提供預設值
+                companyData.contact = {
+                    name: '',
+                    phone: '',
+                    email: ''
+                };
+            }
+            return companyData;
+        });
+        res.status(200).json(processedCompanies);
     }
     catch (error) {
         console.error('獲取公司列表錯誤:', error);
@@ -34,7 +70,32 @@ const getCompanyById = async (req, res) => {
         if (!company) {
             return res.status(404).json({ message: '公司不存在' });
         }
-        res.status(200).json(company);
+        const companyData = company.toJSON();
+        // 處理聯絡人資訊格式
+        if (companyData.contact) {
+            try {
+                if (typeof companyData.contact === 'string') {
+                    const parsedContact = JSON.parse(companyData.contact);
+                    companyData.contact = parsedContact;
+                }
+            }
+            catch (error) {
+                console.error('解析聯絡人資訊失敗:', error);
+                companyData.contact = {
+                    name: '',
+                    phone: '',
+                    email: ''
+                };
+            }
+        }
+        else {
+            companyData.contact = {
+                name: '',
+                phone: '',
+                email: ''
+            };
+        }
+        res.status(200).json(companyData);
     }
     catch (error) {
         console.error('獲取公司詳情錯誤:', error);

@@ -166,4 +166,27 @@ router.delete('/:id', async (req, res) => {
         res.status(500).json({ message: '伺服器錯誤，請稍後再試' });
     }
 });
+// 重設用戶密碼
+router.put('/:id/password', async (req, res) => {
+    try {
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({ message: '新密碼為必填項' });
+        }
+        const user = await User_1.default.findByPk(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: '用戶不存在' });
+        }
+        // 加密新密碼
+        const salt = await bcryptjs_1.default.genSalt(10);
+        const hashedPassword = await bcryptjs_1.default.hash(password, salt);
+        // 更新密碼
+        await user.update({ password: hashedPassword });
+        res.status(200).json({ message: '密碼重設成功' });
+    }
+    catch (error) {
+        console.error('重設密碼錯誤:', error);
+        res.status(500).json({ message: '伺服器錯誤，請稍後再試' });
+    }
+});
 exports.default = router;

@@ -13,7 +13,7 @@ import {
   MenuItem,
   Typography,
 } from '@mui/material';
-import { ApiService } from '../../../services/api.service';
+import { companyService } from '../../../services/companyService';
 import { User, UserRole, UserStatus } from '../../../types/user';
 import { Company } from '../../../types/company';
 
@@ -70,7 +70,7 @@ const UserDetailDialog: React.FC<UserDetailDialogProps> = ({
 
   const loadCompanies = async () => {
     try {
-      const data = await ApiService.getCompanies();
+      const data = await companyService.getCompanies();
       setCompanies(data);
     } catch (error) {
       console.error('載入公司資料失敗:', error);

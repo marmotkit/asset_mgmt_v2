@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = require("react");
 const material_1 = require("@mui/material");
-const api_service_1 = require("../../../services/api.service");
+const companyService_1 = require("../../../services/companyService");
 const defaultFormData = {
     username: '',
     name: '',
@@ -40,7 +40,7 @@ const UserDetailDialog = ({ open, onClose, onSave, user }) => {
     }, [user, open]);
     const loadCompanies = async () => {
         try {
-            const data = await api_service_1.ApiService.getCompanies();
+            const data = await companyService_1.companyService.getCompanies();
             setCompanies(data);
         }
         catch (error) {

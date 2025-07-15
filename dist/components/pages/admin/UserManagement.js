@@ -13,7 +13,8 @@ const DialogTitle_1 = __importDefault(require("@mui/material/DialogTitle"));
 const DialogContent_1 = __importDefault(require("@mui/material/DialogContent"));
 const DialogActions_1 = __importDefault(require("@mui/material/DialogActions"));
 const TextField_1 = __importDefault(require("@mui/material/TextField"));
-const api_service_1 = require("../../../services/api.service");
+const userService_1 = require("../../../services/userService");
+const companyService_1 = require("../../../services/companyService");
 const UserDetailDialog_1 = __importDefault(require("./UserDetailDialog"));
 const UserManagement = () => {
     const [users, setUsers] = (0, react_1.useState)([]);
@@ -33,7 +34,7 @@ const UserManagement = () => {
         try {
             setLoading(true);
             setError(null);
-            const data = await api_service_1.ApiService.getUsers();
+            const data = await userService_1.userService.getUsers();
             setUsers(data || []);
         }
         catch (err) {
@@ -46,7 +47,7 @@ const UserManagement = () => {
     };
     const loadCompanies = async () => {
         try {
-            const data = await api_service_1.ApiService.getCompanies();
+            const data = await companyService_1.companyService.getCompanies();
             setCompanies(data);
         }
         catch (error) {
@@ -77,12 +78,12 @@ const UserManagement = () => {
             let savedUser;
             if (userData.id) {
                 // 更新現有會員
-                savedUser = await api_service_1.ApiService.updateUser(userData);
+                savedUser = await userService_1.userService.updateUser(userData.id, userData);
                 console.log('Updated user result:', savedUser);
             }
             else {
                 // 建立新會員
-                savedUser = await api_service_1.ApiService.createUser(userData);
+                savedUser = await userService_1.userService.createUser(userData);
                 console.log('Created user result:', savedUser);
             }
             await loadUsers();
@@ -127,7 +128,7 @@ const UserManagement = () => {
         try {
             setLoading(true);
             setError(null);
-            await api_service_1.ApiService.changeUserPassword(resetPwdUser.id, resetPwd);
+            await userService_1.userService.resetUserPassword(resetPwdUser.id, resetPwd);
             setResetPwdDialogOpen(false);
             setResetPwdUser(null);
             setResetPwd('');
