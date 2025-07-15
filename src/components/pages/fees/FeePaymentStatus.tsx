@@ -70,7 +70,11 @@ const getPaymentMethodLabel = (method: PaymentMethod | undefined | string) => {
 // 日期格式化工具
 const formatDate = (dateStr?: string) => {
     if (!dateStr) return '-';
-    return dateStr.split('T')[0];
+    return new Date(dateStr).toLocaleDateString('zh-TW', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
 };
 
 const FeePaymentStatus: React.FC = () => {

@@ -198,6 +198,19 @@ export const FeeReport: React.FC = () => {
         if (columnId === 'hasInvoice') {
             return invoiceStatus[record.id] ? '是' : '否';
         }
+
+        // 特殊處理繳費日期格式
+        if (columnId === 'paymentDate') {
+            if (record.paymentDate) {
+                return new Date(record.paymentDate).toLocaleDateString('zh-TW', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            }
+            return '-';
+        }
+
         return record[columnId as keyof FeeHistory] || '-';
     };
 
