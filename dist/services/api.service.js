@@ -522,19 +522,17 @@ class ApiService {
                 params.append('year', year.toString());
             if (month)
                 params.append('month', month.toString());
-            const queryString = params.toString();
-            const url = `/rental-payments${queryString ? `?${queryString}` : ''}`;
-            const response = await apiClient.get(url);
+            const response = await this.get(`/rental-payments?${params.toString()}`);
             return response.data;
         }
         catch (error) {
             console.error('獲取租金收款項目失敗:', error);
-            throw new Error('獲取租金收款項目失敗');
+            return [];
         }
     }
     static async generateRentalPayments(investmentId, year) {
         try {
-            const response = await apiClient.post('/rental-payments/generate', {
+            const response = await this.post('/rental-payments/generate', {
                 investmentId,
                 year
             });
@@ -547,7 +545,7 @@ class ApiService {
     }
     static async updateRentalPayment(id, data) {
         try {
-            const response = await apiClient.put(`/rental-payments/${id}`, data);
+            const response = await this.put(`/rental-payments/${id}`, data);
             return response.data;
         }
         catch (error) {
@@ -557,7 +555,7 @@ class ApiService {
     }
     static async deleteRentalPayment(id) {
         try {
-            await apiClient.delete(`/rental-payments/${id}`);
+            await this.delete(`/rental-payments/${id}`);
         }
         catch (error) {
             console.error('刪除租金收款項目失敗:', error);
@@ -573,7 +571,7 @@ class ApiService {
             if (month !== undefined) {
                 url += `/${month}`;
             }
-            await apiClient.delete(url);
+            await this.delete(url);
         }
         catch (error) {
             console.error('清除租金收款記錄失敗:', error);

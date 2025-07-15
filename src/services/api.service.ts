@@ -644,20 +644,17 @@ export class ApiService {
             if (year) params.append('year', year.toString());
             if (month) params.append('month', month.toString());
 
-            const queryString = params.toString();
-            const url = `/rental-payments${queryString ? `?${queryString}` : ''}`;
-
-            const response = await apiClient.get<RentalPayment[]>(url);
+            const response = await this.get<RentalPayment[]>(`/rental-payments?${params.toString()}`);
             return response.data;
         } catch (error) {
             console.error('獲取租金收款項目失敗:', error);
-            throw new Error('獲取租金收款項目失敗');
+            return [];
         }
     }
 
     public static async generateRentalPayments(investmentId: string, year: number): Promise<void> {
         try {
-            const response = await apiClient.post('/rental-payments/generate', {
+            const response = await this.post<void>('/rental-payments/generate', {
                 investmentId,
                 year
             });
@@ -670,7 +667,7 @@ export class ApiService {
 
     public static async updateRentalPayment(id: string, data: Partial<RentalPayment>): Promise<RentalPayment> {
         try {
-            const response = await apiClient.put<RentalPayment>(`/rental-payments/${id}`, data);
+            const response = await this.put<RentalPayment>(`/rental-payments/${id}`, data);
             return response.data;
         } catch (error) {
             console.error('更新租金收款項目失敗:', error);
@@ -680,7 +677,7 @@ export class ApiService {
 
     public static async deleteRentalPayment(id: string): Promise<void> {
         try {
-            await apiClient.delete(`/rental-payments/${id}`);
+            await this.delete(`/rental-payments/${id}`);
         } catch (error) {
             console.error('刪除租金收款項目失敗:', error);
             throw new Error('刪除租金收款項目失敗');
@@ -698,7 +695,7 @@ export class ApiService {
                 url += `/${month}`;
             }
 
-            await apiClient.delete(url);
+            await this.delete(url);
         } catch (error) {
             console.error('清除租金收款記錄失敗:', error);
             throw error;
