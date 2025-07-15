@@ -119,28 +119,8 @@ sequelize.sync({ alter: false })
             console.error('檢查/建立 documents 表時發生錯誤:', error);
         }
 
-        // 執行投資資料遷移
-        try {
-            console.log('開始遷移投資資料...');
-
-            // 簡單的投資資料插入（如果表是空的）
-            const insertQuery = `
-                INSERT INTO investments (
-                    id, "companyId", "userId", type, name, description, amount,
-                    "startDate", status, "createdAt", "updatedAt"
-                ) VALUES (
-                    gen_random_uuid(), (SELECT id FROM companies LIMIT 1), (SELECT id FROM users LIMIT 1), 
-                    'movable', '設備投資A', '生產線設備', 1000000,
-                    '2023-01-01', 'active', NOW(), NOW()
-                )
-                ON CONFLICT (id) DO NOTHING
-            `;
-
-            await sequelize.query(insertQuery);
-            console.log('投資資料遷移完成！');
-        } catch (error) {
-            console.error('投資資料遷移失敗:', error);
-        }
+        // 投資資料遷移已完成，不再自動插入測試資料
+        console.log('投資資料表已準備就緒');
 
         app.listen(PORT, () => {
             console.log(`服務器運行在 port ${PORT}`);
