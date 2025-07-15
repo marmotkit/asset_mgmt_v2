@@ -158,12 +158,12 @@ sequelize.sync({ alter: false })
         }
 
         // 修正 member_profits 表的 ENUM 類型
-        try {
-            const fixMemberProfitsEnum = require('./scripts/fix-member-profits-enum');
-            await fixMemberProfitsEnum();
-        } catch (error) {
-            console.error('修正 member_profits 表 ENUM 時發生錯誤:', error);
-        }
+        // try {
+        //     const fixMemberProfitsEnum = require('./scripts/fix-member-profits-enum');
+        //     await fixMemberProfitsEnum();
+        // } catch (error) {
+        //     console.error('修正 member_profits 表 ENUM 時發生錯誤:', error);
+        // }
 
         app.listen(PORT, () => {
             console.log(`服務器運行在 port ${PORT}`);
