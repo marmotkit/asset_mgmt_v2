@@ -720,328 +720,66 @@ export class ApiService {
     }
 
     public static async getMemberProfits(investmentId?: string, memberId?: string, year?: number, month?: number): Promise<MemberProfit[]> {
-        if (ApiService.mockMemberProfits.length === 0) {
-            ApiService.loadMemberProfitsFromStorage();
-        }
+        try {
+            const params = new URLSearchParams();
+            if (investmentId) params.append('investmentId', investmentId);
+            if (memberId) params.append('memberId', memberId);
+            if (year) params.append('year', year.toString());
+            if (month) params.append('month', month.toString());
 
-        // 直接複製陣列而不使用擴展運算符
-        const profits: MemberProfit[] = [];
-
-        // 逐個複製物件所有屬性
-        for (const profit of ApiService.mockMemberProfits) {
-            const newProfit: MemberProfit = {
-                id: profit.id,
-                investmentId: profit.investmentId,
-                memberId: profit.memberId,
-                year: profit.year,
-                month: profit.month,
-                amount: Number(profit.amount),
-                status: profit.status,
-                paymentDate: profit.paymentDate,
-                paymentMethod: profit.paymentMethod,
-                note: profit.note,
-                createdAt: profit.createdAt,
-                updatedAt: profit.updatedAt
-            };
-            profits.push(newProfit);
+            const response = await this.get<MemberProfit[]>(`/member-profits?${params.toString()}`);
+            return response.data;
+        } catch (error) {
+            console.error('獲取會員分潤列表失敗:', error);
+            return [];
         }
-
-        // 依序套用篩選條件
-        let filteredProfits = profits;
-        if (investmentId) {
-            filteredProfits = filteredProfits.filter(p => p.investmentId === investmentId);
-        }
-        if (memberId) {
-            filteredProfits = filteredProfits.filter(p => p.memberId === memberId);
-        }
-        if (year) {
-            filteredProfits = filteredProfits.filter(p => p.year === year);
-        }
-        if (month) {
-            filteredProfits = filteredProfits.filter(p => p.month === month);
-        }
-
-        return Promise.resolve(filteredProfits);
     }
 
     public static async generateMemberProfits(investmentId: string, year: number): Promise<MemberProfit[]> {
         try {
-            // 載入資料
-            ApiService.loadRentalStandardsFromStorage();
-            ApiService.loadRentalPaymentsFromStorage();
-            ApiService.loadMemberProfitsFromStorage();
+            const response = await this.post<{ message: string; generatedCount: number }>('/member-profits/generate', {
+                investmentId,
+                year
+            });
 
-            console.log('生成會員分潤項目 - 開始', { investmentId, year });
+            console.log('生成會員分潤項目成功:', response.data);
 
-            // 檢查是否已存在該投資項目的分潤項目
-            const existingProfits = ApiService.mockMemberProfits.filter(p =>
-                p.investmentId === investmentId && p.year === year
-            );
-            if (existingProfits.length > 0) {
-                console.warn('該投資項目已存在分潤項目:', existingProfits.length, '筆');
-                throw new Error('該投資項目的分潤項目已存在，請勿重複生成');
-            }
-
-            // 獲取投資項目
-            const investment = await this.getInvestment(investmentId);
-            console.log('投資項目', investment?.name || investment?.id || '未找到');
-
-            if (!investment) {
-                console.error('找不到投資項目:', investmentId);
-                throw new Error('找不到投資項目');
-            }
-
-            // 檢查投資項目是否有指定會員
-            if (!investment.userId) {
-                console.error('投資項目未指定所屬會員:', investment.id, investment.name);
-                throw new Error('投資項目未指定所屬會員');
-            }
-
-            console.log('投資項目所屬會員 ID', investment.userId);
-
-            // 載入會員資料
-            const members = await this.getMembers();
-            console.log('載入會員資料, 共', members.length, '位會員');
-            console.log('所有會員 ID:', members.map(m => m.id));
-
-            const member = members.find(m => m.id === investment.userId);
-            if (!member) {
-                console.error('投資項目所屬會員: 未找到');
-                console.error('找不到會員:', investment.userId);
-
-                // 嘗試更新投資項目關聯到存在的會員
-                if (members.length > 0) {
-                    console.log('嘗試將投資項目關聯到現有會員...');
-                    const availableMember = members[0];
-
-                    // 更新投資項目的會員ID
-                    try {
-                        const updatedInvestment = await this.updateInvestment({
-                            ...investment,
-                            userId: availableMember.id
-                        });
-                        console.log(`已更新投資項目 ${investment.name} 關聯到會員 ${availableMember.name}(${availableMember.id})`);
-
-                        // 使用更新後的會員繼續處理
-                        return this.generateMemberProfits(investmentId, year);
-                    } catch (error) {
-                        console.error('更新投資項目失敗:', error);
-                        throw new Error('更新投資項目失敗');
-                    }
-                }
-
-                throw new Error('找不到所屬會員，請確保投資項目已正確關聯到現有會員');
-            }
-
-            console.log('找到投資項目所屬會員:', member.name, `(${member.id})`);
-
-            // 載入該年度的租金收款項目
-            const rentalPayments = ApiService.mockRentalPayments.filter(p =>
-                p.investmentId === investmentId && p.year === year
-            );
-            console.log('找到租金收款項目:', rentalPayments.length, '筆');
-
-            if (rentalPayments.length === 0) {
-                console.error('未找到租金收款項目:', { investmentId, year });
-                throw new Error('未找到該投資項目的租金收款項目');
-            }
-
-            // 載入分潤標準
-            const standards = await this.getProfitSharingStandards(investmentId);
-            console.log('載入分潤標準:', standards.length, '筆');
-
-            if (standards.length === 0) {
-                console.error('未設定分潤標準:', { investmentId });
-                throw new Error('未設定分潤標準');
-            }
-
-            const newProfits: MemberProfit[] = [];
-            for (const standard of standards) {
-                const startDate = new Date(standard.startDate);
-                const endDate = standard.endDate ? new Date(standard.endDate) : new Date(year, 11, 31);
-
-                console.log('處理分潤標準', {
-                    標準ID: standard.id,
-                    標準開始日期: startDate.toISOString().split('T')[0],
-                    標準結束日期: endDate.toISOString().split('T')[0],
-                    年度: year
-                });
-
-                // 跳過不適用的分潤標準
-                if (startDate.getFullYear() > year || endDate.getFullYear() < year) {
-                    console.log('跳過不適用的分潤標準', {
-                        標準ID: standard.id,
-                        標準開始年度: startDate.getFullYear(),
-                        標準結束年度: endDate.getFullYear(),
-                        目標年度: year
-                    });
-                    continue;
-                }
-
-                // 計算適用的月份範圍
-                const startMonth = startDate.getFullYear() === year ? startDate.getMonth() + 1 : 1;
-                const endMonth = endDate.getFullYear() === year ? endDate.getMonth() + 1 : 12;
-
-                console.log('計算適用的月份範圍', {
-                    標準ID: standard.id,
-                    開始月份: startMonth,
-                    結束月份: endMonth
-                });
-
-                // 只為指定的會員生成分潤項目
-                let generatedCount = 0;
-                for (let month = startMonth; month <= endMonth; month++) {
-                    // 查找對應月份的租金收款項目
-                    const rentalPayment = rentalPayments.find(p => p.month === month);
-                    if (!rentalPayment) {
-                        console.warn('找不到對應月份的租金收款項目', {
-                            月份: month
-                        });
-                        continue;
-                    }
-
-                    console.log('找到對應月份的租金收款項目', {
-                        月份: month,
-                        租金ID: rentalPayment.id,
-                        金額: rentalPayment.amount
-                    });
-
-                    // 計算分潤金額
-                    let amount = 0;
-                    if (standard.type === ProfitSharingType.FIXED_AMOUNT) {
-                        amount = standard.value;
-                        console.log('使用固定金額分潤:', standard.value);
-                    } else if (standard.type === ProfitSharingType.PERCENTAGE) {
-                        // 使用租金收款金額計算分潤
-                        amount = rentalPayment.amount * (standard.value / 100);
-                        console.log('使用百分比計算分潤:', {
-                            百分比: standard.value,
-                            計算結果: amount
-                        });
-                    }
-
-                    // 應用最小/最大金額限制
-                    let originalAmount = amount;
-                    if (standard.minAmount !== undefined) {
-                        amount = Math.max(amount, standard.minAmount);
-                        if (amount !== originalAmount) {
-                            console.log('應用最小金額限制:', {
-                                原始金額: originalAmount,
-                                最小限制: standard.minAmount,
-                                調整後: amount
-                            });
-                        }
-                    }
-
-                    originalAmount = amount;
-                    if (standard.maxAmount !== undefined) {
-                        amount = Math.min(amount, standard.maxAmount);
-                        if (amount !== originalAmount) {
-                            console.log('應用最大金額限制:', {
-                                原始金額: originalAmount,
-                                最大限制: standard.maxAmount,
-                                調整後: amount
-                            });
-                        }
-                    }
-
-                    // 這裡進行四捨五入，避免小數點問題
-                    amount = Math.round(amount);
-                    console.log(`${month}月份最終分潤金額:`, amount);
-
-                    const profit: MemberProfit = {
-                        id: crypto.randomUUID(),
-                        investmentId,
-                        memberId: member.id,
-                        year,
-                        month,
-                        amount,
-                        status: PaymentStatus.PENDING,
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    };
-                    newProfits.push(profit);
-                    generatedCount++;
-                }
-
-                console.log(`依照分潤標準 ${standard.id} 生成了 ${generatedCount} 筆分潤記錄`);
-            }
-
-            console.log(`總共生成 ${newProfits.length} 筆會員分潤項目`);
-
-            if (newProfits.length === 0) {
-                console.error('無法生成分潤項目:', { investmentId, year });
-                throw new Error('無法生成分潤項目，請檢查分潤標準的生效日期');
-            }
-
-            // 添加新生成的分潤項目
-            ApiService.mockMemberProfits.push(...(newProfits as any));
-            ApiService.saveMemberProfitsToStorage();
-            console.log('分潤項目已保存到本地存儲');
-
-            return Promise.resolve(newProfits);
+            // 返回空陣列，因為生成的項目會通過 getMemberProfits 方法獲取
+            return [];
         } catch (error) {
             console.error('生成會員分潤項目失敗:', error);
-            return Promise.reject(error);
+            throw error;
         }
     }
 
     public static async updateMemberProfit(id: string, data: Partial<MemberProfit>): Promise<MemberProfit> {
-        const index = ApiService.mockMemberProfits.findIndex(p => p.id === id);
-        if (index === -1) throw new Error('會員分潤項目不存在');
-
-        const updatedProfit: MemberProfit = {
-            ...(ApiService.mockMemberProfits[index] as any),
-            ...(data as any),
-            updatedAt: new Date().toISOString()
-        };
-        ApiService.mockMemberProfits[index] = updatedProfit;
-        ApiService.saveMemberProfitsToStorage();
-        return Promise.resolve(updatedProfit);
+        try {
+            const response = await this.put<MemberProfit>(`/member-profits/${id}`, data);
+            return response.data;
+        } catch (error) {
+            console.error('更新會員分潤項目失敗:', error);
+            throw error;
+        }
     }
 
     public static async deleteMemberProfit(id: string): Promise<void> {
-        const index = ApiService.mockMemberProfits.findIndex(p => p.id === id);
-        if (index === -1) throw new Error('會員分潤項目不存在');
-        ApiService.mockMemberProfits.splice(index, 1);
-        ApiService.saveMemberProfitsToStorage();
-        return Promise.resolve();
+        try {
+            await this.delete(`/member-profits/${id}`);
+        } catch (error) {
+            console.error('刪除會員分潤項目失敗:', error);
+            throw error;
+        }
     }
 
     public static async clearMemberProfits(year?: number): Promise<void> {
-        console.log(`開始清除會員分潤記錄 - 年度: ${year}`);
         try {
-            // 確保先載入數據
-            if (ApiService.mockMemberProfits.length === 0) {
-                ApiService.loadMemberProfitsFromStorage();
-            }
+            const params = new URLSearchParams();
+            if (year) params.append('year', year.toString());
 
-            if (year) {
-                const beforeCount = ApiService.mockMemberProfits.length;
-
-                // 如果指定了年份，只清除該年度的分潤項目
-                ApiService.mockMemberProfits = ApiService.mockMemberProfits.filter(
-                    profit => profit.year !== year
-                );
-
-                const afterCount = ApiService.mockMemberProfits.length;
-                const deletedCount = beforeCount - afterCount;
-                console.log(`會員分潤記錄清除完成：刪除 ${deletedCount} 筆記錄`);
-            } else {
-                // 如果沒有指定年份，清除所有分潤項目
-                const beforeCount = ApiService.mockMemberProfits.length;
-                ApiService.mockMemberProfits = [];
-                console.log(`會員分潤記錄清除完成：刪除所有 ${beforeCount} 筆記錄`);
-            }
-
-            // 確保更新 localStorage
-            ApiService.saveMemberProfitsToStorage();
-
-            // 返回成功訊息
-            return Promise.resolve();
+            await this.delete(`/member-profits/clear?${params.toString()}`);
         } catch (error) {
-            console.error('清除會員分潤記錄時發生錯誤:', error);
-            return Promise.reject(error);
+            console.error('清除會員分潤記錄失敗:', error);
+            throw error;
         }
     }
 
