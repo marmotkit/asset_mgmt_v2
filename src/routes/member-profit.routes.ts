@@ -44,6 +44,9 @@ router.get('/', async (req, res) => {
             WHERE 1=1
         `;
 
+        // 加入除錯資訊
+        console.log('查詢會員分潤列表，參數:', { investmentId, memberId, year, month });
+
         const params: any[] = [];
         let paramIndex = 1;
 
@@ -75,22 +78,33 @@ router.get('/', async (req, res) => {
 
         const result = await pool.query(query, params);
 
-        const memberProfits = result.rows.map((row: any) => ({
-            id: row.id,
-            investmentId: row.investmentId || row.investment_id,
-            memberId: row.memberId || row.member_id,
-            year: row.year,
-            month: row.month,
-            amount: parseFloat(row.amount),
-            status: row.status,
-            paymentDate: row.paymentDate || row.payment_date,
-            note: row.note,
-            createdAt: row.createdAt || row.created_at,
-            updatedAt: row.updatedAt || row.updated_at,
-            investmentName: row.investment_name,
-            memberName: row.member_name || '未知會員',
-            memberNo: row.member_no
-        }));
+        const memberProfits = result.rows.map((row: any) => {
+            // 加入除錯資訊
+            console.log('會員分潤資料行:', {
+                id: row.id,
+                memberId: row.memberId || row.member_id,
+                memberName: row.member_name,
+                memberNo: row.member_no,
+                investmentName: row.investment_name
+            });
+
+            return {
+                id: row.id,
+                investmentId: row.investmentId || row.investment_id,
+                memberId: row.memberId || row.member_id,
+                year: row.year,
+                month: row.month,
+                amount: parseFloat(row.amount),
+                status: row.status,
+                paymentDate: row.paymentDate || row.payment_date,
+                note: row.note,
+                createdAt: row.createdAt || row.created_at,
+                updatedAt: row.updatedAt || row.updated_at,
+                investmentName: row.investment_name,
+                memberName: row.member_name || '未知會員',
+                memberNo: row.member_no
+            };
+        });
 
         res.json(memberProfits);
     } catch (error) {
@@ -416,7 +430,7 @@ router.get('/available-investments', async (req, res) => {
 });
 
 // 清除會員分潤項目
-router.delete('/clear', async (req, res) => {
+router.delete('/clear-all', async (req, res) => {
     try {
         const { year, month } = req.query;
 

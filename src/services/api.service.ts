@@ -776,7 +776,7 @@ export class ApiService {
             const params = new URLSearchParams();
             if (year) params.append('year', year.toString());
 
-            await this.delete(`/member-profits/clear?${params.toString()}`);
+            await this.delete(`/member-profits/clear-all?${params.toString()}`);
         } catch (error) {
             console.error('清除會員分潤記錄失敗:', error);
             throw error;
