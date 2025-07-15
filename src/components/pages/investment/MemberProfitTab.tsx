@@ -74,7 +74,6 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
         month: new Date().getMonth() + 1,
         amount: 0,
         status: PaymentStatus.PENDING,
-        paymentMethod: PaymentMethod.BANK_TRANSFER,
         paymentDate: '',
         note: '',
     });
@@ -218,7 +217,6 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
             month: profit.month,
             amount: profit.amount,
             status: profit.status,
-            paymentMethod: profit.paymentMethod || PaymentMethod.BANK_TRANSFER,
             paymentDate: profit.paymentDate || '',
             note: profit.note || '',
         });
@@ -433,9 +431,11 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
                                         />
                                     </TableCell>
                                     <TableCell>
-                                        {profit.paymentMethod === PaymentMethod.CASH ? '現金' :
-                                            profit.paymentMethod === PaymentMethod.BANK_TRANSFER ? '銀行轉帳' :
-                                                profit.paymentMethod === PaymentMethod.CHECK ? '支票' : '其他'}
+                                        {profit.paymentMethod ? (
+                                            profit.paymentMethod === PaymentMethod.CASH ? '現金' :
+                                                profit.paymentMethod === PaymentMethod.BANK_TRANSFER ? '銀行轉帳' :
+                                                    profit.paymentMethod === PaymentMethod.CHECK ? '支票' : '其他'
+                                        ) : '-'}
                                     </TableCell>
                                     <TableCell>
                                         {profit.paymentDate ? formatDate(profit.paymentDate) : '-'}

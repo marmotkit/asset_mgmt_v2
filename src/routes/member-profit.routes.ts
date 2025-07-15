@@ -62,7 +62,6 @@ router.get('/', async (req, res) => {
             amount: parseFloat(row.amount),
             status: row.status,
             paymentDate: row.paymentDate || row.payment_date,
-            paymentMethod: row.paymentMethod || row.payment_method,
             note: row.note,
             createdAt: row.createdAt || row.created_at,
             updatedAt: row.updatedAt || row.updated_at,
@@ -88,18 +87,17 @@ router.post('/', async (req, res) => {
             amount,
             status,
             paymentDate,
-            paymentMethod,
             note
         } = req.body;
 
         const query = `
             INSERT INTO member_profits (
                 "investmentId", "memberId", year, month, amount, 
-                status, "paymentDate", "paymentMethod", note, 
+                status, "paymentDate", note, 
                 "createdAt", "updatedAt"
             ) VALUES (
                 :investmentId, :memberId, :year, :month, :amount, 
-                :status, :paymentDate, :paymentMethod, :note, 
+                :status, :paymentDate, :note, 
                 NOW(), NOW()
             ) RETURNING *
         `;
@@ -113,7 +111,6 @@ router.post('/', async (req, res) => {
                 amount,
                 status,
                 paymentDate,
-                paymentMethod,
                 note
             },
             type: QueryTypes.INSERT
@@ -129,7 +126,6 @@ router.post('/', async (req, res) => {
             amount: parseFloat(memberProfit.amount),
             status: memberProfit.status,
             paymentDate: memberProfit.paymentDate,
-            paymentMethod: memberProfit.paymentMethod,
             note: memberProfit.note,
             createdAt: memberProfit.createdAt,
             updatedAt: memberProfit.updatedAt
@@ -148,7 +144,6 @@ router.put('/:id', async (req, res) => {
             amount,
             status,
             paymentDate,
-            paymentMethod,
             note
         } = req.body;
 
@@ -158,7 +153,6 @@ router.put('/:id', async (req, res) => {
                 amount = :amount,
                 status = :status,
                 "paymentDate" = :paymentDate,
-                "paymentMethod" = :paymentMethod,
                 note = :note,
                 "updatedAt" = NOW()
             WHERE id = :id
@@ -170,7 +164,6 @@ router.put('/:id', async (req, res) => {
                 amount,
                 status,
                 paymentDate,
-                paymentMethod,
                 note,
                 id
             },
@@ -202,7 +195,6 @@ router.put('/:id', async (req, res) => {
             amount: parseFloat(memberProfit.amount),
             status: memberProfit.status,
             paymentDate: memberProfit.paymentDate,
-            paymentMethod: memberProfit.paymentMethod,
             note: memberProfit.note,
             createdAt: memberProfit.createdAt,
             updatedAt: memberProfit.updatedAt
@@ -313,11 +305,11 @@ router.post('/generate', async (req, res) => {
         const insertQuery = `
             INSERT INTO member_profits (
                 "investmentId", "memberId", year, month, amount, 
-                status, "paymentDate", "paymentMethod", note, 
+                status, "paymentDate", note, 
                 "createdAt", "updatedAt"
             ) VALUES (
                 :investmentId, :memberId, :year, :month, :amount, 
-                'PENDING', null, 'OTHER', :note, NOW(), NOW()
+                'PENDING', null, :note, NOW(), NOW()
             )
         `;
 
