@@ -14,9 +14,9 @@ router.get('/', async (req, res) => {
             SELECT 
                 i.*,
                 c.name as company_name,
-                c.company_no as company_no,
+                c."companyNo" as company_no,
                 u.name as user_name,
-                u.member_no as user_member_no
+                u."memberNo" as user_member_no
             FROM investments i
             LEFT JOIN companies c ON i."companyId" = c.id
             LEFT JOIN users u ON i."userId" = u.id
@@ -41,9 +41,9 @@ router.get('/:id', async (req, res) => {
             SELECT 
                 i.*,
                 c.name as company_name,
-                c.company_no as company_no,
+                c."companyNo" as company_no,
                 u.name as user_name,
-                u.member_no as user_member_no
+                u."memberNo" as user_member_no
             FROM investments i
             LEFT JOIN companies c ON i."companyId" = c.id
             LEFT JOIN users u ON i."userId" = u.id
@@ -72,14 +72,10 @@ router.post('/', async (req, res) => {
         const query = `
             INSERT INTO investments (
                 id, "companyId", "userId", type, name, description, amount, 
-                "startDate", "endDate", status, "assetType", "serialNumber", 
-                manufacturer, location, area, "propertyType", "registrationNumber",
-                "createdAt", "updatedAt"
+                "startDate", "endDate", status, "createdAt", "updatedAt"
             ) VALUES (
                 gen_random_uuid(), :company_id, :user_id, :type, :name, :description, :amount,
-                :start_date, :end_date, :status, :asset_type, :serial_number,
-                :manufacturer, :location, :area, :property_type, :registration_number,
-                NOW(), NOW()
+                :start_date, :end_date, :status, NOW(), NOW()
             ) RETURNING *
         `;
         const result = await sequelize.query(query, {
@@ -108,9 +104,9 @@ router.post('/', async (req, res) => {
             SELECT 
                 i.*,
                 c.name as company_name,
-                c.company_no as company_no,
+                c."companyNo" as company_no,
                 u.name as user_name,
-                u.member_no as user_member_no
+                u."memberNo" as user_member_no
             FROM investments i
             LEFT JOIN companies c ON i."companyId" = c.id
             LEFT JOIN users u ON i."userId" = u.id
@@ -152,13 +148,6 @@ router.put('/:id', async (req, res) => {
                 "startDate" = :start_date,
                 "endDate" = :end_date,
                 status = :status,
-                "assetType" = :asset_type,
-                "serialNumber" = :serial_number,
-                manufacturer = :manufacturer,
-                location = :location,
-                area = :area,
-                "propertyType" = :property_type,
-                "registrationNumber" = :registration_number,
                 "updatedAt" = NOW()
             WHERE id = :id
         `;
@@ -189,9 +178,9 @@ router.put('/:id', async (req, res) => {
             SELECT 
                 i.*,
                 c.name as company_name,
-                c.company_no as company_no,
+                c."companyNo" as company_no,
                 u.name as user_name,
-                u.member_no as user_member_no
+                u."memberNo" as user_member_no
             FROM investments i
             LEFT JOIN companies c ON i."companyId" = c.id
             LEFT JOIN users u ON i."userId" = u.id

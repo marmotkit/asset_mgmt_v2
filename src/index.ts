@@ -127,13 +127,11 @@ sequelize.sync({ alter: false })
             const insertQuery = `
                 INSERT INTO investments (
                     id, "companyId", "userId", type, name, description, amount,
-                    "startDate", status, "assetType", "serialNumber", manufacturer,
-                    "createdAt", "updatedAt"
+                    "startDate", status, "createdAt", "updatedAt"
                 ) VALUES (
                     '1', (SELECT id FROM companies LIMIT 1), (SELECT id FROM users LIMIT 1), 
                     'movable', '設備投資A', '生產線設備', 1000000,
-                    '2023-01-01', 'active', '機械設備', 'EQ-001', '台灣機械',
-                    NOW(), NOW()
+                    '2023-01-01', 'active', NOW(), NOW()
                 )
                 ON CONFLICT (id) DO NOTHING
             `;
