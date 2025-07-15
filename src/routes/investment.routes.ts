@@ -95,6 +95,10 @@ router.post('/', async (req, res) => {
             registrationNumber
         } = req.body;
 
+        // 處理日期欄位，空字串設為 NULL
+        const processedStartDate = startDate && startDate.trim() !== '' ? startDate : null;
+        const processedEndDate = endDate && endDate.trim() !== '' ? endDate : null;
+
         const query = `
             INSERT INTO investments (
                 id, "companyId", "userId", type, name, description, amount, 
@@ -113,8 +117,8 @@ router.post('/', async (req, res) => {
                 name,
                 description,
                 amount,
-                startDate,
-                endDate,
+                startDate: processedStartDate,
+                endDate: processedEndDate,
                 status: status || 'active',
                 assetType,
                 serialNumber,
@@ -195,6 +199,10 @@ router.put('/:id', async (req, res) => {
             registrationNumber
         } = req.body;
 
+        // 處理日期欄位，空字串設為 NULL
+        const processedStartDate = startDate && startDate.trim() !== '' ? startDate : null;
+        const processedEndDate = endDate && endDate.trim() !== '' ? endDate : null;
+
         const updateQuery = `
             UPDATE investments SET
                 "companyId" = :companyId,
@@ -219,8 +227,8 @@ router.put('/:id', async (req, res) => {
                 name,
                 description,
                 amount,
-                startDate,
-                endDate,
+                startDate: processedStartDate,
+                endDate: processedEndDate,
                 status,
                 assetType,
                 serialNumber,

@@ -81,6 +81,13 @@ router.post('/', async (req, res) => {
             note
         } = req.body;
 
+        // 處理數值和日期欄位，空值設為 NULL
+        const processedValue = value !== undefined && value !== null && value !== '' ? value : null;
+        const processedMinAmount = minAmount !== undefined && minAmount !== null && minAmount !== '' ? minAmount : null;
+        const processedMaxAmount = maxAmount !== undefined && maxAmount !== null && maxAmount !== '' ? maxAmount : null;
+        const processedStartDate = startDate && startDate.trim() !== '' ? startDate : null;
+        const processedEndDate = endDate && endDate.trim() !== '' ? endDate : null;
+
         const query = `
             INSERT INTO profit_sharing_standards (
                 id, "investmentId", type, value, "minAmount", "maxAmount", 
@@ -95,11 +102,11 @@ router.post('/', async (req, res) => {
             replacements: {
                 investmentId,
                 type,
-                value,
-                minAmount,
-                maxAmount,
-                startDate,
-                endDate,
+                value: processedValue,
+                minAmount: processedMinAmount,
+                maxAmount: processedMaxAmount,
+                startDate: processedStartDate,
+                endDate: processedEndDate,
                 note
             },
             type: QueryTypes.INSERT
@@ -158,6 +165,13 @@ router.put('/:id', async (req, res) => {
             note
         } = req.body;
 
+        // 處理數值和日期欄位，空值設為 NULL
+        const processedValue = value !== undefined && value !== null && value !== '' ? value : null;
+        const processedMinAmount = minAmount !== undefined && minAmount !== null && minAmount !== '' ? minAmount : null;
+        const processedMaxAmount = maxAmount !== undefined && maxAmount !== null && maxAmount !== '' ? maxAmount : null;
+        const processedStartDate = startDate && startDate.trim() !== '' ? startDate : null;
+        const processedEndDate = endDate && endDate.trim() !== '' ? endDate : null;
+
         const updateQuery = `
             UPDATE profit_sharing_standards SET
                 "investmentId" = :investmentId,
@@ -177,11 +191,11 @@ router.put('/:id', async (req, res) => {
                 id: req.params.id,
                 investmentId,
                 type,
-                value,
-                minAmount,
-                maxAmount,
-                startDate,
-                endDate,
+                value: processedValue,
+                minAmount: processedMinAmount,
+                maxAmount: processedMaxAmount,
+                startDate: processedStartDate,
+                endDate: processedEndDate,
                 note
             },
             type: QueryTypes.UPDATE
