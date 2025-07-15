@@ -77,22 +77,22 @@ router.post('/', async (req, res) => {
         const sequelize = require('../db/connection').default;
 
         const {
-            company_id,
-            user_id,
+            companyId,
+            userId,
             type,
             name,
             description,
             amount,
-            start_date,
-            end_date,
+            startDate,
+            endDate,
             status,
-            asset_type,
-            serial_number,
+            assetType,
+            serialNumber,
             manufacturer,
             location,
             area,
-            property_type,
-            registration_number
+            propertyType,
+            registrationNumber
         } = req.body;
 
         const query = `
@@ -100,29 +100,29 @@ router.post('/', async (req, res) => {
                 id, "companyId", "userId", type, name, description, amount, 
                 "startDate", "endDate", status, "createdAt", "updatedAt"
             ) VALUES (
-                gen_random_uuid(), :company_id, :user_id, :type, :name, :description, :amount,
-                :start_date, :end_date, :status, NOW(), NOW()
+                gen_random_uuid(), :companyId, :userId, :type, :name, :description, :amount,
+                :startDate, :endDate, :status, NOW(), NOW()
             ) RETURNING *
         `;
 
         const result = await sequelize.query(query, {
             replacements: {
-                company_id,
-                user_id,
+                companyId,
+                userId,
                 type,
                 name,
                 description,
                 amount,
-                start_date,
-                end_date,
+                startDate,
+                endDate,
                 status: status || 'active',
-                asset_type,
-                serial_number,
+                assetType,
+                serialNumber,
                 manufacturer,
                 location,
                 area,
-                property_type,
-                registration_number
+                propertyType,
+                registrationNumber
             },
             type: QueryTypes.INSERT
         });
@@ -169,34 +169,34 @@ router.put('/:id', async (req, res) => {
         }
 
         const {
-            company_id,
-            user_id,
+            companyId,
+            userId,
             type,
             name,
             description,
             amount,
-            start_date,
-            end_date,
+            startDate,
+            endDate,
             status,
-            asset_type,
-            serial_number,
+            assetType,
+            serialNumber,
             manufacturer,
             location,
             area,
-            property_type,
-            registration_number
+            propertyType,
+            registrationNumber
         } = req.body;
 
         const updateQuery = `
             UPDATE investments SET
-                "companyId" = :company_id,
-                "userId" = :user_id,
+                "companyId" = :companyId,
+                "userId" = :userId,
                 type = :type,
                 name = :name,
                 description = :description,
                 amount = :amount,
-                "startDate" = :start_date,
-                "endDate" = :end_date,
+                "startDate" = :startDate,
+                "endDate" = :endDate,
                 status = :status,
                 "updatedAt" = NOW()
             WHERE id = :id
@@ -205,22 +205,22 @@ router.put('/:id', async (req, res) => {
         await sequelize.query(updateQuery, {
             replacements: {
                 id: req.params.id,
-                company_id,
-                user_id,
+                companyId,
+                userId,
                 type,
                 name,
                 description,
                 amount,
-                start_date,
-                end_date,
+                startDate,
+                endDate,
                 status,
-                asset_type,
-                serial_number,
+                assetType,
+                serialNumber,
                 manufacturer,
                 location,
                 area,
-                property_type,
-                registration_number
+                propertyType,
+                registrationNumber
             },
             type: QueryTypes.UPDATE
         });
@@ -280,4 +280,4 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-export default router; 
+export default router;
