@@ -521,54 +521,43 @@ export class ApiService {
     }
 
     public static async getRentalStandards(investmentId?: string): Promise<RentalStandard[]> {
-        if (ApiService.mockRentalStandards.length === 0) {
-            ApiService.loadRentalStandardsFromStorage();
+        try {
+            const params = investmentId ? `?investmentId=${investmentId}` : '';
+            const response = await apiClient.get<RentalStandard[]>(`/rental-standards${params}`);
+            return response.data;
+        } catch (error) {
+            console.error('獲取租賃標準失敗:', error);
+            throw new Error('獲取租賃標準失敗');
         }
-        let standards = [...(ApiService.mockRentalStandards as any)];
-        if (investmentId) {
-            standards = standards.filter(s => s.investmentId === investmentId);
-        }
-        return Promise.resolve(standards);
     }
 
     public static async createRentalStandard(data: Partial<RentalStandard>): Promise<RentalStandard> {
-        const newStandard: RentalStandard = {
-            id: crypto.randomUUID(),
-            investmentId: data.investmentId || '',
-            monthlyRent: data.monthlyRent || 0,
-            startDate: data.startDate || new Date().toISOString(),
-            endDate: data.endDate,
-            renterName: data.renterName || '',
-            renterTaxId: data.renterTaxId,
-            note: data.note,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        ApiService.mockRentalStandards.push(newStandard);
-        ApiService.saveRentalStandardsToStorage();
-        return Promise.resolve(newStandard);
+        try {
+            const response = await apiClient.post<RentalStandard>('/rental-standards', data);
+            return response.data;
+        } catch (error) {
+            console.error('創建租賃標準失敗:', error);
+            throw new Error('創建租賃標準失敗');
+        }
     }
 
     public static async updateRentalStandard(id: string, data: Partial<RentalStandard>): Promise<RentalStandard> {
-        const index = ApiService.mockRentalStandards.findIndex(s => s.id === id);
-        if (index === -1) throw new Error('租賃標準不存在');
-
-        const updatedStandard: RentalStandard = {
-            ...(ApiService.mockRentalStandards[index] as any),
-            ...(data as any),
-            updatedAt: new Date().toISOString()
-        };
-        ApiService.mockRentalStandards[index] = updatedStandard;
-        ApiService.saveRentalStandardsToStorage();
-        return Promise.resolve(updatedStandard);
+        try {
+            const response = await apiClient.put<RentalStandard>(`/rental-standards/${id}`, data);
+            return response.data;
+        } catch (error) {
+            console.error('更新租賃標準失敗:', error);
+            throw new Error('更新租賃標準失敗');
+        }
     }
 
     public static async deleteRentalStandard(id: string): Promise<void> {
-        const index = ApiService.mockRentalStandards.findIndex(s => s.id === id);
-        if (index === -1) throw new Error('租賃標準不存在');
-        ApiService.mockRentalStandards.splice(index, 1);
-        ApiService.saveRentalStandardsToStorage();
-        return Promise.resolve();
+        try {
+            await apiClient.delete(`/rental-standards/${id}`);
+        } catch (error) {
+            console.error('刪除租賃標準失敗:', error);
+            throw new Error('刪除租賃標準失敗');
+        }
     }
 
     // 分潤標準設定相關方法
