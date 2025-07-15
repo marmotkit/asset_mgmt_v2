@@ -179,4 +179,24 @@ router.put('/:id/password', async (req, res) => {
     }
 });
 
+// 查詢用戶密碼
+router.get('/:id/password', async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ message: '用戶不存在' });
+        }
+
+        // 返回加密後的密碼（注意：這是為了管理員查詢，實際應用中應該謹慎處理）
+        res.status(200).json({
+            message: '密碼查詢成功',
+            password: user.password
+        });
+    } catch (error) {
+        console.error('查詢密碼錯誤:', error);
+        res.status(500).json({ message: '伺服器錯誤，請稍後再試' });
+    }
+});
+
 export default router; 

@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import LockResetIcon from '@mui/icons-material/LockReset';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -43,6 +44,10 @@ const UserManagement: React.FC = () => {
     const [resetPwdUser, setResetPwdUser] = useState<User | null>(null);
     const [resetPwd, setResetPwd] = useState('');
     const [resetPwdError, setResetPwdError] = useState('');
+    const [viewPwdDialogOpen, setViewPwdDialogOpen] = useState(false);
+    const [viewPwdUser, setViewPwdUser] = useState<User | null>(null);
+    const [viewPwd, setViewPwd] = useState('');
+    const [viewPwdLoading, setViewPwdLoading] = useState(false);
 
     const loadUsers = async () => {
         try {
@@ -126,6 +131,35 @@ const UserManagement: React.FC = () => {
         setResetPwdUser(null);
         setResetPwd('');
         setResetPwdError('');
+    };
+
+    const handleOpenViewPwd = (user: User) => {
+        setViewPwdUser(user);
+        setViewPwdDialogOpen(true);
+        setViewPwd('');
+        setViewPwdLoading(false);
+    };
+
+    const handleCloseViewPwd = () => {
+        setViewPwdDialogOpen(false);
+        setViewPwdUser(null);
+        setViewPwd('');
+        setViewPwdLoading(false);
+    };
+
+    const handleViewPwd = async () => {
+        if (!viewPwdUser) return;
+
+        try {
+            setViewPwdLoading(true);
+            const password = await userService.getUserPassword(viewPwdUser.id);
+            setViewPwd(password);
+        } catch (err) {
+            console.error('查詢密碼失敗:', err);
+            setError(err instanceof Error ? err.message : '查詢密碼失敗');
+        } finally {
+            setViewPwdLoading(false);
+        }
     };
     const handleResetPwd = async () => {
         // 驗證密碼
@@ -318,9 +352,16 @@ const UserManagement: React.FC = () => {
                                             <EditIcon />
                                         </IconButton>
                                     </Tooltip>
-                                    <IconButton size="small" color="primary" onClick={() => handleOpenResetPwd(user)}>
-                                        <LockResetIcon />
-                                    </IconButton>
+                                    <Tooltip title="重設密碼">
+                                        <IconButton size="small" color="primary" onClick={() => handleOpenResetPwd(user)}>
+                                            <LockResetIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="查詢密碼">
+                                        <IconButton size="small" color="secondary" onClick={() => handleOpenViewPwd(user)}>
+                                            <VisibilityIcon />
+                                        </IconButton>
+                                    </Tooltip>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -359,6 +400,38 @@ const UserManagement: React.FC = () => {
                 <DialogActions>
                     <Button onClick={handleCloseResetPwd}>取消</Button>
                     <Button onClick={handleResetPwd} variant="contained">儲存</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={viewPwdDialogOpen} onClose={handleCloseViewPwd}>
+                <DialogTitle>查詢密碼</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            會員：{viewPwdUser?.name} ({viewPwdUser?.username})
+                        </Typography>
+                    </Box>
+                    <TextField
+                        label="密碼"
+                        type="text"
+                        value={viewPwd}
+                        InputProps={{
+                            readOnly: true,
+                        }}
+                        fullWidth
+                        placeholder={viewPwdLoading ? '載入中...' : '點擊查詢按鈕查看密碼'}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseViewPwd}>關閉</Button>
+                    <Button
+                        onClick={handleViewPwd}
+                        variant="contained"
+                        disabled={viewPwdLoading}
+                        startIcon={viewPwdLoading ? <CircularProgress size={16} /> : null}
+                    >
+                        {viewPwdLoading ? '查詢中...' : '查詢密碼'}
+                    </Button>
                 </DialogActions>
             </Dialog>
         </Box>

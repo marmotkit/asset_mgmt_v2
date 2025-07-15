@@ -136,6 +136,22 @@ class UserService {
             throw new Error(errorMessage);
         }
     }
+
+    async getUserPassword(userId: string): Promise<string> {
+        try {
+            const token = this.getAuthToken();
+            const response = await axios.get(`${this.API_BASE_URL}/users/${userId}/password`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            return response.data.password;
+        } catch (error: any) {
+            console.error('查詢密碼失敗:', error);
+            const errorMessage = error.response?.data?.message || '查詢密碼失敗';
+            throw new Error(errorMessage);
+        }
+    }
 }
 
 export const userService = new UserService(); 
