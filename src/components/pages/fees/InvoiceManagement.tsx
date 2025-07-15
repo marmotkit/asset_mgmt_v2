@@ -127,7 +127,7 @@ const DocumentListDialog: React.FC<DocumentListDialogProps> = ({
     const handleMemberSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedMember = members.find(m => m.id === event.target.value);
         if (selectedMember) {
-            setSelectedMemberId(selectedMember.id);
+            setSelectedMemberId(selectedMember.memberNo); // 使用 memberNo 而不是 UUID
             setSelectedMemberName(selectedMember.name);
         }
     };

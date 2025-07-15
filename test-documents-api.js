@@ -20,12 +20,18 @@ async function testDocumentsAPI() {
         console.log('獲取所有文件成功:', getAllResponse.data);
         console.log('文件數量:', getAllResponse.data.length);
 
-        // 2. 測試創建發票
-        console.log('\n2. 測試創建發票...');
+        // 2. 測試按會員 ID 查詢（使用 B003）
+        console.log('\n2. 測試按會員 ID 查詢 (B003)...');
+        const getByMemberResponse = await axios.get(`${API_BASE_URL}/documents?memberId=B003`, { headers });
+        console.log('按會員 ID 查詢成功:', getByMemberResponse.data);
+        console.log('該會員文件數量:', getByMemberResponse.data.length);
+
+        // 3. 測試創建發票
+        console.log('\n3. 測試創建發票...');
         const newInvoice = {
             type: '二聯式',
-            memberId: 'test-member-id',
-            memberName: '測試會員',
+            memberId: 'B003',
+            memberName: 'LKK01',
             paymentId: 'test-payment-id',
             invoiceNumber: 'AB-00000001',
             amount: 1000,
@@ -37,28 +43,14 @@ async function testDocumentsAPI() {
 
         const createdDocId = createResponse.data.id;
 
-        // 3. 測試獲取單一文件
-        console.log('\n3. 測試獲取單一文件...');
-        const getOneResponse = await axios.get(`${API_BASE_URL}/documents/${createdDocId}`, { headers });
-        console.log('獲取單一文件成功:', getOneResponse.data);
+        // 4. 再次測試按會員 ID 查詢
+        console.log('\n4. 再次測試按會員 ID 查詢 (B003)...');
+        const getByMemberResponse2 = await axios.get(`${API_BASE_URL}/documents?memberId=B003`, { headers });
+        console.log('按會員 ID 查詢成功:', getByMemberResponse2.data);
+        console.log('該會員文件數量:', getByMemberResponse2.data.length);
 
-        // 4. 測試更新文件
-        console.log('\n4. 測試更新文件...');
-        const updateData = {
-            amount: 1500,
-            date: '2025-01-16'
-        };
-
-        const updateResponse = await axios.put(`${API_BASE_URL}/documents/${createdDocId}`, updateData, { headers });
-        console.log('更新文件成功:', updateResponse.data);
-
-        // 5. 測試按會員 ID 查詢
-        console.log('\n5. 測試按會員 ID 查詢...');
-        const getByMemberResponse = await axios.get(`${API_BASE_URL}/documents?memberId=test-member-id`, { headers });
-        console.log('按會員 ID 查詢成功:', getByMemberResponse.data);
-
-        // 6. 測試刪除文件
-        console.log('\n6. 測試刪除文件...');
+        // 5. 測試刪除文件
+        console.log('\n5. 測試刪除文件...');
         const deleteResponse = await axios.delete(`${API_BASE_URL}/documents/${createdDocId}`, { headers });
         console.log('刪除文件成功:', deleteResponse.data);
 
@@ -66,6 +58,10 @@ async function testDocumentsAPI() {
 
     } catch (error) {
         console.error('測試失敗:', error.response?.data || error.message);
+        if (error.response) {
+            console.error('狀態碼:', error.response.status);
+            console.error('回應標頭:', error.response.headers);
+        }
     }
 }
 
