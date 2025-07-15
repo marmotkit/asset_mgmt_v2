@@ -137,7 +137,7 @@ sequelize.sync({ alter: false })
             console.error('檢查/建立 documents 表時發生錯誤:', error);
         }
 
-        // 檢查並建立 anomalies 表（如果不存在）
+        // 檢查並建立/修正 anomalies 表
         try {
             const [anomalyResults] = await sequelize.query(`
                 SELECT table_name 
@@ -164,7 +164,36 @@ sequelize.sync({ alter: false })
                 `);
                 console.log('anomalies 資料表建立成功');
             } else {
-                console.log('anomalies 資料表已存在');
+                // 檢查欄位結構是否正確
+                const [columns] = await sequelize.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'anomalies'
+                    AND column_name = 'type';
+                `);
+
+                if (columns.length === 0) {
+                    console.log('anomalies 資料表結構不正確，重新建立...');
+                    await sequelize.query('DROP TABLE IF EXISTS anomalies CASCADE');
+                    await sequelize.query(`
+                        CREATE TABLE anomalies (
+                            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                            type VARCHAR(255) NOT NULL,
+                            person_id VARCHAR(255),
+                            person_name VARCHAR(255) NOT NULL,
+                            description TEXT NOT NULL,
+                            occurrence_date DATE NOT NULL,
+                            status VARCHAR(255) NOT NULL DEFAULT '待處理',
+                            handling_method TEXT,
+                            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                        );
+                    `);
+                    console.log('anomalies 資料表重新建立成功');
+                } else {
+                    console.log('anomalies 資料表已存在且結構正確');
+                }
             }
         } catch (error) {
             console.error('檢查/建立 anomalies 表時發生錯誤:', error);
