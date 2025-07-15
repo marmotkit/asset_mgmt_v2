@@ -113,11 +113,11 @@ router.post('/', async (req, res) => {
 
         const query = `
             INSERT INTO member_profits (
-                "investmentId", "memberId", year, month, amount, 
+                id, "investmentId", "memberId", year, month, amount, 
                 status, "paymentDate", note, 
                 "createdAt", "updatedAt"
             ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()
+                gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()
             ) RETURNING *
         `;
 
@@ -291,11 +291,11 @@ router.post('/generate', async (req, res) => {
         // 生成分潤項目
         const insertQuery = `
             INSERT INTO member_profits (
-                "investmentId", "memberId", year, month, amount, 
+                id, "investmentId", "memberId", year, month, amount, 
                 status, "paymentDate", note, 
                 "createdAt", "updatedAt"
             ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()
+                gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()
             )
         `;
 
