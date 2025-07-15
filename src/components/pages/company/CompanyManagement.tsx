@@ -24,7 +24,7 @@ import {
     Clear as ClearIcon,
 } from '@mui/icons-material';
 import { Company } from '../../../types/company';
-import { ApiService } from '../../../services';
+import { companyService } from '../../../services/companyService';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
 import CompanyDetailDialog from './CompanyDetailDialog';
@@ -44,7 +44,7 @@ const CompanyManagement: React.FC = () => {
     const loadCompanies = async () => {
         setLoading(true);
         try {
-            const data = await ApiService.getCompanies();
+            const data = await companyService.getCompanies();
             setCompanies(data);
         } catch (err) {
             setError('載入公司資料失敗');
@@ -68,7 +68,7 @@ const CompanyManagement: React.FC = () => {
 
         setLoading(true);
         try {
-            await ApiService.deleteCompany(id);
+            await companyService.deleteCompany(id);
             await loadCompanies();
         } catch (err) {
             setError('刪除公司失敗');
@@ -81,9 +81,9 @@ const CompanyManagement: React.FC = () => {
         setLoading(true);
         try {
             if (companyData.id) {
-                await ApiService.updateCompany(companyData.id, companyData);
+                await companyService.updateCompany(companyData.id, companyData);
             } else {
-                await ApiService.createCompany(companyData);
+                await companyService.createCompany(companyData);
             }
             await loadCompanies();
             setDialogOpen(false);

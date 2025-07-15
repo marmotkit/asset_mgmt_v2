@@ -11,7 +11,7 @@ import {
     Typography,
 } from '@mui/material';
 import { Company, IndustryType } from '../../../types/company';
-import { ApiService } from '../../../services/api.service';
+import { companyService } from '../../../services/companyService';
 
 interface CompanyDetailDialogProps {
     open: boolean;
@@ -59,7 +59,7 @@ const CompanyDetailDialog: React.FC<CompanyDetailDialogProps> = ({
             } else {
                 // 如果是新增公司，先取得新的公司編號
                 try {
-                    const newCompanyNo = await ApiService.getNewCompanyNo();
+                    const newCompanyNo = await companyService.getNewCompanyNo();
                     setFormData({
                         companyNo: newCompanyNo,
                         taxId: '',
