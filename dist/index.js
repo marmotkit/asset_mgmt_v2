@@ -120,9 +120,9 @@ connection_1.default.sync({ alter: false })
         // 簡單的投資資料插入（如果表是空的）
         const insertQuery = `
                 INSERT INTO investments (
-                    id, company_id, user_id, type, name, description, amount,
-                    start_date, status, asset_type, serial_number, manufacturer,
-                    created_at, updated_at
+                    id, "companyId", "userId", type, name, description, amount,
+                    "startDate", status, "assetType", "serialNumber", manufacturer,
+                    "createdAt", "updatedAt"
                 ) VALUES (
                     '1', (SELECT id FROM companies LIMIT 1), (SELECT id FROM users LIMIT 1), 
                     'movable', '設備投資A', '生產線設備', 1000000,

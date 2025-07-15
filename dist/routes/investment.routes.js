@@ -18,9 +18,9 @@ router.get('/', async (req, res) => {
                 u.name as user_name,
                 u.member_no as user_member_no
             FROM investments i
-            LEFT JOIN companies c ON i.company_id = c.id
-            LEFT JOIN users u ON i.user_id = u.id
-            ORDER BY i.created_at DESC
+            LEFT JOIN companies c ON i."companyId" = c.id
+            LEFT JOIN users u ON i."userId" = u.id
+            ORDER BY i."createdAt" DESC
         `;
         const investments = await sequelize.query(query, {
             type: QueryTypes.SELECT
@@ -45,8 +45,8 @@ router.get('/:id', async (req, res) => {
                 u.name as user_name,
                 u.member_no as user_member_no
             FROM investments i
-            LEFT JOIN companies c ON i.company_id = c.id
-            LEFT JOIN users u ON i.user_id = u.id
+            LEFT JOIN companies c ON i."companyId" = c.id
+            LEFT JOIN users u ON i."userId" = u.id
             WHERE i.id = :id
         `;
         const investments = await sequelize.query(query, {
@@ -71,10 +71,10 @@ router.post('/', async (req, res) => {
         const { company_id, user_id, type, name, description, amount, start_date, end_date, status, asset_type, serial_number, manufacturer, location, area, property_type, registration_number } = req.body;
         const query = `
             INSERT INTO investments (
-                id, company_id, user_id, type, name, description, amount, 
-                start_date, end_date, status, asset_type, serial_number, 
-                manufacturer, location, area, property_type, registration_number,
-                created_at, updated_at
+                id, "companyId", "userId", type, name, description, amount, 
+                "startDate", "endDate", status, "assetType", "serialNumber", 
+                manufacturer, location, area, "propertyType", "registrationNumber",
+                "createdAt", "updatedAt"
             ) VALUES (
                 gen_random_uuid(), :company_id, :user_id, :type, :name, :description, :amount,
                 :start_date, :end_date, :status, :asset_type, :serial_number,
@@ -112,8 +112,8 @@ router.post('/', async (req, res) => {
                 u.name as user_name,
                 u.member_no as user_member_no
             FROM investments i
-            LEFT JOIN companies c ON i.company_id = c.id
-            LEFT JOIN users u ON i.user_id = u.id
+            LEFT JOIN companies c ON i."companyId" = c.id
+            LEFT JOIN users u ON i."userId" = u.id
             WHERE i.id = :id
         `, {
             replacements: { id: result[0].id },
@@ -143,23 +143,23 @@ router.put('/:id', async (req, res) => {
         const { company_id, user_id, type, name, description, amount, start_date, end_date, status, asset_type, serial_number, manufacturer, location, area, property_type, registration_number } = req.body;
         const updateQuery = `
             UPDATE investments SET
-                company_id = :company_id,
-                user_id = :user_id,
+                "companyId" = :company_id,
+                "userId" = :user_id,
                 type = :type,
                 name = :name,
                 description = :description,
                 amount = :amount,
-                start_date = :start_date,
-                end_date = :end_date,
+                "startDate" = :start_date,
+                "endDate" = :end_date,
                 status = :status,
-                asset_type = :asset_type,
-                serial_number = :serial_number,
+                "assetType" = :asset_type,
+                "serialNumber" = :serial_number,
                 manufacturer = :manufacturer,
                 location = :location,
                 area = :area,
-                property_type = :property_type,
-                registration_number = :registration_number,
-                updated_at = NOW()
+                "propertyType" = :property_type,
+                "registrationNumber" = :registration_number,
+                "updatedAt" = NOW()
             WHERE id = :id
         `;
         await sequelize.query(updateQuery, {
@@ -193,8 +193,8 @@ router.put('/:id', async (req, res) => {
                 u.name as user_name,
                 u.member_no as user_member_no
             FROM investments i
-            LEFT JOIN companies c ON i.company_id = c.id
-            LEFT JOIN users u ON i.user_id = u.id
+            LEFT JOIN companies c ON i."companyId" = c.id
+            LEFT JOIN users u ON i."userId" = u.id
             WHERE i.id = :id
         `, {
             replacements: { id: req.params.id },
