@@ -236,7 +236,16 @@ const DocumentListDialog: React.FC<DocumentListDialogProps> = ({
                                                             ? (doc as Receipt).receiptNumber
                                                             : (doc as Invoice).invoiceNumber}
                                                     </TableCell>
-                                                    <TableCell>{doc.date}</TableCell>
+                                                    <TableCell>
+                                                        {doc.date ?
+                                                            new Date(doc.date).toLocaleDateString('zh-TW', {
+                                                                year: 'numeric',
+                                                                month: '2-digit',
+                                                                day: '2-digit'
+                                                            }) :
+                                                            '無日期'
+                                                        }
+                                                    </TableCell>
                                                     <TableCell align="right">
                                                         {doc.amount.toLocaleString()}
                                                     </TableCell>
@@ -504,7 +513,16 @@ export const InvoiceManagement: React.FC = () => {
                                 <TableCell>{payment.memberName}</TableCell>
                                 <TableCell>{payment.memberType}</TableCell>
                                 <TableCell align="right">{payment.amount.toLocaleString()}</TableCell>
-                                <TableCell>{payment.paymentDate}</TableCell>
+                                <TableCell>
+                                    {payment.paymentDate ?
+                                        new Date(payment.paymentDate).toLocaleDateString('zh-TW', {
+                                            year: 'numeric',
+                                            month: '2-digit',
+                                            day: '2-digit'
+                                        }) :
+                                        '未繳費'
+                                    }
+                                </TableCell>
                                 <TableCell>
                                     <Chip
                                         label={payment.paymentMethod || '未設定'}
