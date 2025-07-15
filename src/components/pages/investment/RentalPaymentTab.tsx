@@ -27,6 +27,7 @@ import {
     Checkbox,
     Alert,
     DialogContentText,
+    TableSortLabel,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -53,6 +54,12 @@ interface InvestmentSelection {
     hasExistingPayments: boolean;
 }
 
+// 排序欄位類型
+type SortField = 'investmentName' | 'yearMonth' | 'amount' | 'status' | 'paymentMethod' | 'paymentDate' | 'renterName' | 'payerName' | 'note';
+
+// 排序方向類型
+type SortDirection = 'asc' | 'desc';
+
 const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
     const [rentalPayments, setRentalPayments] = useState<RentalPayment[]>([]);
     const [availableInvestments, setAvailableInvestments] = useState<Investment[]>([]);
@@ -64,6 +71,11 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
     const [monthFilter, setMonthFilter] = useState<number>(new Date().getMonth() + 1);
     const [showAllYear, setShowAllYear] = useState<boolean>(false);
     const { enqueueSnackbar } = useSnackbar();
+
+    // 排序相關狀態
+    const [sortField, setSortField] = useState<SortField>('yearMonth');
+    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
     const [formData, setFormData] = useState<Partial<RentalPayment>>({
         investmentId: '',
         year: new Date().getFullYear(),
@@ -87,6 +99,105 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
     useEffect(() => {
         loadData();
     }, [yearFilter, monthFilter, showAllYear]);
+
+    // 排序函數
+    const sortPayments = (payments: RentalPayment[]): RentalPayment[] => {
+        return [...payments].sort((a, b) => {
+            let aValue: any;
+            let bValue: any;
+
+            switch (sortField) {
+                case 'investmentName':
+                    const investmentA = investments.find(inv => inv.id === a.investmentId);
+                    const investmentB = investments.find(inv => inv.id === b.investmentId);
+                    aValue = investmentA?.name || '';
+                    bValue = investmentB?.name || '';
+                    break;
+                case 'yearMonth':
+                    aValue = a.year * 100 + a.month;
+                    bValue = b.year * 100 + b.month;
+                    break;
+                case 'amount':
+                    aValue = a.amount;
+                    bValue = b.amount;
+                    break;
+                case 'status':
+                    aValue = getStatusText(a.status);
+                    bValue = getStatusText(b.status);
+                    break;
+                case 'paymentMethod':
+                    aValue = getPaymentMethodText(a.paymentMethod);
+                    bValue = getPaymentMethodText(b.paymentMethod);
+                    break;
+                case 'paymentDate':
+                    aValue = a.paymentDate ? new Date(a.paymentDate).getTime() : 0;
+                    bValue = b.paymentDate ? new Date(b.paymentDate).getTime() : 0;
+                    break;
+                case 'renterName':
+                    aValue = a.renterName || '';
+                    bValue = b.renterName || '';
+                    break;
+                case 'payerName':
+                    aValue = a.payerName || a.renterName || '';
+                    bValue = b.payerName || b.renterName || '';
+                    break;
+                case 'note':
+                    aValue = a.note || '';
+                    bValue = b.note || '';
+                    break;
+                default:
+                    return 0;
+            }
+
+            // 處理字串比較
+            if (typeof aValue === 'string' && typeof bValue === 'string') {
+                aValue = aValue.toLowerCase();
+                bValue = bValue.toLowerCase();
+            }
+
+            if (aValue < bValue) {
+                return sortDirection === 'asc' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortDirection === 'asc' ? 1 : -1;
+            }
+            return 0;
+        });
+    };
+
+    // 處理排序變更
+    const handleSort = (field: SortField) => {
+        const isAsc = sortField === field && sortDirection === 'asc';
+        setSortDirection(isAsc ? 'desc' : 'asc');
+        setSortField(field);
+    };
+
+    // 獲取付款方式文字
+    const getPaymentMethodText = (method: PaymentMethod) => {
+        switch (method) {
+            case PaymentMethod.CASH:
+                return '現金';
+            case PaymentMethod.BANK_TRANSFER:
+                return '銀行轉帳';
+            case PaymentMethod.CHECK:
+                return '支票';
+            case PaymentMethod.OTHER:
+                return '其他';
+            default:
+                return '其他';
+        }
+    };
+
+    // 獲取排序標籤
+    const getSortLabel = (field: SortField, label: string) => (
+        <TableSortLabel
+            active={sortField === field}
+            direction={sortField === field ? sortDirection : 'asc'}
+            onClick={() => handleSort(field)}
+        >
+            {label}
+        </TableSortLabel>
+    );
 
     const loadData = async () => {
         setLoading(true);
@@ -476,20 +587,20 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>投資項目</TableCell>
-                            <TableCell>年月</TableCell>
-                            <TableCell align="right">租金金額</TableCell>
-                            <TableCell>收款狀態</TableCell>
-                            <TableCell>收款方式</TableCell>
-                            <TableCell>收款日期</TableCell>
-                            <TableCell>承租人</TableCell>
-                            <TableCell>繳款人</TableCell>
-                            <TableCell>備註</TableCell>
+                            <TableCell>{getSortLabel('investmentName', '投資項目')}</TableCell>
+                            <TableCell>{getSortLabel('yearMonth', '年月')}</TableCell>
+                            <TableCell align="right">{getSortLabel('amount', '租金金額')}</TableCell>
+                            <TableCell>{getSortLabel('status', '收款狀態')}</TableCell>
+                            <TableCell>{getSortLabel('paymentMethod', '收款方式')}</TableCell>
+                            <TableCell>{getSortLabel('paymentDate', '收款日期')}</TableCell>
+                            <TableCell>{getSortLabel('renterName', '承租人')}</TableCell>
+                            <TableCell>{getSortLabel('payerName', '繳款人')}</TableCell>
+                            <TableCell>{getSortLabel('note', '備註')}</TableCell>
                             <TableCell>操作</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {rentalPayments.map((payment) => {
+                        {sortPayments(rentalPayments).map((payment) => {
                             const investment = investments.find(
                                 (inv) => inv.id === payment.investmentId
                             );
