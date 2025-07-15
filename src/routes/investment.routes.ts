@@ -127,24 +127,32 @@ router.post('/', async (req, res) => {
             type: QueryTypes.INSERT
         });
 
-        // 獲取新創建的投資項目
-        const newInvestment = await sequelize.query(`
-            SELECT 
-                i.*,
-                c.name as company_name,
-                c."companyNo" as company_no,
-                u.name as user_name,
-                u."memberNo" as user_member_no
-            FROM investments i
-            LEFT JOIN companies c ON i."companyId" = c.id
-            LEFT JOIN users u ON i."userId" = u.id
-            WHERE i.id = :id
-        `, {
-            replacements: { id: result[0].id },
-            type: QueryTypes.SELECT
-        });
+        // 直接返回插入的結果，不需要額外查詢
+        const insertedInvestment = result[0];
 
-        res.status(201).json(newInvestment[0]);
+        // 如果需要關聯資料，可以額外查詢
+        if (insertedInvestment && insertedInvestment.id) {
+            const newInvestment = await sequelize.query(`
+                SELECT 
+                    i.*,
+                    c.name as company_name,
+                    c."companyNo" as company_no,
+                    u.name as user_name,
+                    u."memberNo" as user_member_no
+                FROM investments i
+                LEFT JOIN companies c ON i."companyId" = c.id
+                LEFT JOIN users u ON i."userId" = u.id
+                WHERE i.id = :id
+            `, {
+                replacements: { id: insertedInvestment.id },
+                type: QueryTypes.SELECT
+            });
+
+            res.status(201).json(newInvestment[0]);
+        } else {
+            // 如果沒有返回 ID，直接返回插入的資料
+            res.status(201).json(insertedInvestment);
+        }
     } catch (error) {
         console.error('創建投資項目失敗:', error);
         res.status(400).json({ error: '創建投資項目失敗' });
