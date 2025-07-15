@@ -20,6 +20,7 @@ import companyRoutes from './routes/company.routes';
 import investmentRoutes from './routes/investment.routes';
 import feeRoutes from './routes/fee.routes';
 import feeSettingsRoutes from './routes/fee-settings.routes';
+import documentsRoutes from './routes/documents.routes';
 
 // 加載環境變量
 dotenv.config();
@@ -38,6 +39,7 @@ app.use('/api/companies', companyRoutes);
 app.use('/api/investments', investmentRoutes);
 app.use('/api/fees', feeRoutes);
 app.use('/api/fee-settings', feeSettingsRoutes);
+app.use('/api/documents', documentsRoutes);
 
 // 基本路由測試
 app.get('/', (req, res) => {
@@ -81,6 +83,40 @@ sequelize.sync({ alter: false })
             }
         } catch (error) {
             console.error('檢查/建立 fees 表時發生錯誤:', error);
+        }
+
+        // 檢查並建立 documents 表（如果不存在）
+        try {
+            const [docResults] = await sequelize.query(`
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'documents';
+            `);
+
+            if (docResults.length === 0) {
+                console.log('建立 documents 資料表...');
+                await sequelize.query(`
+                    CREATE TABLE documents (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        type VARCHAR(255) NOT NULL,
+                        member_id VARCHAR(255) NOT NULL,
+                        member_name VARCHAR(255) NOT NULL,
+                        payment_id VARCHAR(255),
+                        invoice_number VARCHAR(255),
+                        receipt_number VARCHAR(255),
+                        amount DECIMAL(12,2) NOT NULL,
+                        date DATE NOT NULL,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    );
+                `);
+                console.log('documents 資料表建立成功');
+            } else {
+                console.log('documents 資料表已存在');
+            }
+        } catch (error) {
+            console.error('檢查/建立 documents 表時發生錯誤:', error);
         }
 
         app.listen(PORT, () => {

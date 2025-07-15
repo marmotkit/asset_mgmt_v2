@@ -34,7 +34,9 @@ import { invoiceService } from '../../../services/invoiceService';
 import { feeHistoryService } from '../../../services/feeHistoryService';
 import { FeeHistory, PaymentMethod } from '../../../types/fee';
 import { documentService } from '../../../services/documentService';
+import { ApiService } from '../../../services/api.service';
 import type { Invoice, Receipt } from '../../../types/invoice';
+import { User } from '../../../types/user';
 
 interface DocumentListDialogProps {
     open: boolean;
@@ -52,7 +54,7 @@ const DocumentListDialog: React.FC<DocumentListDialogProps> = ({
     const [documents, setDocuments] = useState<(Invoice | Receipt)[]>([]);
     const [selectedMemberId, setSelectedMemberId] = useState(memberId);
     const [selectedMemberName, setSelectedMemberName] = useState(memberName);
-    const [members, setMembers] = useState<{ memberId: string; memberName: string }[]>([]);
+    const [members, setMembers] = useState<User[]>([]);
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: '',
@@ -69,18 +71,22 @@ const DocumentListDialog: React.FC<DocumentListDialogProps> = ({
 
     const loadMembers = async () => {
         try {
-            const data = await feeHistoryService.getHistories({
+            // 從雲端資料庫獲取所有會員
+            const allMembers = await ApiService.getUsers();
+
+            // 獲取已收款的會費記錄
+            const paidFees = await feeHistoryService.getHistories({
                 status: '已收款'
             });
-            const uniqueMembers = Array.from(
-                new Map(data.map(item =>
-                    [`${item.memberId}-${item.memberName}`, {
-                        memberId: item.memberId,
-                        memberName: item.memberName
-                    }]
-                )).values()
-            );
-            setMembers(uniqueMembers);
+
+            // 找出有已收款記錄的會員
+            const paidMemberIds = new Set(paidFees.map(fee => fee.memberId));
+            const membersWithPaidFees = allMembers.filter(member => {
+                // 檢查會員 ID 或會員編號是否在已收款記錄中
+                return paidMemberIds.has(member.id) || paidMemberIds.has(member.memberNo);
+            });
+
+            setMembers(membersWithPaidFees);
         } catch (error) {
             console.error('載入會員資料失敗:', error);
             setSnackbar({
@@ -125,10 +131,10 @@ const DocumentListDialog: React.FC<DocumentListDialogProps> = ({
     };
 
     const handleMemberSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedMember = members.find(m => m.memberId === event.target.value);
+        const selectedMember = members.find(m => m.id === event.target.value);
         if (selectedMember) {
-            setSelectedMemberId(selectedMember.memberId);
-            setSelectedMemberName(selectedMember.memberName);
+            setSelectedMemberId(selectedMember.id);
+            setSelectedMemberName(selectedMember.name);
         }
     };
 
@@ -193,8 +199,8 @@ const DocumentListDialog: React.FC<DocumentListDialogProps> = ({
                                 onChange={(e) => handleMemberSelect(e as any)}
                             >
                                 {members.map((member) => (
-                                    <MenuItem key={member.memberId} value={member.memberId}>
-                                        {member.memberName} ({member.memberId})
+                                    <MenuItem key={member.id} value={member.id}>
+                                        {member.name} ({member.memberNo})
                                     </MenuItem>
                                 ))}
                             </Select>
@@ -271,6 +277,7 @@ const DocumentListDialog: React.FC<DocumentListDialogProps> = ({
                 </DialogActions>
             </Dialog>
 
+            {/* 刪除確認對話框 */}
             <Dialog
                 open={deleteConfirmOpen}
                 onClose={handleDeleteCancel}
@@ -278,26 +285,27 @@ const DocumentListDialog: React.FC<DocumentListDialogProps> = ({
                 <DialogTitle>確認刪除</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        確定要刪除這份文件嗎？此操作無法復原。
+                        確定要刪除這個文件嗎？此操作無法復原。
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleDeleteCancel}>取消</Button>
-                    <Button onClick={handleDeleteConfirm} color="error" autoFocus>
+                    <Button onClick={handleDeleteConfirm} color="error" variant="contained">
                         刪除
                     </Button>
                 </DialogActions>
             </Dialog>
 
+            {/* Snackbar */}
             <Snackbar
                 open={snackbar.open}
-                autoHideDuration={3000}
-                onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                autoHideDuration={6000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
             >
                 <Alert
-                    onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+                    onClose={() => setSnackbar({ ...snackbar, open: false })}
                     severity={snackbar.severity}
+                    sx={{ width: '100%' }}
                 >
                     {snackbar.message}
                 </Alert>

@@ -1,5 +1,5 @@
 import { Invoice, Receipt, DocumentFilter, InvoiceType } from '../types/invoice';
-import { storageService } from './storageService';
+import { ApiService } from './api.service';
 
 class InvoiceService {
     private lastInvoiceNumber: { [key: string]: number } = {
@@ -56,17 +56,58 @@ class InvoiceService {
     }
 
     private async saveDocument(document: Invoice | Receipt) {
-        const documents = await this.getDocuments({});
-        documents.push(document);
-        await storageService.updateData('documents', documents);
+        try {
+            // 將發票/收據資料儲存到雲端資料庫
+            const response = await fetch('https://asset-mgmt-api-clean.onrender.com/api/documents', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+                body: JSON.stringify(document),
+            });
+
+            if (!response.ok) {
+                throw new Error('儲存文件失敗');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('儲存文件失敗:', error);
+            throw error;
+        }
     }
 
     async getDocuments(query: { memberId?: string }): Promise<(Invoice | Receipt)[]> {
-        const documents = await storageService.getData<(Invoice | Receipt)[]>('documents') || [];
-        if (query.memberId) {
-            return documents.filter(doc => doc.memberId === query.memberId);
+        try {
+            const token = localStorage.getItem('token');
+            let url = 'https://asset-mgmt-api-clean.onrender.com/api/documents';
+
+            if (query.memberId) {
+                url += `?memberId=${query.memberId}`;
+            }
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('載入文件失敗');
+            }
+
+            const documents = await response.json();
+            return documents || [];
+        } catch (error) {
+            console.error('載入文件失敗:', error);
+            // 如果 API 失敗，回退到 localStorage
+            const documents = JSON.parse(localStorage.getItem('documents') || '[]');
+            if (query.memberId) {
+                return documents.filter((doc: any) => doc.memberId === query.memberId);
+            }
+            return documents;
         }
-        return documents;
     }
 
     getCompanyInfo() {
@@ -77,9 +118,25 @@ class InvoiceService {
     }
 
     async deleteDocument(id: string): Promise<void> {
-        const documents = await this.getDocuments({});
-        const updatedDocuments = documents.filter(doc => doc.id !== id);
-        await storageService.updateData('documents', updatedDocuments);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`https://asset-mgmt-api-clean.onrender.com/api/documents/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('刪除文件失敗');
+            }
+        } catch (error) {
+            console.error('刪除文件失敗:', error);
+            // 如果 API 失敗，回退到 localStorage
+            const documents = JSON.parse(localStorage.getItem('documents') || '[]');
+            const updatedDocuments = documents.filter((doc: any) => doc.id !== id);
+            localStorage.setItem('documents', JSON.stringify(updatedDocuments));
+        }
     }
 }
 
