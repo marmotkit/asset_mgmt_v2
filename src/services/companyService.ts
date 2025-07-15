@@ -28,7 +28,7 @@ class CompanyService {
     async getCompanies(): Promise<Company[]> {
         try {
             const token = this.getAuthToken();
-            const response = await axios.get(`${this.API_BASE_URL}/api/companies`, {
+            const response = await axios.get(`${this.API_BASE_URL}/companies`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -43,7 +43,7 @@ class CompanyService {
     async getCompanyById(companyId: string): Promise<Company | undefined> {
         try {
             const token = this.getAuthToken();
-            const response = await axios.get(`${this.API_BASE_URL}/api/companies/${companyId}`, {
+            const response = await axios.get(`${this.API_BASE_URL}/companies/${companyId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -58,7 +58,7 @@ class CompanyService {
     async createCompany(companyData: Partial<Company>): Promise<Company> {
         try {
             const token = this.getAuthToken();
-            const response = await axios.post(`${this.API_BASE_URL}/api/companies`, companyData, {
+            const response = await axios.post(`${this.API_BASE_URL}/companies`, companyData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -75,7 +75,7 @@ class CompanyService {
     async updateCompany(companyId: string, companyData: Partial<Company>): Promise<Company> {
         try {
             const token = this.getAuthToken();
-            const response = await axios.put(`${this.API_BASE_URL}/api/companies/${companyId}`, companyData, {
+            const response = await axios.put(`${this.API_BASE_URL}/companies/${companyId}`, companyData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -92,7 +92,7 @@ class CompanyService {
     async deleteCompany(companyId: string): Promise<void> {
         try {
             const token = this.getAuthToken();
-            await axios.delete(`${this.API_BASE_URL}/api/companies/${companyId}`, {
+            await axios.delete(`${this.API_BASE_URL}/companies/${companyId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
