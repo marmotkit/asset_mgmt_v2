@@ -37,6 +37,7 @@ interface ProfitSharingStandardTabProps {
 
 const ProfitSharingStandardTab: React.FC<ProfitSharingStandardTabProps> = ({ investments }) => {
     const [profitSharingStandards, setProfitSharingStandards] = useState<ProfitSharingStandard[]>([]);
+    const [availableInvestments, setAvailableInvestments] = useState<Investment[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -57,8 +58,12 @@ const ProfitSharingStandardTab: React.FC<ProfitSharingStandardTabProps> = ({ inv
     const loadData = async () => {
         setLoading(true);
         try {
-            const standardsData = await ApiService.getProfitSharingStandards();
+            const [standardsData, availableInvestmentsData] = await Promise.all([
+                ApiService.getProfitSharingStandards(),
+                ApiService.getAvailableInvestmentsForProfitSharing()
+            ]);
             setProfitSharingStandards(standardsData);
+            setAvailableInvestments(availableInvestmentsData);
         } catch (err) {
             setError('載入資料失敗');
         } finally {
@@ -231,8 +236,9 @@ const ProfitSharingStandardTab: React.FC<ProfitSharingStandardTabProps> = ({ inv
                                 value={formData.investmentId}
                                 onChange={handleInputChange('investmentId')}
                                 required
+                                helperText="只顯示有租賃標準設定的投資項目"
                             >
-                                {investments.map((investment) => (
+                                {availableInvestments.map((investment) => (
                                     <MenuItem key={investment.id} value={investment.id}>
                                         {investment.name}
                                     </MenuItem>

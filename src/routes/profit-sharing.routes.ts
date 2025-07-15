@@ -38,6 +38,38 @@ router.get('/', async (req, res) => {
     }
 });
 
+// 獲取有租賃標準的投資項目（用於分潤標準選擇）
+router.get('/available-investments', async (req, res) => {
+    try {
+        const query = `
+            SELECT DISTINCT
+                i.id,
+                i.name,
+                i.type,
+                i.amount,
+                i."startDate",
+                i.status,
+                c.name as company_name,
+                u.name as user_name
+            FROM investments i
+            LEFT JOIN companies c ON i."companyId" = c.id
+            LEFT JOIN users u ON i."userId" = u.id
+            INNER JOIN rental_standards rs ON i.id = rs."investmentId"
+            WHERE i.status = 'active'
+            ORDER BY i.name
+        `;
+
+        const investments = await sequelize.query(query, {
+            type: QueryTypes.SELECT
+        });
+
+        res.json(investments);
+    } catch (error) {
+        console.error('獲取有租賃標準的投資項目失敗:', error);
+        res.status(500).json({ error: '獲取有租賃標準的投資項目失敗' });
+    }
+});
+
 // 獲取單個分潤標準
 router.get('/:id', async (req, res) => {
     try {
