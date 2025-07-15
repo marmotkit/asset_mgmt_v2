@@ -272,9 +272,9 @@ const OtherAnomaliesPanel: React.FC = () => {
         personId: '',
         personName: '',
         description: '',
-        date: new Date().toISOString().split('T')[0],
+        occurrenceDate: new Date().toISOString().split('T')[0],
         status: '待處理',
-        handling: ''
+        handlingMethod: ''
     });
 
     useEffect(() => {
@@ -346,9 +346,9 @@ const OtherAnomaliesPanel: React.FC = () => {
                 personId: '',
                 personName: '',
                 description: '',
-                date: new Date().toISOString().split('T')[0],
+                occurrenceDate: new Date().toISOString().split('T')[0],
                 status: '待處理',
-                handling: ''
+                handlingMethod: ''
             });
             handleCloseDialog();
         } catch (error) {
@@ -392,7 +392,7 @@ const OtherAnomaliesPanel: React.FC = () => {
                                     <TableRow key={anomaly.id || index}>
                                         <TableCell>{anomaly.type}</TableCell>
                                         <TableCell>{anomaly.personName}</TableCell>
-                                        <TableCell>{new Date(anomaly.date).toLocaleDateString()}</TableCell>
+                                        <TableCell>{new Date(anomaly.occurrenceDate).toLocaleDateString()}</TableCell>
                                         <TableCell>{anomaly.description}</TableCell>
                                         <TableCell>
                                             <Chip
@@ -401,7 +401,7 @@ const OtherAnomaliesPanel: React.FC = () => {
                                                 size="small"
                                             />
                                         </TableCell>
-                                        <TableCell>{anomaly.handling || '尚未處理'}</TableCell>
+                                        <TableCell>{anomaly.handlingMethod || '尚未處理'}</TableCell>
                                     </TableRow>
                                 ))
                         ) : (
@@ -483,10 +483,10 @@ const OtherAnomaliesPanel: React.FC = () => {
                         <Grid item xs={12} md={6}>
                             <TextField
                                 fullWidth
-                                name="date"
+                                name="occurrenceDate"
                                 label="發生日期"
                                 type="date"
-                                value={newAnomaly.date}
+                                value={newAnomaly.occurrenceDate}
                                 onChange={handleInputChange}
                                 InputLabelProps={{
                                     shrink: true,
@@ -524,11 +524,11 @@ const OtherAnomaliesPanel: React.FC = () => {
                         <Grid item xs={12}>
                             <TextField
                                 fullWidth
-                                name="handling"
+                                name="handlingMethod"
                                 label="處理方式"
                                 multiline
                                 rows={2}
-                                value={newAnomaly.handling}
+                                value={newAnomaly.handlingMethod}
                                 onChange={handleInputChange}
                             />
                         </Grid>
@@ -540,7 +540,7 @@ const OtherAnomaliesPanel: React.FC = () => {
                         onClick={handleSaveAnomaly}
                         variant="contained"
                         color="primary"
-                        disabled={!newAnomaly.type || (!newAnomaly.personId && !newAnomaly.personName) || !newAnomaly.date || !newAnomaly.description}
+                        disabled={!newAnomaly.type || (!newAnomaly.personId && !newAnomaly.personName) || !newAnomaly.occurrenceDate || !newAnomaly.description}
                     >
                         保存
                     </Button>

@@ -98,13 +98,31 @@ router.get('/rental-overdue-payments', async (req, res) => {
     }
 });
 
-// 獲取其他異常記錄（預留功能）
+// 獲取其他異常記錄
 router.get('/anomalies', async (req, res) => {
     try {
         console.log('【風險管理】查詢其他異常記錄...');
 
-        // 目前返回空陣列，未來可以擴展
-        res.json([]);
+        const query = `
+            SELECT 
+                id,
+                type,
+                person_id as "personId",
+                person_name as "personName",
+                description,
+                occurrence_date as "occurrenceDate",
+                status,
+                handling_method as "handlingMethod",
+                created_at as "createdAt",
+                updated_at as "updatedAt"
+            FROM anomalies
+            ORDER BY created_at DESC
+        `;
+
+        const result = await pool.query(query);
+        console.log(`【風險管理】找到 ${result.rows.length} 筆其他異常記錄`);
+
+        res.json(result.rows);
     } catch (error) {
         console.error('【風險管理】查詢其他異常記錄失敗:', error);
         res.status(500).json({

@@ -1061,33 +1061,32 @@ export class ApiService {
         personId?: string;
         personName: string;
         description: string;
-        date: string;
+        occurrenceDate: string;
         status: string;
-        handling?: string;
+        handlingMethod?: string;
     }): Promise<any> {
-        // 從本地存儲獲取異常記錄
-        const storedAnomalies = localStorage.getItem('anomalies') || '[]';
-        const anomalies = JSON.parse(storedAnomalies);
-
-        // 建立新的異常記錄
-        const newAnomaly = {
-            id: crypto.randomUUID(),
-            ...data,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-
-        // 添加到列表並儲存
-        anomalies.push(newAnomaly);
-        localStorage.setItem('anomalies', JSON.stringify(anomalies));
-
-        return Promise.resolve(newAnomaly);
+        try {
+            console.log('【API】調用真實 API 新增異常記錄');
+            const response = await this.post('/anomalies', data);
+            console.log('【API】新增異常記錄回應:', response);
+            return response.data;
+        } catch (error) {
+            console.error('【API】新增異常記錄失敗:', error);
+            throw error;
+        }
     }
 
     // 獲取異常記錄列表
     public static async getAnomalies(): Promise<any[]> {
-        const storedAnomalies = localStorage.getItem('anomalies') || '[]';
-        return Promise.resolve(JSON.parse(storedAnomalies));
+        try {
+            console.log('【API】調用真實 API 獲取異常記錄');
+            const response = await this.get('/anomalies');
+            console.log('【API】異常記錄回應:', response);
+            return Array.isArray(response.data) ? response.data : [];
+        } catch (error) {
+            console.error('【API】獲取異常記錄失敗:', error);
+            return [];
+        }
     }
 
     // 帳務管理功能
