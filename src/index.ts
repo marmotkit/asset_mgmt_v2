@@ -28,6 +28,7 @@ import documentsRoutes from './routes/documents.routes';
 import annualActivitiesRoutes from './routes/annual-activities.routes';
 import activityRegistrationsRoutes from './routes/activity-registrations.routes';
 import memberCaresRoutes from './routes/member-cares.routes';
+import riskManagementRoutes from './routes/risk-management.routes';
 
 // 加載環境變量
 dotenv.config();
@@ -54,6 +55,7 @@ app.use('/api/documents', documentsRoutes);
 app.use('/api/annual-activities', annualActivitiesRoutes);
 app.use('/api/activity-registrations', activityRegistrationsRoutes);
 app.use('/api/member-cares', memberCaresRoutes);
+app.use('/api/risk-management', riskManagementRoutes);
 
 // 基本路由測試
 app.get('/', (req, res) => {

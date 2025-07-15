@@ -37,7 +37,24 @@ router.get('/', auth_middleware_1.authMiddleware, async (req, res) => {
         }
         query += ` ORDER BY year DESC, start_date DESC`;
         const result = await client.query(query, params);
-        res.json(result.rows);
+        // 轉換欄位名稱從 snake_case 到 camelCase
+        const transformedRows = result.rows.map(row => ({
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            startDate: row.start_date,
+            endDate: row.end_date,
+            location: row.location,
+            capacity: row.capacity,
+            registrationDeadline: row.registration_deadline,
+            status: row.status,
+            year: row.year,
+            coverImage: row.cover_image,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at
+        }));
+        console.log('查詢到的活動資料:', transformedRows);
+        res.json(transformedRows);
     }
     catch (error) {
         console.error('獲取年度活動失敗:', error);
@@ -64,7 +81,23 @@ router.get('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ error: '找不到指定的活動' });
         }
-        res.json(result.rows[0]);
+        // 轉換欄位名稱從 snake_case 到 camelCase
+        const transformedRow = {
+            id: result.rows[0].id,
+            title: result.rows[0].title,
+            description: result.rows[0].description,
+            startDate: result.rows[0].start_date,
+            endDate: result.rows[0].end_date,
+            location: result.rows[0].location,
+            capacity: result.rows[0].capacity,
+            registrationDeadline: result.rows[0].registration_deadline,
+            status: result.rows[0].status,
+            year: result.rows[0].year,
+            coverImage: result.rows[0].cover_image,
+            createdAt: result.rows[0].created_at,
+            updatedAt: result.rows[0].updated_at
+        };
+        res.json(transformedRow);
     }
     catch (error) {
         console.error('獲取活動詳情失敗:', error);
@@ -79,6 +112,7 @@ router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
     const client = await pool.connect();
     try {
         const { title, description, startDate, endDate, location, capacity, registrationDeadline, status, year, coverImage } = req.body;
+        console.log('收到的活動資料:', req.body);
         const query = `
             INSERT INTO annual_activities (
                 title, description, start_date, end_date, location, 
@@ -90,7 +124,9 @@ router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
             title, description, startDate, endDate, location,
             capacity, registrationDeadline, status, year, coverImage
         ];
+        console.log('插入的資料:', values);
         const result = await client.query(query, values);
+        console.log('插入結果:', result.rows[0]);
         res.status(201).json(result.rows[0]);
     }
     catch (error) {
@@ -123,7 +159,23 @@ router.put('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ error: '找不到指定的活動' });
         }
-        res.json(result.rows[0]);
+        // 轉換欄位名稱從 snake_case 到 camelCase
+        const transformedRow = {
+            id: result.rows[0].id,
+            title: result.rows[0].title,
+            description: result.rows[0].description,
+            startDate: result.rows[0].start_date,
+            endDate: result.rows[0].end_date,
+            location: result.rows[0].location,
+            capacity: result.rows[0].capacity,
+            registrationDeadline: result.rows[0].registration_deadline,
+            status: result.rows[0].status,
+            year: result.rows[0].year,
+            coverImage: result.rows[0].cover_image,
+            createdAt: result.rows[0].created_at,
+            updatedAt: result.rows[0].updated_at
+        };
+        res.json(transformedRow);
     }
     catch (error) {
         console.error('更新活動失敗:', error);

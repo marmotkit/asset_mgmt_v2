@@ -46,7 +46,26 @@ router.get('/', auth_middleware_1.authMiddleware, async (req, res) => {
         }
         query += ` ORDER BY mc.care_date DESC`;
         const result = await client.query(query, params);
-        res.json(result.rows);
+        // 轉換欄位名稱從 snake_case 到 camelCase
+        const transformedRows = result.rows.map(row => ({
+            id: row.id,
+            memberId: row.member_id,
+            type: row.type,
+            title: row.title,
+            description: row.description,
+            date: row.care_date,
+            status: row.status,
+            assignedTo: row.assigned_to,
+            followUpDate: row.follow_up_date,
+            notes: row.notes,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+            memberName: row.member_name,
+            memberEmail: row.member_email,
+            assignedToName: row.assigned_to_name
+        }));
+        console.log('查詢到的關懷記錄:', transformedRows);
+        res.json(transformedRows);
     }
     catch (error) {
         console.error('獲取會員關懷記錄失敗:', error);
@@ -77,7 +96,25 @@ router.get('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ error: '找不到指定的會員關懷記錄' });
         }
-        res.json(result.rows[0]);
+        // 轉換欄位名稱從 snake_case 到 camelCase
+        const transformedRow = {
+            id: result.rows[0].id,
+            memberId: result.rows[0].member_id,
+            type: result.rows[0].type,
+            title: result.rows[0].title,
+            description: result.rows[0].description,
+            date: result.rows[0].care_date,
+            status: result.rows[0].status,
+            assignedTo: result.rows[0].assigned_to,
+            followUpDate: result.rows[0].follow_up_date,
+            notes: result.rows[0].notes,
+            createdAt: result.rows[0].created_at,
+            updatedAt: result.rows[0].updated_at,
+            memberName: result.rows[0].member_name,
+            memberEmail: result.rows[0].member_email,
+            assignedToName: result.rows[0].assigned_to_name
+        };
+        res.json(transformedRow);
     }
     catch (error) {
         console.error('獲取會員關懷記錄詳情失敗:', error);
@@ -91,7 +128,8 @@ router.get('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
 router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
     const client = await pool.connect();
     try {
-        const { memberId, type, title, description, careDate, status, assignedTo, followUpDate, notes } = req.body;
+        const { memberId, type, title, description, date, status, assignedTo, followUpDate, notes } = req.body;
+        console.log('收到的關懷記錄資料:', req.body);
         // 檢查會員是否存在
         const memberQuery = `SELECT * FROM users WHERE id = $1`;
         const memberResult = await client.query(memberQuery, [memberId]);
@@ -106,6 +144,8 @@ router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
                 return res.status(404).json({ error: '指定的負責人不存在' });
             }
         }
+        // 修正：將 date 轉為 YYYY-MM-DD 格式
+        const careDate = date ? date.split('T')[0] : null;
         const query = `
             INSERT INTO member_cares (
                 member_id, type, title, description, care_date, status, 
@@ -117,7 +157,9 @@ router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
             memberId, type, title, description || '', careDate, status || 'planned',
             assignedTo, followUpDate, notes
         ];
+        console.log('插入的關懷記錄資料:', values);
         const result = await client.query(query, values);
+        console.log('插入結果:', result.rows[0]);
         res.status(201).json(result.rows[0]);
     }
     catch (error) {
@@ -133,7 +175,7 @@ router.put('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
     const client = await pool.connect();
     try {
         const { id } = req.params;
-        const { type, title, description, careDate, status, assignedTo, followUpDate, notes } = req.body;
+        const { type, title, description, date, status, assignedTo, followUpDate, notes } = req.body;
         // 如果指定了負責人，檢查負責人是否存在
         if (assignedTo) {
             const assignedQuery = `SELECT * FROM users WHERE id = $1`;
@@ -151,14 +193,29 @@ router.put('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
             RETURNING *
         `;
         const values = [
-            type, title, description || '', careDate, status, assignedTo,
+            type, title, description || '', date, status, assignedTo,
             followUpDate, notes, id
         ];
         const result = await client.query(query, values);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: '找不到指定的會員關懷記錄' });
         }
-        res.json(result.rows[0]);
+        // 轉換欄位名稱從 snake_case 到 camelCase
+        const transformedRow = {
+            id: result.rows[0].id,
+            memberId: result.rows[0].member_id,
+            type: result.rows[0].type,
+            title: result.rows[0].title,
+            description: result.rows[0].description,
+            date: result.rows[0].care_date,
+            status: result.rows[0].status,
+            assignedTo: result.rows[0].assigned_to,
+            followUpDate: result.rows[0].follow_up_date,
+            notes: result.rows[0].notes,
+            createdAt: result.rows[0].created_at,
+            updatedAt: result.rows[0].updated_at
+        };
+        res.json(transformedRow);
     }
     catch (error) {
         console.error('更新會員關懷記錄失敗:', error);

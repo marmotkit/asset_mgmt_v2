@@ -30,6 +30,7 @@ const documents_routes_1 = __importDefault(require("./routes/documents.routes"))
 const annual_activities_routes_1 = __importDefault(require("./routes/annual-activities.routes"));
 const activity_registrations_routes_1 = __importDefault(require("./routes/activity-registrations.routes"));
 const member_cares_routes_1 = __importDefault(require("./routes/member-cares.routes"));
+const risk_management_routes_1 = __importDefault(require("./routes/risk-management.routes"));
 // 加載環境變量
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -52,6 +53,7 @@ app.use('/api/documents', documents_routes_1.default);
 app.use('/api/annual-activities', annual_activities_routes_1.default);
 app.use('/api/activity-registrations', activity_registrations_routes_1.default);
 app.use('/api/member-cares', member_cares_routes_1.default);
+app.use('/api/risk-management', risk_management_routes_1.default);
 // 基本路由測試
 app.get('/', (req, res) => {
     res.send('資產管理系統 API 服務運行中');

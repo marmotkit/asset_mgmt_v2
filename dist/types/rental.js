@@ -13,7 +13,7 @@ var PaymentStatus;
 (function (PaymentStatus) {
     PaymentStatus["PENDING"] = "pending";
     PaymentStatus["PAID"] = "paid";
-    PaymentStatus["OVERDUE"] = "overdue";
+    PaymentStatus["OVERDUE"] = "late";
 })(PaymentStatus || (exports.PaymentStatus = PaymentStatus = {}));
 var PaymentMethod;
 (function (PaymentMethod) {

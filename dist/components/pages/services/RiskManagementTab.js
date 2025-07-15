@@ -12,7 +12,6 @@ function TabPanel(props) {
 // 會員逾期繳款記錄組件
 const MemberOverduePaymentsPanel = () => {
     const [overduePayments, setOverduePayments] = (0, react_1.useState)([]);
-    const [members, setMembers] = (0, react_1.useState)([]);
     const [page, setPage] = (0, react_1.useState)(0);
     const [rowsPerPage, setRowsPerPage] = (0, react_1.useState)(10);
     (0, react_1.useEffect)(() => {
@@ -20,10 +19,8 @@ const MemberOverduePaymentsPanel = () => {
             try {
                 // 使用新增的API方法獲取逾期繳款記錄
                 const overdue = await api_service_1.ApiService.getOverdueMemberPayments();
+                console.log('【前端】獲取到的會員逾期繳款記錄:', overdue);
                 setOverduePayments(overdue);
-                // 獲取會員資料以顯示名稱
-                const memberData = await api_service_1.ApiService.getMembers();
-                setMembers(memberData);
             }
             catch (error) {
                 console.error('無法獲取會員逾期繳款記錄:', error);
@@ -31,10 +28,6 @@ const MemberOverduePaymentsPanel = () => {
         };
         fetchData();
     }, []);
-    const getMemberName = (memberId) => {
-        const member = members.find(m => m.id === memberId);
-        return member ? member.name : '未知會員';
-    };
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
@@ -44,7 +37,7 @@ const MemberOverduePaymentsPanel = () => {
     };
     return ((0, jsx_runtime_1.jsxs)(material_1.Box, { children: [(0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "h6", gutterBottom: true, children: "\u6703\u54E1\u903E\u671F\u7E73\u6B3E\u8A18\u9304" }), (0, jsx_runtime_1.jsxs)(material_1.TableContainer, { component: material_1.Paper, children: [(0, jsx_runtime_1.jsxs)(material_1.Table, { children: [(0, jsx_runtime_1.jsx)(material_1.TableHead, { children: (0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6703\u54E1\u59D3\u540D" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u5E74\u5EA6" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6708\u4EFD" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u91D1\u984D" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u72C0\u614B" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u61C9\u4ED8\u65E5\u671F" })] }) }), (0, jsx_runtime_1.jsx)(material_1.TableBody, { children: overduePayments.length > 0 ? (overduePayments
                                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((payment) => ((0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getMemberName(payment.memberId) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.year }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.month }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.amount.toLocaleString() }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: (0, jsx_runtime_1.jsx)(material_1.Chip, { label: "\u903E\u671F", color: "error", size: "small" }) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.paymentDate || '未設定' })] }, payment.id)))) : ((0, jsx_runtime_1.jsx)(material_1.TableRow, { children: (0, jsx_runtime_1.jsx)(material_1.TableCell, { colSpan: 6, align: "center", children: "\u7121\u6703\u54E1\u903E\u671F\u7E73\u6B3E\u8A18\u9304" }) })) })] }), (0, jsx_runtime_1.jsx)(material_1.TablePagination, { rowsPerPageOptions: [5, 10, 25], component: "div", count: overduePayments.length, rowsPerPage: rowsPerPage, page: page, onPageChange: handleChangePage, onRowsPerPageChange: handleChangeRowsPerPage, labelRowsPerPage: "\u6BCF\u9801\u5217\u6578:" })] })] }));
+                                    .map((payment) => ((0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.memberName || '未知會員' }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.year }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.month }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: Number(payment.amount).toLocaleString() }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: (0, jsx_runtime_1.jsx)(material_1.Chip, { label: "\u903E\u671F", color: "error", size: "small" }) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.dueDate || '未設定' })] }, payment.id)))) : ((0, jsx_runtime_1.jsx)(material_1.TableRow, { children: (0, jsx_runtime_1.jsx)(material_1.TableCell, { colSpan: 6, align: "center", children: "\u7121\u6703\u54E1\u903E\u671F\u7E73\u6B3E\u8A18\u9304" }) })) })] }), (0, jsx_runtime_1.jsx)(material_1.TablePagination, { rowsPerPageOptions: [5, 10, 25], component: "div", count: overduePayments.length, rowsPerPage: rowsPerPage, page: page, onPageChange: handleChangePage, onRowsPerPageChange: handleChangeRowsPerPage, labelRowsPerPage: "\u6BCF\u9801\u5217\u6578:" })] })] }));
 };
 // 客戶租金逾期繳款記錄組件
 const CustomerOverdueRentalsPanel = () => {
@@ -56,6 +49,7 @@ const CustomerOverdueRentalsPanel = () => {
             try {
                 // 使用新增的API方法獲取逾期租金記錄
                 const overdue = await api_service_1.ApiService.getOverdueRentalPayments();
+                console.log('【前端】獲取到的客戶租金逾期繳款記錄:', overdue);
                 setOverdueRentals(overdue);
             }
             catch (error) {
@@ -73,7 +67,7 @@ const CustomerOverdueRentalsPanel = () => {
     };
     return ((0, jsx_runtime_1.jsxs)(material_1.Box, { children: [(0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "h6", gutterBottom: true, children: "\u5BA2\u6236\u79DF\u91D1\u903E\u671F\u7E73\u6B3E\u8A18\u9304" }), (0, jsx_runtime_1.jsxs)(material_1.TableContainer, { component: material_1.Paper, children: [(0, jsx_runtime_1.jsxs)(material_1.Table, { children: [(0, jsx_runtime_1.jsx)(material_1.TableHead, { children: (0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u627F\u79DF\u4EBA" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u5E74\u5EA6" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6708\u4EFD" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u91D1\u984D" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u72C0\u614B" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u79DF\u8CC3\u671F\u9593" })] }) }), (0, jsx_runtime_1.jsx)(material_1.TableBody, { children: overdueRentals.length > 0 ? (overdueRentals
                                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((rental) => ((0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: rental.renterName }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: rental.year }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: rental.month }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: rental.amount.toLocaleString() }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: (0, jsx_runtime_1.jsx)(material_1.Chip, { label: "\u903E\u671F", color: "error", size: "small" }) }), (0, jsx_runtime_1.jsxs)(material_1.TableCell, { children: [new Date(rental.startDate).toLocaleDateString(), " - ", new Date(rental.endDate).toLocaleDateString()] })] }, rental.id)))) : ((0, jsx_runtime_1.jsx)(material_1.TableRow, { children: (0, jsx_runtime_1.jsx)(material_1.TableCell, { colSpan: 6, align: "center", children: "\u7121\u5BA2\u6236\u79DF\u91D1\u903E\u671F\u7E73\u6B3E\u8A18\u9304" }) })) })] }), (0, jsx_runtime_1.jsx)(material_1.TablePagination, { rowsPerPageOptions: [5, 10, 25], component: "div", count: overdueRentals.length, rowsPerPage: rowsPerPage, page: page, onPageChange: handleChangePage, onRowsPerPageChange: handleChangeRowsPerPage, labelRowsPerPage: "\u6BCF\u9801\u5217\u6578:" })] })] }));
+                                    .map((rental) => ((0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: rental.renterName }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: rental.year }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: rental.month }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: Number(rental.amount).toLocaleString() }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: (0, jsx_runtime_1.jsx)(material_1.Chip, { label: "\u903E\u671F", color: "error", size: "small" }) }), (0, jsx_runtime_1.jsxs)(material_1.TableCell, { children: [rental.startDate, " - ", rental.endDate] })] }, rental.id)))) : ((0, jsx_runtime_1.jsx)(material_1.TableRow, { children: (0, jsx_runtime_1.jsx)(material_1.TableCell, { colSpan: 6, align: "center", children: "\u7121\u5BA2\u6236\u79DF\u91D1\u903E\u671F\u7E73\u6B3E\u8A18\u9304" }) })) })] }), (0, jsx_runtime_1.jsx)(material_1.TablePagination, { rowsPerPageOptions: [5, 10, 25], component: "div", count: overdueRentals.length, rowsPerPage: rowsPerPage, page: page, onPageChange: handleChangePage, onRowsPerPageChange: handleChangeRowsPerPage, labelRowsPerPage: "\u6BCF\u9801\u5217\u6578:" })] })] }));
 };
 // 其他異常記錄組件
 const OtherAnomaliesPanel = () => {

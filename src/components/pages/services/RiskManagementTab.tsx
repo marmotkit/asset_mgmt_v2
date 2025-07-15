@@ -60,8 +60,7 @@ function TabPanel(props: TabPanelProps) {
 
 // 會員逾期繳款記錄組件
 const MemberOverduePaymentsPanel: React.FC = () => {
-    const [overduePayments, setOverduePayments] = useState<MemberProfit[]>([]);
-    const [members, setMembers] = useState<User[]>([]);
+    const [overduePayments, setOverduePayments] = useState<any[]>([]);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -70,11 +69,8 @@ const MemberOverduePaymentsPanel: React.FC = () => {
             try {
                 // 使用新增的API方法獲取逾期繳款記錄
                 const overdue = await ApiService.getOverdueMemberPayments();
+                console.log('【前端】獲取到的會員逾期繳款記錄:', overdue);
                 setOverduePayments(overdue);
-
-                // 獲取會員資料以顯示名稱
-                const memberData = await ApiService.getMembers();
-                setMembers(memberData);
             } catch (error) {
                 console.error('無法獲取會員逾期繳款記錄:', error);
             }
@@ -82,11 +78,6 @@ const MemberOverduePaymentsPanel: React.FC = () => {
 
         fetchData();
     }, []);
-
-    const getMemberName = (memberId: string): string => {
-        const member = members.find(m => m.id === memberId);
-        return member ? member.name : '未知會員';
-    };
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -121,10 +112,10 @@ const MemberOverduePaymentsPanel: React.FC = () => {
                                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                 .map((payment) => (
                                     <TableRow key={payment.id}>
-                                        <TableCell>{getMemberName(payment.memberId)}</TableCell>
+                                        <TableCell>{payment.memberName || '未知會員'}</TableCell>
                                         <TableCell>{payment.year}</TableCell>
                                         <TableCell>{payment.month}</TableCell>
-                                        <TableCell>{payment.amount.toLocaleString()}</TableCell>
+                                        <TableCell>{Number(payment.amount).toLocaleString()}</TableCell>
                                         <TableCell>
                                             <Chip
                                                 label="逾期"
@@ -132,7 +123,7 @@ const MemberOverduePaymentsPanel: React.FC = () => {
                                                 size="small"
                                             />
                                         </TableCell>
-                                        <TableCell>{payment.paymentDate || '未設定'}</TableCell>
+                                        <TableCell>{payment.dueDate || '未設定'}</TableCell>
                                     </TableRow>
                                 ))
                         ) : (
@@ -161,7 +152,7 @@ const MemberOverduePaymentsPanel: React.FC = () => {
 
 // 客戶租金逾期繳款記錄組件
 const CustomerOverdueRentalsPanel: React.FC = () => {
-    const [overdueRentals, setOverdueRentals] = useState<RentalPayment[]>([]);
+    const [overdueRentals, setOverdueRentals] = useState<any[]>([]);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -170,6 +161,7 @@ const CustomerOverdueRentalsPanel: React.FC = () => {
             try {
                 // 使用新增的API方法獲取逾期租金記錄
                 const overdue = await ApiService.getOverdueRentalPayments();
+                console.log('【前端】獲取到的客戶租金逾期繳款記錄:', overdue);
                 setOverdueRentals(overdue);
             } catch (error) {
                 console.error('無法獲取客戶租金逾期繳款記錄:', error);
@@ -215,7 +207,7 @@ const CustomerOverdueRentalsPanel: React.FC = () => {
                                         <TableCell>{rental.renterName}</TableCell>
                                         <TableCell>{rental.year}</TableCell>
                                         <TableCell>{rental.month}</TableCell>
-                                        <TableCell>{rental.amount.toLocaleString()}</TableCell>
+                                        <TableCell>{Number(rental.amount).toLocaleString()}</TableCell>
                                         <TableCell>
                                             <Chip
                                                 label="逾期"
@@ -224,7 +216,7 @@ const CustomerOverdueRentalsPanel: React.FC = () => {
                                             />
                                         </TableCell>
                                         <TableCell>
-                                            {new Date(rental.startDate).toLocaleDateString()} - {new Date(rental.endDate).toLocaleDateString()}
+                                            {rental.startDate} - {rental.endDate}
                                         </TableCell>
                                     </TableRow>
                                 ))
