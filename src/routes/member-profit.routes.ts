@@ -379,6 +379,39 @@ router.post('/generate', async (req, res) => {
     }
 });
 
+// 獲取可用於生成分潤的投資項目（有租賃標準和分潤標準的）
+router.get('/available-investments', async (req, res) => {
+    try {
+        const query = `
+            SELECT DISTINCT
+                i.id,
+                i.name,
+                i.type,
+                i.amount,
+                i."startDate",
+                i.status,
+                c.name as company_name,
+                u.name as user_name
+            FROM investments i
+            LEFT JOIN companies c ON i."companyId" = c.id
+            LEFT JOIN users u ON i."userId" = u.id
+            INNER JOIN rental_standards rs ON i.id = rs."investmentId"
+            INNER JOIN profit_sharing_standards pss ON i.id = pss."investmentId"
+            WHERE i.status = 'active'
+            ORDER BY i.name
+        `;
+
+        const investments = await sequelize.query(query, {
+            type: QueryTypes.SELECT
+        });
+
+        res.json(investments);
+    } catch (error) {
+        console.error('獲取可用於生成分潤的投資項目失敗:', error);
+        res.status(500).json({ error: '獲取可用於生成分潤的投資項目失敗' });
+    }
+});
+
 // 清除會員分潤項目
 router.delete('/clear', async (req, res) => {
     try {

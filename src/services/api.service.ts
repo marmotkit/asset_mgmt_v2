@@ -68,7 +68,7 @@ export class ApiService {
         console.log(`API 服務初始化 - 主機名稱: ${hostname}, 基礎 URL: ${baseUrl}, 是否在 Render: ${isRender}`);
         return baseUrl;
     })();
-    private static readonly LOCAL_STORAGE_KEY = 'auth_token';
+    private static readonly LOCAL_STORAGE_KEY = 'token';
 
     private static instance: ApiService;
     private static mockUsers: User[] = [];
@@ -780,6 +780,17 @@ export class ApiService {
         } catch (error) {
             console.error('清除會員分潤記錄失敗:', error);
             throw error;
+        }
+    }
+
+    // 獲取可用於生成分潤的投資項目（有租賃標準和分潤標準的）
+    public static async getAvailableInvestmentsForMemberProfits(): Promise<Investment[]> {
+        try {
+            const response = await this.get<Investment[]>('/member-profits/available-investments');
+            return response.data;
+        } catch (error) {
+            console.error('獲取可用於生成分潤的投資項目失敗:', error);
+            return [];
         }
     }
 

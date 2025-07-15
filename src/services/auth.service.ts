@@ -49,7 +49,7 @@ class AuthServiceClass {
   // 登入
   async login(username: string, password: string): Promise<User> {
     try {
-      const response = await fetch('https://asset-mgmt-api-test.onrender.com/api/auth/login', {
+      const response = await fetch('https://asset-mgmt-api-clean.onrender.com/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

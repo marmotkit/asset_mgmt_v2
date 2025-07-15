@@ -117,8 +117,16 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
             // 載入最新的分潤資料以檢查重複
             const existingProfits = await ApiService.getMemberProfits(undefined, undefined, yearFilter);
 
+            // 獲取有租賃標準和分潤標準的投資項目
+            const availableInvestments = await ApiService.getAvailableInvestmentsForMemberProfits();
+
+            if (availableInvestments.length === 0) {
+                enqueueSnackbar('沒有可用的投資項目。請確保投資項目已設定租賃標準和分潤標準。', { variant: 'warning' });
+                return;
+            }
+
             // 準備投資項目選擇清單
-            const selections: InvestmentSelection[] = investments.map(inv => ({
+            const selections: InvestmentSelection[] = availableInvestments.map(inv => ({
                 id: inv.id,
                 name: inv.name,
                 selected: false,

@@ -130,6 +130,33 @@ sequelize.sync({ alter: false })
         // 投資資料遷移已完成，不再自動插入測試資料
         console.log('投資資料表已準備就緒');
 
+        // 確保預設管理員帳號存在
+        try {
+            const bcrypt = require('bcryptjs');
+            const User = require('./models/User').default;
+
+            const adminExists = await User.findOne({ where: { username: 'admin' } });
+            if (!adminExists) {
+                const hashedPassword = await bcrypt.hash('admin123', 10);
+                await User.create({
+                    memberNo: 'A001',
+                    username: 'admin',
+                    password: hashedPassword,
+                    name: '系統管理員',
+                    email: 'admin@example.com',
+                    role: 'admin',
+                    status: 'active',
+                    isFirstLogin: false,
+                    preferences: '[]'
+                });
+                console.log('✓ 預設管理員帳號建立成功 (admin/admin123)');
+            } else {
+                console.log('✓ 管理員帳號已存在');
+            }
+        } catch (error) {
+            console.error('建立預設管理員帳號時發生錯誤:', error);
+        }
+
         app.listen(PORT, () => {
             console.log(`服務器運行在 port ${PORT}`);
         });
