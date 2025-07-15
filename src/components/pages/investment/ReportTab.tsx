@@ -73,7 +73,7 @@ const ReportTab: React.FC<ReportTabProps> = ({ investments }) => {
 
         const totalRental = rentalPayments.reduce((sum, payment) => {
             if (payment.year === filterYear) {
-                return sum + payment.amount;
+                return sum + Number(payment.amount);
             }
             return sum;
         }, 0);
@@ -83,21 +83,21 @@ const ReportTab: React.FC<ReportTabProps> = ({ investments }) => {
                 payment.status === PaymentStatus.PAID &&
                 payment.year === filterYear
             )
-            .reduce((sum, payment) => sum + payment.amount, 0);
+            .reduce((sum, payment) => sum + Number(payment.amount), 0);
 
         const pendingRental = rentalPayments
             .filter(payment =>
                 payment.status === PaymentStatus.PENDING &&
                 payment.year === filterYear
             )
-            .reduce((sum, payment) => sum + payment.amount, 0);
+            .reduce((sum, payment) => sum + Number(payment.amount), 0);
 
         const overdueRental = rentalPayments
             .filter(payment =>
                 payment.status === PaymentStatus.OVERDUE &&
                 payment.year === filterYear
             )
-            .reduce((sum, payment) => sum + payment.amount, 0);
+            .reduce((sum, payment) => sum + Number(payment.amount), 0);
 
         const stats = { totalRental, collectedRental, pendingRental, overdueRental };
         console.log('租金統計結果:', stats);
@@ -107,7 +107,7 @@ const ReportTab: React.FC<ReportTabProps> = ({ investments }) => {
     const calculateProfitStats = () => {
         const totalProfit = memberProfits.reduce((sum, profit) => {
             if (profit.year === filterYear) {
-                return sum + profit.amount;
+                return sum + Number(profit.amount);
             }
             return sum;
         }, 0);
@@ -117,21 +117,21 @@ const ReportTab: React.FC<ReportTabProps> = ({ investments }) => {
                 profit.status === PaymentStatus.PAID &&
                 profit.year === filterYear
             )
-            .reduce((sum, profit) => sum + profit.amount, 0);
+            .reduce((sum, profit) => sum + Number(profit.amount), 0);
 
         const pendingProfit = memberProfits
             .filter(profit =>
                 profit.status === PaymentStatus.PENDING &&
                 profit.year === filterYear
             )
-            .reduce((sum, profit) => sum + profit.amount, 0);
+            .reduce((sum, profit) => sum + Number(profit.amount), 0);
 
         const overdueProfit = memberProfits
             .filter(profit =>
                 profit.status === PaymentStatus.OVERDUE &&
                 profit.year === filterYear
             )
-            .reduce((sum, profit) => sum + profit.amount, 0);
+            .reduce((sum, profit) => sum + Number(profit.amount), 0);
 
         return { totalProfit, paidProfit, pendingProfit, overdueProfit };
     };
@@ -148,15 +148,15 @@ const ReportTab: React.FC<ReportTabProps> = ({ investments }) => {
                 profit.year === filterYear
             );
 
-            const totalRental = investmentRentals.reduce((sum, payment) => sum + payment.amount, 0);
+            const totalRental = investmentRentals.reduce((sum, payment) => sum + Number(payment.amount), 0);
             const collectedRental = investmentRentals
                 .filter(payment => payment.status === PaymentStatus.PAID)
-                .reduce((sum, payment) => sum + payment.amount, 0);
+                .reduce((sum, payment) => sum + Number(payment.amount), 0);
 
-            const totalProfit = investmentProfits.reduce((sum, profit) => sum + profit.amount, 0);
+            const totalProfit = investmentProfits.reduce((sum, profit) => sum + Number(profit.amount), 0);
             const paidProfit = investmentProfits
                 .filter(profit => profit.status === PaymentStatus.PAID)
-                .reduce((sum, profit) => sum + profit.amount, 0);
+                .reduce((sum, profit) => sum + Number(profit.amount), 0);
 
             const netIncome = collectedRental - paidProfit;
 
