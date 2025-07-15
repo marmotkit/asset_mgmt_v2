@@ -325,10 +325,29 @@ router.post('/generate', async (req, res) => {
 
                 // 計算分潤金額
                 let amount = 0;
-                if (standard.type === 'FIXED_AMOUNT') {
-                    amount = parseFloat(standard.value);
-                } else if (standard.type === 'PERCENTAGE') {
-                    amount = rentalPayment.amount * (parseFloat(standard.value) / 100);
+                console.log('分潤標準:', {
+                    id: standard.id,
+                    type: standard.type,
+                    value: standard.value,
+                    startDate: standard.startDate,
+                    endDate: standard.endDate
+                });
+                console.log('租金收款項目:', {
+                    id: rentalPayment.id,
+                    month: rentalPayment.month,
+                    amount: rentalPayment.amount
+                });
+
+                if (standard.type === 'FIXED_AMOUNT' || standard.type === 'fixed_amount') {
+                    amount = parseFloat(standard.value) || 0;
+                    console.log('固定金額分潤:', amount);
+                } else if (standard.type === 'PERCENTAGE' || standard.type === 'percentage') {
+                    const rentalAmount = parseFloat(rentalPayment.amount) || 0;
+                    const percentage = parseFloat(standard.value) || 0;
+                    amount = rentalAmount * (percentage / 100);
+                    console.log('百分比分潤:', { rentalAmount, percentage, amount });
+                } else {
+                    console.log('未知的分潤類型:', standard.type);
                 }
 
                 // 生成更有意義的備註
