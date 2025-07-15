@@ -23,7 +23,6 @@ router.get('/', auth_middleware_1.authMiddleware, async (req, res) => {
         const sql = `
             SELECT id, member_id, member_no, member_name, member_type, amount, due_date, status, note, created_at, updated_at, payment_method, paid_date
             FROM public.fees
-            ${!isHistoryPage ? "WHERE status IN ('待收款', '已收款')" : ''}
             ORDER BY created_at DESC
         `;
         console.log('執行 SQL:', sql);
