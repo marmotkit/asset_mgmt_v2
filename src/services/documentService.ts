@@ -190,8 +190,8 @@ export class DocumentService {
                                             type: WidthType.PERCENTAGE
                                         },
                                         children: [
-                                            new Paragraph(`名稱：${invoice.sellerName}`),
-                                            new Paragraph(`統一編號：${invoice.sellerTaxId}`)
+                                            new Paragraph(`名稱：${invoice.sellerName || '測試公司'}`),
+                                            new Paragraph(`統一編號：${invoice.sellerTaxId || '12345678'}`)
                                         ]
                                     })
                                 ]
@@ -496,8 +496,8 @@ export class DocumentService {
                                                 type: WidthType.PERCENTAGE
                                             },
                                             children: [
-                                                new Paragraph(`名稱：${invoice.sellerName}`),
-                                                new Paragraph(`統一編號：${invoice.sellerTaxId}`)
+                                                new Paragraph(`名稱：${invoice.sellerName || '測試公司'}`),
+                                                new Paragraph(`統一編號：${invoice.sellerTaxId || '12345678'}`)
                                             ]
                                         })
                                     ]
@@ -518,8 +518,8 @@ export class DocumentService {
                                                     type: WidthType.PERCENTAGE
                                                 },
                                                 children: [
-                                                    new Paragraph(`名稱：${invoice.buyerName}`),
-                                                    new Paragraph(`統一編號：${invoice.buyerTaxId}`)
+                                                    new Paragraph(`名稱：${invoice.buyerName || ''}`),
+                                                    new Paragraph(`統一編號：${invoice.buyerTaxId || ''}`)
                                                 ]
                                             })
                                         ]
@@ -574,31 +574,58 @@ export class DocumentService {
                                         })
                                     ]
                                 }),
-                                ...invoice.items.map(item => new TableRow({
-                                    children: [
-                                        new TableCell({
-                                            children: [new Paragraph(item.description)]
-                                        }),
-                                        new TableCell({
-                                            children: [new Paragraph({
-                                                text: item.quantity.toString(),
-                                                alignment: AlignmentType.RIGHT
-                                            })]
-                                        }),
-                                        new TableCell({
-                                            children: [new Paragraph({
-                                                text: formatCurrency(item.unitPrice),
-                                                alignment: AlignmentType.RIGHT
-                                            })]
-                                        }),
-                                        new TableCell({
-                                            children: [new Paragraph({
-                                                text: formatCurrency(item.amount),
-                                                alignment: AlignmentType.RIGHT
-                                            })]
+                                ...(invoice.items && invoice.items.length > 0 ?
+                                    invoice.items.map(item => new TableRow({
+                                        children: [
+                                            new TableCell({
+                                                children: [new Paragraph(item.description)]
+                                            }),
+                                            new TableCell({
+                                                children: [new Paragraph({
+                                                    text: item.quantity.toString(),
+                                                    alignment: AlignmentType.RIGHT
+                                                })]
+                                            }),
+                                            new TableCell({
+                                                children: [new Paragraph({
+                                                    text: formatCurrency(item.unitPrice),
+                                                    alignment: AlignmentType.RIGHT
+                                                })]
+                                            }),
+                                            new TableCell({
+                                                children: [new Paragraph({
+                                                    text: formatCurrency(item.amount),
+                                                    alignment: AlignmentType.RIGHT
+                                                })]
+                                            })
+                                        ]
+                                    })) : [
+                                        new TableRow({
+                                            children: [
+                                                new TableCell({
+                                                    children: [new Paragraph('會費')]
+                                                }),
+                                                new TableCell({
+                                                    children: [new Paragraph({
+                                                        text: '1',
+                                                        alignment: AlignmentType.RIGHT
+                                                    })]
+                                                }),
+                                                new TableCell({
+                                                    children: [new Paragraph({
+                                                        text: formatCurrency(invoice.amount),
+                                                        alignment: AlignmentType.RIGHT
+                                                    })]
+                                                }),
+                                                new TableCell({
+                                                    children: [new Paragraph({
+                                                        text: formatCurrency(invoice.amount),
+                                                        alignment: AlignmentType.RIGHT
+                                                    })]
+                                                })
+                                            ]
                                         })
-                                    ]
-                                }))
+                                    ])
                             ]
                         }),
                         new Paragraph({
@@ -615,7 +642,7 @@ export class DocumentService {
                             alignment: AlignmentType.RIGHT,
                             children: [
                                 new TextRun({
-                                    text: `營業稅：${formatCurrency(invoice.taxAmount)}`,
+                                    text: `營業稅：${formatCurrency(invoice.taxAmount || 0)}`,
                                     size: 24
                                 })
                             ]
@@ -624,7 +651,7 @@ export class DocumentService {
                             alignment: AlignmentType.RIGHT,
                             children: [
                                 new TextRun({
-                                    text: `總計：${formatCurrency(invoice.amount + invoice.taxAmount)}`,
+                                    text: `總計：${formatCurrency(invoice.amount + (invoice.taxAmount || 0))}`,
                                     size: 24,
                                     bold: true
                                 })
