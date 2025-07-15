@@ -28,10 +28,18 @@ const ReportTab = ({ investments }) => {
                 services_1.ApiService.getRentalPayments(undefined, filterYear),
                 services_1.ApiService.getMemberProfits(undefined, undefined, filterYear),
             ]);
+            console.log('統計報表載入資料:', {
+                filterYear,
+                paymentsData: paymentsData.length,
+                profitsData: profitsData.length,
+                samplePayment: paymentsData[0],
+                sampleProfit: profitsData[0]
+            });
             setRentalPayments(paymentsData);
             setMemberProfits(profitsData);
         }
         catch (err) {
+            console.error('統計報表載入資料失敗:', err);
             setError('載入資料失敗');
         }
         finally {
@@ -39,6 +47,11 @@ const ReportTab = ({ investments }) => {
         }
     };
     const calculateRentalStats = () => {
+        console.log('計算租金統計，資料:', {
+            filterYear,
+            rentalPaymentsCount: rentalPayments.length,
+            rentalPayments: rentalPayments.map(p => ({ id: p.id, year: p.year, amount: p.amount, status: p.status }))
+        });
         const totalRental = rentalPayments.reduce((sum, payment) => {
             if (payment.year === filterYear) {
                 return sum + payment.amount;
@@ -57,7 +70,9 @@ const ReportTab = ({ investments }) => {
             .filter(payment => payment.status === rental_1.PaymentStatus.OVERDUE &&
             payment.year === filterYear)
             .reduce((sum, payment) => sum + payment.amount, 0);
-        return { totalRental, collectedRental, pendingRental, overdueRental };
+        const stats = { totalRental, collectedRental, pendingRental, overdueRental };
+        console.log('租金統計結果:', stats);
+        return stats;
     };
     const calculateProfitStats = () => {
         const totalProfit = memberProfits.reduce((sum, profit) => {
