@@ -23,6 +23,7 @@ export interface Company {
     contact: ContactInfo;
     fax?: string;
     note?: string;        // 新增：備註欄位
+    memberCount?: number; // 新增：會員數量
     createdAt: string;
     updatedAt: string;
 }

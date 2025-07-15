@@ -35,7 +35,30 @@ class CompanyService {
                     Authorization: `Bearer ${token}`
                 }
             });
-            return response.data || [];
+            const companies = response.data || [];
+            // 獲取所有用戶來計算會員數量
+            try {
+                const usersResponse = await axios_1.default.get(`${this.API_BASE_URL}/users`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                const users = usersResponse.data || [];
+                // 為每個公司計算會員數量
+                const companiesWithMemberCount = companies.map((company) => {
+                    const memberCount = users.filter((user) => user.companyId === company.id).length;
+                    return {
+                        ...company,
+                        memberCount
+                    };
+                });
+                return companiesWithMemberCount;
+            }
+            catch (userError) {
+                console.warn('無法獲取用戶資料來計算會員數量:', userError);
+                // 如果無法獲取用戶資料，返回原始公司資料
+                return companies;
+            }
         }
         catch (error) {
             console.error('獲取公司列表失敗:', error);

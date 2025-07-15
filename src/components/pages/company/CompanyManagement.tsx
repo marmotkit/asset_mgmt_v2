@@ -22,12 +22,14 @@ import {
     Delete as DeleteIcon,
     Search as SearchIcon,
     Clear as ClearIcon,
+    People as PeopleIcon,
 } from '@mui/icons-material';
 import { Company } from '../../../types/company';
 import { companyService } from '../../../services/companyService';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
 import CompanyDetailDialog from './CompanyDetailDialog';
+import CompanyMembersDialog from './CompanyMembersDialog';
 
 const CompanyManagement: React.FC = () => {
     const [companies, setCompanies] = useState<Company[]>([]);
@@ -36,6 +38,8 @@ const CompanyManagement: React.FC = () => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [membersDialogOpen, setMembersDialogOpen] = useState(false);
+    const [selectedCompanyForMembers, setSelectedCompanyForMembers] = useState<Company | null>(null);
 
     useEffect(() => {
         loadCompanies();
@@ -75,6 +79,16 @@ const CompanyManagement: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleViewMembers = (company: Company) => {
+        setSelectedCompanyForMembers(company);
+        setMembersDialogOpen(true);
+    };
+
+    const handleCloseMembersDialog = () => {
+        setMembersDialogOpen(false);
+        setSelectedCompanyForMembers(null);
     };
 
     const handleSaveCompany = async (companyData: Partial<Company>) => {
@@ -165,6 +179,7 @@ const CompanyManagement: React.FC = () => {
                             <TableCell>聯絡電話</TableCell>
                             <TableCell>傳真</TableCell>
                             <TableCell>電子郵件</TableCell>
+                            <TableCell>會員數量</TableCell>
                             <TableCell>備註</TableCell>
                             <TableCell>操作</TableCell>
                         </TableRow>
@@ -185,18 +200,36 @@ const CompanyManagement: React.FC = () => {
                                 <TableCell>{company.contact.phone}</TableCell>
                                 <TableCell>{company.fax || '-'}</TableCell>
                                 <TableCell>{company.contact.email}</TableCell>
+                                <TableCell>
+                                    <Chip
+                                        label={company.memberCount || 0}
+                                        color="primary"
+                                        size="small"
+                                        variant="outlined"
+                                    />
+                                </TableCell>
                                 <TableCell>{company.note || '-'}</TableCell>
                                 <TableCell>
                                     <IconButton
                                         size="small"
                                         onClick={() => handleEditCompany(company)}
+                                        title="編輯"
                                     >
                                         <EditIcon />
                                     </IconButton>
                                     <IconButton
                                         size="small"
+                                        color="primary"
+                                        onClick={() => handleViewMembers(company)}
+                                        title="查詢會員"
+                                    >
+                                        <PeopleIcon />
+                                    </IconButton>
+                                    <IconButton
+                                        size="small"
                                         color="error"
                                         onClick={() => handleDeleteCompany(company.id)}
+                                        title="刪除"
                                     >
                                         <DeleteIcon />
                                     </IconButton>
@@ -212,6 +245,13 @@ const CompanyManagement: React.FC = () => {
                 onClose={() => setDialogOpen(false)}
                 companyData={selectedCompany}
                 onSave={handleSaveCompany}
+            />
+
+            <CompanyMembersDialog
+                open={membersDialogOpen}
+                onClose={handleCloseMembersDialog}
+                companyId={selectedCompanyForMembers?.id || ''}
+                companyName={selectedCompanyForMembers?.name || ''}
             />
         </Box>
     );
