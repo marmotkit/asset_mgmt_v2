@@ -194,24 +194,49 @@ router.put('/:id/password', async (req, res) => {
 // 查詢用戶密碼
 router.get('/:id/password', async (req, res) => {
     try {
-        const user = await User.findByPk(req.params.id, {
-            attributes: ['id', 'plainPassword']
-        });
+        // 先檢查資料庫是否有 plainPassword 欄位
+        const [results] = await sequelize.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name = 'plainPassword';
+        `);
 
-        if (!user) {
-            return res.status(404).json({ message: '用戶不存在' });
-        }
+        const hasPlainPasswordColumn = results.length > 0;
 
-        // 檢查是否有 plainPassword 欄位
-        if (user.plainPassword) {
-            res.status(200).json({
-                message: '密碼查詢成功',
-                password: user.plainPassword
+        if (hasPlainPasswordColumn) {
+            // 如果有 plainPassword 欄位，查詢該欄位
+            const user = await User.findByPk(req.params.id, {
+                attributes: ['id', 'plainPassword']
             });
+
+            if (!user) {
+                return res.status(404).json({ message: '用戶不存在' });
+            }
+
+            if (user.plainPassword) {
+                res.status(200).json({
+                    message: '密碼查詢成功',
+                    password: user.plainPassword
+                });
+            } else {
+                res.status(200).json({
+                    message: '密碼查詢成功',
+                    password: '密碼未設定'
+                });
+            }
         } else {
+            // 如果沒有 plainPassword 欄位，只檢查用戶是否存在
+            const user = await User.findByPk(req.params.id, {
+                attributes: ['id']
+            });
+
+            if (!user) {
+                return res.status(404).json({ message: '用戶不存在' });
+            }
+
             res.status(200).json({
                 message: '密碼查詢成功',
-                password: '密碼未設定或已加密'
+                password: '密碼已加密，無法顯示明文'
             });
         }
     } catch (error) {
