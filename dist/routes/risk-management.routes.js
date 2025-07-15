@@ -37,7 +37,7 @@ router.get('/member-overdue-payments', async (req, res) => {
                 EXTRACT(YEAR FROM f.due_date) as year,
                 EXTRACT(MONTH FROM f.due_date) as month
             FROM fees f
-            WHERE f.status = 'overdue'
+            WHERE f.status = '逾期'
             ORDER BY f.due_date DESC
         `;
         const result = await pool.query(query);

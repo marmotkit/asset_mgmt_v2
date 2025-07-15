@@ -392,29 +392,60 @@ const FeePaymentStatus: React.FC = () => {
 
     return (
         <Box>
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => setCreateAnnualOpen(true)}
-                    sx={{ mr: 2 }}
-                >
-                    產生年度應收
-                </Button>
-                <TextField
-                    size="small"
-                    placeholder="搜尋會員編號或姓名"
-                    value={filter.search}
-                    onChange={(e) => handleFilterChange('search', e.target.value)}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon />
-                            </InputAdornment>
-                        ),
-                    }}
-                    sx={{ width: 250 }}
-                />
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                        <InputLabel>狀態篩選</InputLabel>
+                        <Select
+                            value={filter.status}
+                            onChange={(e) => handleFilterChange('status', e.target.value)}
+                            label="狀態篩選"
+                        >
+                            <MenuItem value="">全部</MenuItem>
+                            <MenuItem value="待收款">待收款</MenuItem>
+                            <MenuItem value="已收款">已收款</MenuItem>
+                            <MenuItem value="逾期">逾期</MenuItem>
+                            <MenuItem value="終止">終止</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                        <InputLabel>會員類型</InputLabel>
+                        <Select
+                            value={filter.memberType}
+                            onChange={(e) => handleFilterChange('memberType', e.target.value)}
+                            label="會員類型"
+                        >
+                            <MenuItem value="">全部</MenuItem>
+                            {memberTypes.map(type => (
+                                <MenuItem key={type} value={type}>{type}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => setCreateAnnualOpen(true)}
+                        sx={{ mr: 2 }}
+                    >
+                        產生年度應收
+                    </Button>
+                    <TextField
+                        size="small"
+                        placeholder="搜尋會員編號或姓名"
+                        value={filter.search}
+                        onChange={(e) => handleFilterChange('search', e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon />
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{ width: 250 }}
+                    />
+                </Box>
             </Box>
 
             <TableContainer component={Paper}>
