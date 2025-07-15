@@ -1,11 +1,12 @@
 import express from 'express';
 import { QueryTypes } from 'sequelize';
 import sequelize from '../db/connection';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = express.Router();
 
 // 獲取所有租金收款項目
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
         const { investmentId, year, month } = req.query;
 
@@ -58,7 +59,7 @@ router.get('/', async (req, res) => {
 });
 
 // 獲取單個租金收款項目
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
     try {
         const query = `
             SELECT 
@@ -91,7 +92,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // 創建租金收款項目
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
     try {
         const {
             investmentId,
@@ -178,8 +179,11 @@ router.post('/', async (req, res) => {
 });
 
 // 更新租金收款項目
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
     try {
+        console.log('收到的更新資料:', req.body);
+        console.log('更新 ID:', req.params.id);
+
         // 檢查租金收款項目是否存在
         const checkQuery = 'SELECT id FROM rental_payments WHERE id = :id';
         const existing = await sequelize.query(checkQuery, {
@@ -211,6 +215,22 @@ router.put('/:id', async (req, res) => {
         const processedStartDate = startDate && startDate.trim() !== '' ? startDate : null;
         const processedEndDate = endDate && endDate.trim() !== '' ? endDate : null;
         const processedPaymentDate = paymentDate && paymentDate.trim() !== '' ? paymentDate : null;
+
+        console.log('處理後的資料:', {
+            investmentId,
+            year,
+            month,
+            amount,
+            status,
+            startDate: processedStartDate,
+            endDate: processedEndDate,
+            renterName,
+            renterTaxId,
+            payerName,
+            paymentMethod,
+            paymentDate: processedPaymentDate,
+            note
+        });
 
         const updateQuery = `
             UPDATE rental_payments SET
@@ -251,6 +271,8 @@ router.put('/:id', async (req, res) => {
             type: QueryTypes.UPDATE
         });
 
+        console.log('更新成功，獲取更新後的資料');
+
         // 獲取更新後的租金收款項目
         const updatedRentalPayment = await sequelize.query(`
             SELECT 
@@ -269,15 +291,17 @@ router.put('/:id', async (req, res) => {
             type: QueryTypes.SELECT
         });
 
+        console.log('更新後的資料:', updatedRentalPayment[0]);
         res.json(updatedRentalPayment[0]);
     } catch (error) {
         console.error('更新租金收款項目失敗:', error);
-        res.status(400).json({ error: '更新租金收款項目失敗' });
+        console.error('錯誤詳情:', error.message);
+        res.status(400).json({ error: '更新租金收款項目失敗', details: error.message });
     }
 });
 
 // 刪除租金收款項目
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         // 檢查租金收款項目是否存在
         const checkQuery = 'SELECT id FROM rental_payments WHERE id = :id';

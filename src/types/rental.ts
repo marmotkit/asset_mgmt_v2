@@ -37,7 +37,7 @@ export interface ProfitSharingStandard {
 export enum PaymentStatus {
     PENDING = 'pending',
     PAID = 'paid',
-    OVERDUE = 'overdue'
+    OVERDUE = 'late'
 }
 
 export enum PaymentMethod {
