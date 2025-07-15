@@ -183,7 +183,7 @@ MemberProfit.init(
             allowNull: false,
         },
         status: {
-            type: DataTypes.ENUM('pending', 'paid', 'late', 'canceled'),
+            type: DataTypes.ENUM('pending', 'paid', 'overdue'),
             allowNull: false,
             defaultValue: 'pending',
         },

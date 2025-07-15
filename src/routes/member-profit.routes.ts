@@ -309,7 +309,7 @@ router.post('/generate', async (req, res) => {
                 "createdAt", "updatedAt"
             ) VALUES (
                 :investmentId, :memberId, :year, :month, :amount, 
-                'PENDING', null, :note, NOW(), NOW()
+                'pending', null, :note, NOW(), NOW()
             )
         `;
 
