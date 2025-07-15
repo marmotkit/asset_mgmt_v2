@@ -41,6 +41,7 @@ export interface User {
   createdAt: string;     // 建立時間
   updatedAt: string;     // 更新時間
   password?: string;   // 可選欄位，僅用於創建/更新時
+  plainPassword?: string; // 明文密碼（僅用於管理員查詢）
 }
 
 export interface InvestmentPreference {

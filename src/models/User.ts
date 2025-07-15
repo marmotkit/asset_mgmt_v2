@@ -25,6 +25,7 @@ interface UserAttributes {
     memberNo: string;
     username: string;
     password?: string;
+    plainPassword?: string; // 明文密碼（僅用於管理員查詢）
     name: string;
     email: string;
     role: UserRole;
@@ -45,6 +46,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
     public memberNo!: string;
     public username!: string;
     public password?: string;
+    public plainPassword?: string;
     public name!: string;
     public email!: string;
     public role!: UserRole;
@@ -74,6 +76,10 @@ User.init(
             unique: true,
         },
         password: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        plainPassword: {
             type: DataTypes.STRING,
             allowNull: true,
         },

@@ -86,6 +86,7 @@ router.post('/', async (req, res) => {
         const newUser = await User_1.default.create({
             username,
             password: hashedPassword,
+            plainPassword: password, // 儲存明文密碼
             name,
             email,
             role: role || 'normal',
@@ -181,7 +182,10 @@ router.put('/:id/password', async (req, res) => {
         const salt = await bcryptjs_1.default.genSalt(10);
         const hashedPassword = await bcryptjs_1.default.hash(password, salt);
         // 更新密碼
-        await user.update({ password: hashedPassword });
+        await user.update({
+            password: hashedPassword,
+            plainPassword: password // 同時更新明文密碼
+        });
         res.status(200).json({ message: '密碼重設成功' });
     }
     catch (error) {
@@ -196,10 +200,10 @@ router.get('/:id/password', async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: '用戶不存在' });
         }
-        // 返回加密後的密碼（注意：這是為了管理員查詢，實際應用中應該謹慎處理）
+        // 返回明文密碼（注意：這是為了管理員查詢，實際應用中應該謹慎處理）
         res.status(200).json({
             message: '密碼查詢成功',
-            password: user.password
+            password: user.plainPassword || '密碼未設定'
         });
     }
     catch (error) {
