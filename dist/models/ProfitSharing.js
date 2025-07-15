@@ -116,7 +116,7 @@ MemberProfit.init({
         allowNull: false,
     },
     status: {
-        type: sequelize_1.DataTypes.ENUM('pending', 'paid', 'late', 'canceled'),
+        type: sequelize_1.DataTypes.ENUM('pending', 'paid', 'overdue'),
         allowNull: false,
         defaultValue: 'pending',
     },

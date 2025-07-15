@@ -68,54 +68,65 @@ router.post('/', async (req, res) => {
     try {
         const { QueryTypes } = require('sequelize');
         const sequelize = require('../db/connection').default;
-        const { company_id, user_id, type, name, description, amount, start_date, end_date, status, asset_type, serial_number, manufacturer, location, area, property_type, registration_number } = req.body;
+        const { companyId, userId, type, name, description, amount, startDate, endDate, status, assetType, serialNumber, manufacturer, location, area, propertyType, registrationNumber } = req.body;
+        // 處理日期欄位，空字串設為 NULL
+        const processedStartDate = startDate && startDate.trim() !== '' ? startDate : null;
+        const processedEndDate = endDate && endDate.trim() !== '' ? endDate : null;
         const query = `
             INSERT INTO investments (
                 id, "companyId", "userId", type, name, description, amount, 
                 "startDate", "endDate", status, "createdAt", "updatedAt"
             ) VALUES (
-                gen_random_uuid(), :company_id, :user_id, :type, :name, :description, :amount,
-                :start_date, :end_date, :status, NOW(), NOW()
+                gen_random_uuid(), :companyId, :userId, :type, :name, :description, :amount,
+                :startDate, :endDate, :status, NOW(), NOW()
             ) RETURNING *
         `;
         const result = await sequelize.query(query, {
             replacements: {
-                company_id,
-                user_id,
+                companyId,
+                userId,
                 type,
                 name,
                 description,
                 amount,
-                start_date,
-                end_date,
+                startDate: processedStartDate,
+                endDate: processedEndDate,
                 status: status || 'active',
-                asset_type,
-                serial_number,
+                assetType,
+                serialNumber,
                 manufacturer,
                 location,
                 area,
-                property_type,
-                registration_number
+                propertyType,
+                registrationNumber
             },
             type: QueryTypes.INSERT
         });
-        // 獲取新創建的投資項目
-        const newInvestment = await sequelize.query(`
-            SELECT 
-                i.*,
-                c.name as company_name,
-                c."companyNo" as company_no,
-                u.name as user_name,
-                u."memberNo" as user_member_no
-            FROM investments i
-            LEFT JOIN companies c ON i."companyId" = c.id
-            LEFT JOIN users u ON i."userId" = u.id
-            WHERE i.id = :id
-        `, {
-            replacements: { id: result[0].id },
-            type: QueryTypes.SELECT
-        });
-        res.status(201).json(newInvestment[0]);
+        // 直接返回插入的結果，不需要額外查詢
+        const insertedInvestment = result[0];
+        // 如果需要關聯資料，可以額外查詢
+        if (insertedInvestment && insertedInvestment.id) {
+            const newInvestment = await sequelize.query(`
+                SELECT 
+                    i.*,
+                    c.name as company_name,
+                    c."companyNo" as company_no,
+                    u.name as user_name,
+                    u."memberNo" as user_member_no
+                FROM investments i
+                LEFT JOIN companies c ON i."companyId" = c.id
+                LEFT JOIN users u ON i."userId" = u.id
+                WHERE i.id = :id
+            `, {
+                replacements: { id: insertedInvestment.id },
+                type: QueryTypes.SELECT
+            });
+            res.status(201).json(newInvestment[0]);
+        }
+        else {
+            // 如果沒有返回 ID，直接返回插入的資料
+            res.status(201).json(insertedInvestment);
+        }
     }
     catch (error) {
         console.error('創建投資項目失敗:', error);
@@ -136,17 +147,20 @@ router.put('/:id', async (req, res) => {
         if (existing.length === 0) {
             return res.status(404).json({ error: '投資項目不存在' });
         }
-        const { company_id, user_id, type, name, description, amount, start_date, end_date, status, asset_type, serial_number, manufacturer, location, area, property_type, registration_number } = req.body;
+        const { companyId, userId, type, name, description, amount, startDate, endDate, status, assetType, serialNumber, manufacturer, location, area, propertyType, registrationNumber } = req.body;
+        // 處理日期欄位，空字串設為 NULL
+        const processedStartDate = startDate && startDate.trim() !== '' ? startDate : null;
+        const processedEndDate = endDate && endDate.trim() !== '' ? endDate : null;
         const updateQuery = `
             UPDATE investments SET
-                "companyId" = :company_id,
-                "userId" = :user_id,
+                "companyId" = :companyId,
+                "userId" = :userId,
                 type = :type,
                 name = :name,
                 description = :description,
                 amount = :amount,
-                "startDate" = :start_date,
-                "endDate" = :end_date,
+                "startDate" = :startDate,
+                "endDate" = :endDate,
                 status = :status,
                 "updatedAt" = NOW()
             WHERE id = :id
@@ -154,22 +168,22 @@ router.put('/:id', async (req, res) => {
         await sequelize.query(updateQuery, {
             replacements: {
                 id: req.params.id,
-                company_id,
-                user_id,
+                companyId,
+                userId,
                 type,
                 name,
                 description,
                 amount,
-                start_date,
-                end_date,
+                startDate: processedStartDate,
+                endDate: processedEndDate,
                 status,
-                asset_type,
-                serial_number,
+                assetType,
+                serialNumber,
                 manufacturer,
                 location,
                 area,
-                property_type,
-                registration_number
+                propertyType,
+                registrationNumber
             },
             type: QueryTypes.UPDATE
         });

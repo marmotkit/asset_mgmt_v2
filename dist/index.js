@@ -20,6 +20,10 @@ const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
 const company_routes_1 = __importDefault(require("./routes/company.routes"));
 const investment_routes_1 = __importDefault(require("./routes/investment.routes"));
+const rental_routes_1 = __importDefault(require("./routes/rental.routes"));
+const profit_sharing_routes_1 = __importDefault(require("./routes/profit-sharing.routes"));
+const rental_payments_routes_1 = __importDefault(require("./routes/rental-payments.routes"));
+const member_profit_routes_1 = __importDefault(require("./routes/member-profit.routes"));
 const fee_routes_1 = __importDefault(require("./routes/fee.routes"));
 const fee_settings_routes_1 = __importDefault(require("./routes/fee-settings.routes"));
 const documents_routes_1 = __importDefault(require("./routes/documents.routes"));
@@ -35,6 +39,10 @@ app.use('/api/auth', auth_routes_1.default);
 app.use('/api/users', user_routes_1.default);
 app.use('/api/companies', company_routes_1.default);
 app.use('/api/investments', investment_routes_1.default);
+app.use('/api/rental-standards', rental_routes_1.default);
+app.use('/api/profit-sharing-standards', profit_sharing_routes_1.default);
+app.use('/api/rental-payments', rental_payments_routes_1.default);
+app.use('/api/member-profits', member_profit_routes_1.default);
 app.use('/api/fees', fee_routes_1.default);
 app.use('/api/fee-settings', fee_settings_routes_1.default);
 app.use('/api/documents', documents_routes_1.default);
@@ -114,27 +122,42 @@ connection_1.default.sync({ alter: false })
     catch (error) {
         console.error('檢查/建立 documents 表時發生錯誤:', error);
     }
-    // 執行投資資料遷移
+    // 投資資料遷移已完成，不再自動插入測試資料
+    console.log('投資資料表已準備就緒');
+    // 確保預設管理員帳號存在
     try {
-        console.log('開始遷移投資資料...');
-        // 簡單的投資資料插入（如果表是空的）
-        const insertQuery = `
-                INSERT INTO investments (
-                    id, "companyId", "userId", type, name, description, amount,
-                    "startDate", status, "createdAt", "updatedAt"
-                ) VALUES (
-                    '1', (SELECT id FROM companies LIMIT 1), (SELECT id FROM users LIMIT 1), 
-                    'movable', '設備投資A', '生產線設備', 1000000,
-                    '2023-01-01', 'active', NOW(), NOW()
-                )
-                ON CONFLICT (id) DO NOTHING
-            `;
-        await connection_1.default.query(insertQuery);
-        console.log('投資資料遷移完成！');
+        const bcrypt = require('bcryptjs');
+        const User = require('./models/User').default;
+        const adminExists = await User.findOne({ where: { username: 'admin' } });
+        if (!adminExists) {
+            const hashedPassword = await bcrypt.hash('admin123', 10);
+            await User.create({
+                memberNo: 'A001',
+                username: 'admin',
+                password: hashedPassword,
+                name: '系統管理員',
+                email: 'admin@example.com',
+                role: 'admin',
+                status: 'active',
+                isFirstLogin: false,
+                preferences: '[]'
+            });
+            console.log('✓ 預設管理員帳號建立成功 (admin/admin123)');
+        }
+        else {
+            console.log('✓ 管理員帳號已存在');
+        }
     }
     catch (error) {
-        console.error('投資資料遷移失敗:', error);
+        console.error('建立預設管理員帳號時發生錯誤:', error);
     }
+    // 修正 member_profits 表的 ENUM 類型
+    // try {
+    //     const fixMemberProfitsEnum = require('./scripts/fix-member-profits-enum');
+    //     await fixMemberProfitsEnum();
+    // } catch (error) {
+    //     console.error('修正 member_profits 表 ENUM 時發生錯誤:', error);
+    // }
     app.listen(PORT, () => {
         console.log(`服務器運行在 port ${PORT}`);
     });

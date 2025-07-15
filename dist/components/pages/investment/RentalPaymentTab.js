@@ -15,13 +15,18 @@ const ErrorAlert_1 = __importDefault(require("../../common/ErrorAlert"));
 const notistack_1 = require("notistack");
 const RentalPaymentTab = ({ investments }) => {
     const [rentalPayments, setRentalPayments] = (0, react_1.useState)([]);
+    const [availableInvestments, setAvailableInvestments] = (0, react_1.useState)([]);
     const [loading, setLoading] = (0, react_1.useState)(true);
     const [error, setError] = (0, react_1.useState)(null);
     const [dialogOpen, setDialogOpen] = (0, react_1.useState)(false);
     const [selectedPayment, setSelectedPayment] = (0, react_1.useState)(null);
     const [yearFilter, setYearFilter] = (0, react_1.useState)(new Date().getFullYear());
     const [monthFilter, setMonthFilter] = (0, react_1.useState)(new Date().getMonth() + 1);
+    const [showAllYear, setShowAllYear] = (0, react_1.useState)(false);
     const { enqueueSnackbar } = (0, notistack_1.useSnackbar)();
+    // 排序相關狀態
+    const [sortField, setSortField] = (0, react_1.useState)('yearMonth');
+    const [sortDirection, setSortDirection] = (0, react_1.useState)('desc');
     const [formData, setFormData] = (0, react_1.useState)({
         investmentId: '',
         year: new Date().getFullYear(),
@@ -41,12 +46,105 @@ const RentalPaymentTab = ({ investments }) => {
     const [clearDialogOpen, setClearDialogOpen] = (0, react_1.useState)(false);
     (0, react_1.useEffect)(() => {
         loadData();
-    }, [yearFilter, monthFilter]);
+    }, [yearFilter, monthFilter, showAllYear]);
+    // 當切換到當年度模式時，自動調整排序方向為升序
+    (0, react_1.useEffect)(() => {
+        if (showAllYear && sortField === 'yearMonth' && sortDirection === 'desc') {
+            setSortDirection('asc');
+        }
+    }, [showAllYear, sortField, sortDirection]);
+    // 排序函數
+    const sortPayments = (payments) => {
+        return [...payments].sort((a, b) => {
+            let aValue;
+            let bValue;
+            switch (sortField) {
+                case 'investmentName':
+                    const investmentA = investments.find(inv => inv.id === a.investmentId);
+                    const investmentB = investments.find(inv => inv.id === b.investmentId);
+                    aValue = (investmentA === null || investmentA === void 0 ? void 0 : investmentA.name) || '';
+                    bValue = (investmentB === null || investmentB === void 0 ? void 0 : investmentB.name) || '';
+                    break;
+                case 'yearMonth':
+                    aValue = a.year * 100 + a.month;
+                    bValue = b.year * 100 + b.month;
+                    break;
+                case 'amount':
+                    aValue = a.amount;
+                    bValue = b.amount;
+                    break;
+                case 'status':
+                    aValue = getStatusText(a.status);
+                    bValue = getStatusText(b.status);
+                    break;
+                case 'paymentMethod':
+                    aValue = getPaymentMethodText(a.paymentMethod);
+                    bValue = getPaymentMethodText(b.paymentMethod);
+                    break;
+                case 'paymentDate':
+                    aValue = a.paymentDate ? new Date(a.paymentDate).getTime() : 0;
+                    bValue = b.paymentDate ? new Date(b.paymentDate).getTime() : 0;
+                    break;
+                case 'renterName':
+                    aValue = a.renterName || '';
+                    bValue = b.renterName || '';
+                    break;
+                case 'payerName':
+                    aValue = a.payerName || a.renterName || '';
+                    bValue = b.payerName || b.renterName || '';
+                    break;
+                case 'note':
+                    aValue = a.note || '';
+                    bValue = b.note || '';
+                    break;
+                default:
+                    return 0;
+            }
+            // 處理字串比較
+            if (typeof aValue === 'string' && typeof bValue === 'string') {
+                aValue = aValue.toLowerCase();
+                bValue = bValue.toLowerCase();
+            }
+            if (aValue < bValue) {
+                return sortDirection === 'asc' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortDirection === 'asc' ? 1 : -1;
+            }
+            return 0;
+        });
+    };
+    // 處理排序變更
+    const handleSort = (field) => {
+        const isAsc = sortField === field && sortDirection === 'asc';
+        setSortDirection(isAsc ? 'desc' : 'asc');
+        setSortField(field);
+    };
+    // 獲取付款方式文字
+    const getPaymentMethodText = (method) => {
+        switch (method) {
+            case rental_1.PaymentMethod.CASH:
+                return '現金';
+            case rental_1.PaymentMethod.BANK_TRANSFER:
+                return '銀行轉帳';
+            case rental_1.PaymentMethod.CHECK:
+                return '支票';
+            case rental_1.PaymentMethod.OTHER:
+                return '其他';
+            default:
+                return '其他';
+        }
+    };
+    // 獲取排序標籤
+    const getSortLabel = (field, label) => ((0, jsx_runtime_1.jsx)(material_1.TableSortLabel, { active: sortField === field, direction: sortField === field ? sortDirection : 'asc', onClick: () => handleSort(field), children: label }));
     const loadData = async () => {
         setLoading(true);
         try {
+            // 載入有租賃標準的投資項目
+            const availableInvestmentsData = await services_1.ApiService.getAvailableInvestmentsForRentalPayments();
+            setAvailableInvestments(availableInvestmentsData);
             // 載入租金收款資料
-            const paymentsData = await services_1.ApiService.getRentalPayments(undefined, yearFilter, monthFilter);
+            const paymentsData = await services_1.ApiService.getRentalPayments(undefined, yearFilter, showAllYear ? undefined : monthFilter);
             // 載入所有相關的租賃標準
             const investmentIds = Array.from(new Set(paymentsData.map(p => p.investmentId)));
             const standardsPromises = investmentIds.map(investmentId => services_1.ApiService.getRentalStandards(investmentId));
@@ -86,8 +184,8 @@ const RentalPaymentTab = ({ investments }) => {
         try {
             // 載入最新的收款資料以檢查重複
             const existingPayments = await services_1.ApiService.getRentalPayments(undefined, yearFilter);
-            // 準備投資項目選擇清單
-            const selections = investments.map(inv => ({
+            // 準備有租賃標準的投資項目選擇清單
+            const selections = availableInvestments.map(inv => ({
                 id: inv.id,
                 name: inv.name,
                 selected: false,
@@ -107,8 +205,8 @@ const RentalPaymentTab = ({ investments }) => {
     // 確認清除租金項目
     const handleClearConfirm = async () => {
         try {
-            await services_1.ApiService.clearRentalPayments(yearFilter, monthFilter);
-            enqueueSnackbar(`已清除 ${yearFilter}年${monthFilter ? monthFilter + '月' : ''}的租金項目`, { variant: 'success' });
+            await services_1.ApiService.clearRentalPayments(yearFilter, showAllYear ? undefined : monthFilter);
+            enqueueSnackbar(`已清除 ${yearFilter}年${showAllYear ? '' : monthFilter + '月'}的租金項目`, { variant: 'success' });
             await loadData();
         }
         catch (err) {
@@ -304,9 +402,18 @@ const RentalPaymentTab = ({ investments }) => {
         return (0, jsx_runtime_1.jsx)(ErrorAlert_1.default, { message: error });
     return ((0, jsx_runtime_1.jsxs)(material_1.Box, { children: [(0, jsx_runtime_1.jsxs)(material_1.Box, { sx: { mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "h6", children: "\u79DF\u91D1\u6536\u6B3E\u7BA1\u7406" }), (0, jsx_runtime_1.jsxs)(material_1.Box, { children: [(0, jsx_runtime_1.jsxs)(material_1.FormControl, { sx: { mr: 2, minWidth: 100 }, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { id: "year-filter-label", htmlFor: "year-filter", children: "\u5E74\u5EA6" }), (0, jsx_runtime_1.jsx)(material_1.Select, { labelId: "year-filter-label", id: "year-filter", name: "year-filter", value: yearFilter.toString(), label: "\u5E74\u5EA6", onChange: (e) => setYearFilter(Number(e.target.value)), inputProps: {
                                             'aria-labelledby': 'year-filter-label'
-                                        }, children: Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map((year) => ((0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: year, id: `year-option-${year}`, children: year }, year))) })] }), (0, jsx_runtime_1.jsxs)(material_1.FormControl, { sx: { mr: 2, minWidth: 100 }, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { id: "month-filter-label", htmlFor: "month-filter", children: "\u6708\u4EFD" }), (0, jsx_runtime_1.jsx)(material_1.Select, { labelId: "month-filter-label", id: "month-filter", name: "month-filter", value: monthFilter.toString(), label: "\u6708\u4EFD", onChange: (e) => setMonthFilter(Number(e.target.value)), inputProps: {
+                                        }, children: Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map((year) => ((0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: year, id: `year-option-${year}`, children: year }, year))) })] }), (0, jsx_runtime_1.jsxs)(material_1.FormControl, { sx: { mr: 2, minWidth: 100 }, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { id: "month-filter-label", htmlFor: "month-filter", children: "\u6708\u4EFD" }), (0, jsx_runtime_1.jsx)(material_1.Select, { labelId: "month-filter-label", id: "month-filter", name: "month-filter", value: monthFilter.toString(), label: "\u6708\u4EFD", onChange: (e) => setMonthFilter(Number(e.target.value)), disabled: showAllYear, inputProps: {
                                             'aria-labelledby': 'month-filter-label'
-                                        }, children: Array.from({ length: 12 }, (_, i) => i + 1).map((month) => ((0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: month, id: `month-option-${month}`, children: month }, month))) })] }), (0, jsx_runtime_1.jsx)(material_1.Button, { variant: "contained", startIcon: (0, jsx_runtime_1.jsx)(icons_material_1.Refresh, {}), onClick: handleGeneratePayments, sx: { mr: 1 }, "aria-label": "\u751F\u6210\u6536\u6B3E\u9805\u76EE", children: "\u751F\u6210\u6536\u6B3E\u9805\u76EE" }), (0, jsx_runtime_1.jsx)(material_1.Button, { variant: "outlined", color: "error", startIcon: (0, jsx_runtime_1.jsx)(icons_material_1.Delete, {}), onClick: handleClearPayments, children: "\u6E05\u9664\u79DF\u91D1\u9805\u76EE" })] })] }), (0, jsx_runtime_1.jsx)(material_1.TableContainer, { component: material_1.Paper, children: (0, jsx_runtime_1.jsxs)(material_1.Table, { children: [(0, jsx_runtime_1.jsx)(material_1.TableHead, { children: (0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6295\u8CC7\u9805\u76EE" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u5E74\u6708" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { align: "right", children: "\u79DF\u91D1\u91D1\u984D" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6536\u6B3E\u72C0\u614B" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6536\u6B3E\u65B9\u5F0F" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6536\u6B3E\u65E5\u671F" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u627F\u79DF\u4EBA" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u7E73\u6B3E\u4EBA" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u5099\u8A3B" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u64CD\u4F5C" })] }) }), (0, jsx_runtime_1.jsxs)(material_1.TableBody, { children: [rentalPayments.map((payment) => {
+                                        }, children: Array.from({ length: 12 }, (_, i) => i + 1).map((month) => ((0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: month, id: `month-option-${month}`, children: month }, month))) })] }), (0, jsx_runtime_1.jsx)(material_1.FormControlLabel, { control: (0, jsx_runtime_1.jsx)(material_1.Checkbox, { checked: showAllYear, onChange: (e) => {
+                                        setShowAllYear(e.target.checked);
+                                        if (e.target.checked) {
+                                            setMonthFilter(new Date().getMonth() + 1);
+                                            // 當勾選當年度時，自動調整為年月升序排序
+                                            if (sortField === 'yearMonth' && sortDirection === 'desc') {
+                                                setSortDirection('asc');
+                                            }
+                                        }
+                                    } }), label: "\u7576\u5E74\u5EA6", sx: { mr: 2 } }), (0, jsx_runtime_1.jsx)(material_1.Button, { variant: "contained", startIcon: (0, jsx_runtime_1.jsx)(icons_material_1.Refresh, {}), onClick: handleGeneratePayments, sx: { mr: 1 }, "aria-label": "\u751F\u6210\u6536\u6B3E\u9805\u76EE", children: "\u751F\u6210\u6536\u6B3E\u9805\u76EE" }), (0, jsx_runtime_1.jsx)(material_1.Button, { variant: "outlined", color: "error", startIcon: (0, jsx_runtime_1.jsx)(icons_material_1.Delete, {}), onClick: handleClearPayments, children: "\u6E05\u9664\u79DF\u91D1\u9805\u76EE" })] })] }), (0, jsx_runtime_1.jsx)(material_1.TableContainer, { component: material_1.Paper, children: (0, jsx_runtime_1.jsxs)(material_1.Table, { children: [(0, jsx_runtime_1.jsx)(material_1.TableHead, { children: (0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getSortLabel('investmentName', '投資項目') }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getSortLabel('yearMonth', '年月') }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { align: "right", children: getSortLabel('amount', '租金金額') }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getSortLabel('status', '收款狀態') }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getSortLabel('paymentMethod', '收款方式') }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getSortLabel('paymentDate', '收款日期') }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getSortLabel('renterName', '承租人') }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getSortLabel('payerName', '繳款人') }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getSortLabel('note', '備註') }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u64CD\u4F5C" })] }) }), (0, jsx_runtime_1.jsxs)(material_1.TableBody, { children: [sortPayments(rentalPayments).map((payment) => {
                                     const investment = investments.find((inv) => inv.id === payment.investmentId);
                                     return ((0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: (investment === null || investment === void 0 ? void 0 : investment.name) || '未知項目' }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: `${payment.year}年${payment.month}月` }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { align: "right", children: (0, format_1.formatCurrency)(payment.amount) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: (0, jsx_runtime_1.jsx)(material_1.Chip, { label: getStatusText(payment.status), color: getStatusColor(payment.status), size: "small" }) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: payment.paymentMethod === rental_1.PaymentMethod.CASH ? '現金' :
                                                     payment.paymentMethod === rental_1.PaymentMethod.BANK_TRANSFER ? '銀行轉帳' :

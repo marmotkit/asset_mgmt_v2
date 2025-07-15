@@ -114,25 +114,27 @@ const InvestmentDetailDialog = ({ open, onClose, onSave, investment }) => {
         if (!formData.userId) {
             newErrors.userId = '請選擇所屬會員';
         }
-        // 根據投資類型驗證特定欄位
+        // 根據投資類型驗證特定欄位（暫時放寬驗證）
         if (formData.type === 'movable') {
-            if (!formData.assetType) {
-                newErrors.assetType = '請輸入資產類型';
-            }
-            if (!formData.serialNumber) {
-                newErrors.serialNumber = '請輸入序號';
-            }
+            // 暫時移除動產特有欄位的必填驗證
+            // if (!formData.assetType) {
+            //     newErrors.assetType = '請輸入資產類型';
+            // }
+            // if (!formData.serialNumber) {
+            //     newErrors.serialNumber = '請輸入序號';
+            // }
         }
         else if (formData.type === 'immovable') {
-            if (!formData.location) {
-                newErrors.location = '請輸入位置';
-            }
-            if (!formData.propertyType) {
-                newErrors.propertyType = '請輸入物業類型';
-            }
-            if (!formData.registrationNumber) {
-                newErrors.registrationNumber = '請輸入登記號碼';
-            }
+            // 暫時移除不動產特有欄位的必填驗證
+            // if (!formData.location) {
+            //     newErrors.location = '請輸入位置';
+            // }
+            // if (!formData.propertyType) {
+            //     newErrors.propertyType = '請輸入物業類型';
+            // }
+            // if (!formData.registrationNumber) {
+            //     newErrors.registrationNumber = '請輸入登記號碼';
+            // }
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
