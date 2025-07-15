@@ -36,7 +36,8 @@ router.get('/', async (req, res) => {
             SELECT 
                 mp.*,
                 i.name as investment_name,
-                u.name as member_name
+                u.name as member_name,
+                u."memberNo" as member_no
             FROM member_profits mp
             LEFT JOIN investments i ON mp."investmentId" = i.id
             LEFT JOIN users u ON mp."memberId" = u.id
@@ -87,7 +88,8 @@ router.get('/', async (req, res) => {
             createdAt: row.createdAt || row.created_at,
             updatedAt: row.updatedAt || row.updated_at,
             investmentName: row.investment_name,
-            memberName: row.member_name
+            memberName: row.member_name || '未知會員',
+            memberNo: row.member_no
         }));
 
         res.json(memberProfits);
@@ -329,6 +331,14 @@ router.post('/generate', async (req, res) => {
                     amount = rentalPayment.amount * (parseFloat(standard.value) / 100);
                 }
 
+                // 生成更有意義的備註
+                const standardTypeText = standard.type === 'FIXED_AMOUNT' ? '固定金額' : '百分比';
+                const standardValueText = standard.type === 'FIXED_AMOUNT'
+                    ? `$${standard.value}`
+                    : `${standard.value}%`;
+
+                const note = `基於${standardTypeText}分潤標準(${standardValueText})自動生成`;
+
                 // 插入分潤項目
                 await pool.query(insertQuery, [
                     investmentId,
@@ -338,7 +348,7 @@ router.post('/generate', async (req, res) => {
                     amount,
                     'pending',
                     null,
-                    `基於分潤標準 ${standard.id} 生成`
+                    note
                 ]);
 
                 generatedCount++;
