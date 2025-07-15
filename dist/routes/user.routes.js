@@ -251,4 +251,65 @@ router.get('/:id/password', async (req, res) => {
         res.status(500).json({ message: '伺服器錯誤，請稍後再試' });
     }
 });
+// 執行資料庫遷移（僅用於開發/測試）
+router.post('/migrate/plain-password', async (req, res) => {
+    try {
+        console.log('開始執行 plainPassword 欄位遷移...');
+        // 檢查是否已經存在 plainPassword 欄位
+        const [existingColumns] = await connection_1.default.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name = 'plainPassword';
+        `);
+        if (existingColumns.length > 0) {
+            console.log('✅ plainPassword 欄位已存在，跳過遷移');
+            return res.status(200).json({
+                message: 'plainPassword 欄位已存在，無需遷移',
+                success: true
+            });
+        }
+        // 新增 plainPassword 欄位
+        console.log('新增 plainPassword 欄位...');
+        await connection_1.default.query(`
+            ALTER TABLE users 
+            ADD COLUMN "plainPassword" VARCHAR(255);
+        `);
+        console.log('✅ plainPassword 欄位新增成功！');
+        // 為現有用戶設定預設明文密碼（基於用戶名）
+        console.log('為現有用戶設定預設明文密碼...');
+        const [users] = await connection_1.default.query(`
+            SELECT id, username, "plainPassword" 
+            FROM users 
+            WHERE "plainPassword" IS NULL OR "plainPassword" = '';
+        `);
+        const updatedUsers = [];
+        for (const user of users) {
+            // 為每個用戶設定預設密碼為用戶名 + '123'
+            const defaultPassword = user.username + '123';
+            await connection_1.default.query(`
+                UPDATE users 
+                SET "plainPassword" = $1 
+                WHERE id = $2
+            `, {
+                bind: [defaultPassword, user.id]
+            });
+            updatedUsers.push({ username: user.username, password: defaultPassword });
+            console.log(`✅ 用戶 ${user.username} 密碼設定為: ${defaultPassword}`);
+        }
+        console.log('✅ 所有用戶的預設明文密碼設定完成！');
+        res.status(200).json({
+            message: 'plainPassword 欄位遷移成功',
+            success: true,
+            updatedUsers: updatedUsers
+        });
+    }
+    catch (error) {
+        console.error('❌ 遷移過程中發生錯誤:', error);
+        res.status(500).json({
+            message: '遷移失敗',
+            error: error.message,
+            success: false
+        });
+    }
+});
 exports.default = router;
