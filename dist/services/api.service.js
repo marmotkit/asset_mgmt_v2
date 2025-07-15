@@ -146,128 +146,69 @@ class ApiService {
         localStorage.setItem(key, JSON.stringify(data));
     }
     // Investment related methods
-    static loadInvestmentsFromStorage() {
-        console.log('正在載入投資資料從本地存儲...');
-        const storedInvestments = localStorage.getItem('investments');
-        if (storedInvestments) {
-            try {
-                ApiService.investments = JSON.parse(storedInvestments);
-                console.log(`已載入 ${ApiService.investments.length} 筆投資資料`);
-            }
-            catch (error) {
-                console.error('解析投資資料時發生錯誤:', error);
-                ApiService.investments = [];
-            }
-        }
-        else {
-            console.log('本地存儲中無投資資料，使用默認值');
-            // 獲取會員列表，確保我們使用存在的會員ID
-            const memberIds = ApiService.mockMembers.map(member => member.id);
-            const defaultUserId = memberIds.length > 0 ? memberIds[0] : '6e74484c-af9c-4a4e-be82-c91d65000c29';
-            console.log('使用預設會員ID:', defaultUserId);
-            console.log('可用會員列表:', ApiService.mockMembers.map(m => `${m.name}(${m.id})`));
-            // 初始化預設投資項目
-            ApiService.investments = [
-                {
-                    id: '1',
-                    companyId: '1',
-                    userId: defaultUserId, // 使用確認存在的會員ID
-                    type: 'movable',
-                    name: '設備投資A',
-                    description: '生產線設備',
-                    amount: 1000000,
-                    startDate: '2023-01-01',
-                    status: 'active',
-                    assetType: '機械設備',
-                    serialNumber: 'EQ-001',
-                    manufacturer: '台灣機械',
-                    createdAt: '2023-01-01T00:00:00Z',
-                    updatedAt: '2023-01-01T00:00:00Z'
-                },
-                {
-                    id: '2',
-                    companyId: '2',
-                    userId: defaultUserId, // 使用確認存在的會員ID
-                    type: 'immovable',
-                    name: '不動產投資B',
-                    description: '商業辦公室',
-                    amount: 5000000,
-                    startDate: '2023-02-01',
-                    status: 'active',
-                    location: '台北市信義區',
-                    area: 150,
-                    propertyType: '商業辦公室',
-                    registrationNumber: 'LD-002',
-                    createdAt: '2023-02-01T00:00:00Z',
-                    updatedAt: '2023-02-01T00:00:00Z'
-                }
-            ];
-            console.log('已初始化預設投資資料');
-        }
-        localStorage.setItem('investments', JSON.stringify(ApiService.investments));
-    }
-    static saveInvestmentsToStorage() {
-        localStorage.setItem('investments', JSON.stringify(ApiService.investments));
-    }
     static async getInvestments() {
         console.log('獲取所有投資項目...');
-        if (ApiService.investments.length === 0) {
-            ApiService.loadInvestmentsFromStorage();
+        try {
+            const response = await apiClient.get('/investments');
+            console.log(`返回 ${response.data.length} 筆投資項目`);
+            return response.data;
         }
-        // 複製陣列的簡單方法
-        const result = Array.from(ApiService.investments);
-        console.log(`返回 ${result.length} 筆投資項目`);
-        return Promise.resolve(result);
+        catch (error) {
+            console.error('獲取投資項目失敗:', error);
+            throw new Error('載入投資資料失敗');
+        }
     }
     static async getInvestment(id) {
+        var _a;
         console.log(`正在查找投資項目 ID: ${id}`);
-        if (ApiService.investments.length === 0) {
-            ApiService.loadInvestmentsFromStorage();
+        try {
+            const response = await apiClient.get(`/investments/${id}`);
+            console.log('查找結果: 找到項目');
+            return response.data;
         }
-        const investment = ApiService.investments.find(i => i.id === id);
-        console.log('查找結果:', investment ? '找到項目' : '未找到項目');
-        return Promise.resolve(investment || null);
+        catch (error) {
+            console.error('查找投資項目失敗:', error);
+            if (axios_1.default.isAxiosError(error) && ((_a = error.response) === null || _a === void 0 ? void 0 : _a.status) === 404) {
+                console.log('查找結果: 未找到項目');
+                return null;
+            }
+            throw new Error('獲取投資項目失敗');
+        }
     }
     static async createInvestment(investment) {
-        let newInvestment;
-        if (investment.type === 'movable') {
-            newInvestment = await ApiService.createMovableInvestment(investment);
+        console.log('創建投資項目:', investment);
+        try {
+            const response = await apiClient.post('/investments', investment);
+            console.log('投資項目創建成功');
+            return response.data;
         }
-        else if (investment.type === 'immovable') {
-            newInvestment = await ApiService.createImmovableInvestment(investment);
+        catch (error) {
+            console.error('創建投資項目失敗:', error);
+            throw new Error('創建投資項目失敗');
         }
-        else {
-            // 默認為動產投資
-            newInvestment = await ApiService.createMovableInvestment({
-                ...investment,
-                type: 'movable'
-            });
-        }
-        ApiService.investments.push(newInvestment);
-        ApiService.saveInvestmentsToStorage();
-        return Promise.resolve(newInvestment);
     }
     static async updateInvestment(investment) {
-        const index = ApiService.investments.findIndex(i => i.id === investment.id);
-        if (index === -1) {
-            throw new Error('Investment not found');
+        console.log('更新投資項目:', investment);
+        try {
+            const response = await apiClient.put(`/investments/${investment.id}`, investment);
+            console.log('投資項目更新成功');
+            return response.data;
         }
-        const updatedInvestment = {
-            ...investment,
-            updatedAt: new Date().toISOString()
-        };
-        ApiService.investments[index] = updatedInvestment;
-        ApiService.saveInvestmentsToStorage();
-        return Promise.resolve(updatedInvestment);
+        catch (error) {
+            console.error('更新投資項目失敗:', error);
+            throw new Error('更新投資項目失敗');
+        }
     }
     static async deleteInvestment(id) {
-        const index = ApiService.investments.findIndex(i => i.id === id);
-        if (index === -1) {
-            throw new Error('Investment not found');
+        console.log('刪除投資項目 ID:', id);
+        try {
+            await apiClient.delete(`/investments/${id}`);
+            console.log('投資項目刪除成功');
         }
-        ApiService.investments.splice(index, 1);
-        ApiService.saveInvestmentsToStorage();
-        return Promise.resolve();
+        catch (error) {
+            console.error('刪除投資項目失敗:', error);
+            throw new Error('刪除投資項目失敗');
+        }
     }
     // Company related methods
     static loadCompaniesFromStorage() {
@@ -776,7 +717,6 @@ class ApiService {
             ApiService.loadRentalStandardsFromStorage();
             ApiService.loadRentalPaymentsFromStorage();
             ApiService.loadMemberProfitsFromStorage();
-            ApiService.loadInvestmentsFromStorage();
             console.log('生成會員分潤項目 - 開始', { investmentId, year });
             // 檢查是否已存在該投資項目的分潤項目
             const existingProfits = ApiService.mockMemberProfits.filter(p => p.investmentId === investmentId && p.year === year);
@@ -785,7 +725,7 @@ class ApiService {
                 throw new Error('該投資項目的分潤項目已存在，請勿重複生成');
             }
             // 獲取投資項目
-            const investment = ApiService.investments.find(inv => inv.id === investmentId);
+            const investment = await this.getInvestment(investmentId);
             console.log('投資項目', (investment === null || investment === void 0 ? void 0 : investment.name) || (investment === null || investment === void 0 ? void 0 : investment.id) || '未找到');
             if (!investment) {
                 console.error('找不到投資項目:', investmentId);
@@ -810,13 +750,18 @@ class ApiService {
                     console.log('嘗試將投資項目關聯到現有會員...');
                     const availableMember = members[0];
                     // 更新投資項目的會員ID
-                    const index = ApiService.investments.findIndex(inv => inv.id === investmentId);
-                    if (index !== -1) {
-                        ApiService.investments[index].userId = availableMember.id;
-                        ApiService.saveInvestmentsToStorage();
+                    try {
+                        const updatedInvestment = await this.updateInvestment({
+                            ...investment,
+                            userId: availableMember.id
+                        });
                         console.log(`已更新投資項目 ${investment.name} 關聯到會員 ${availableMember.name}(${availableMember.id})`);
                         // 使用更新後的會員繼續處理
                         return this.generateMemberProfits(investmentId, year);
+                    }
+                    catch (error) {
+                        console.error('更新投資項目失敗:', error);
+                        throw new Error('更新投資項目失敗');
                     }
                 }
                 throw new Error('找不到所屬會員，請確保投資項目已正確關聯到現有會員');
@@ -1620,7 +1565,6 @@ ApiService.API_BASE_URL = (() => {
     return baseUrl;
 })();
 ApiService.LOCAL_STORAGE_KEY = 'auth_token';
-ApiService.investments = []; // 移除預設資料
 ApiService.mockUsers = [];
 ApiService.mockCompanies = [];
 ApiService.mockRentalStandards = [];

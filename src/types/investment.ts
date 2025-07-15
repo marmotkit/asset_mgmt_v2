@@ -18,6 +18,11 @@ export interface BaseInvestment {
     status: InvestmentStatus;
     createdAt: string;
     updatedAt: string;
+    // 關聯資料欄位（從資料庫查詢時包含）
+    company_name?: string;
+    company_no?: string;
+    user_name?: string;
+    user_member_no?: string;
 }
 
 // 動產投資

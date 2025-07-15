@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
     Box,
     Typography,
@@ -16,9 +16,7 @@ import {
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { Investment, InvestmentStatus } from '../../../types/investment';
 import { formatCurrency } from '../../../utils/format';
-import { ApiService } from '../../../services/api.service';
-import { Company } from '../../../types/company';
-import { User } from '../../../types/user';
+
 
 interface InvestmentListProps {
     investments: Investment[];
@@ -31,39 +29,6 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
     onEditInvestment,
     onDeleteInvestment
 }) => {
-    const [companies, setCompanies] = useState<Record<string, Company>>({});
-    const [users, setUsers] = useState<Record<string, User>>({});
-
-    useEffect(() => {
-        const loadCompanies = async () => {
-            try {
-                const data = await ApiService.getCompanies();
-                const companyMap = data.reduce((acc: Record<string, Company>, company: Company) => {
-                    acc[company.id] = company;
-                    return acc;
-                }, {});
-                setCompanies(companyMap);
-            } catch (error) {
-                console.error('載入公司資料失敗:', error);
-            }
-        };
-
-        const loadUsers = async () => {
-            try {
-                const data = await ApiService.getUsers();
-                const userMap = data.reduce((acc: Record<string, User>, user: User) => {
-                    acc[user.id] = user;
-                    return acc;
-                }, {});
-                setUsers(userMap);
-            } catch (error) {
-                console.error('載入會員資料失敗:', error);
-            }
-        };
-
-        loadCompanies();
-        loadUsers();
-    }, []);
 
     const getStatusColor = (status: InvestmentStatus): "success" | "error" | "warning" | "default" => {
         switch (status) {
@@ -133,10 +98,10 @@ const InvestmentList: React.FC<InvestmentListProps> = ({
                                 {investment.startDate} {investment.endDate ? `~ ${investment.endDate}` : ''}
                             </TableCell>
                             <TableCell>
-                                {investment.companyId && companies[investment.companyId]?.name || ''}
+                                {investment.company_name || ''}
                             </TableCell>
                             <TableCell>
-                                {investment.userId && users[investment.userId]?.name || ''}
+                                {investment.user_name || ''}
                             </TableCell>
                             <TableCell>
                                 <Chip

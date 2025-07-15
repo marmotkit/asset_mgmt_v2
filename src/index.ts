@@ -21,6 +21,7 @@ import investmentRoutes from './routes/investment.routes';
 import feeRoutes from './routes/fee.routes';
 import feeSettingsRoutes from './routes/fee-settings.routes';
 import documentsRoutes from './routes/documents.routes';
+import { migrateInvestments } from './scripts/migrate-investments';
 
 // 加載環境變量
 dotenv.config();
@@ -117,6 +118,13 @@ sequelize.sync({ alter: false })
             }
         } catch (error) {
             console.error('檢查/建立 documents 表時發生錯誤:', error);
+        }
+
+        // 執行投資資料遷移
+        try {
+            await migrateInvestments();
+        } catch (error) {
+            console.error('投資資料遷移失敗:', error);
         }
 
         app.listen(PORT, () => {
