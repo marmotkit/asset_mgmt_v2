@@ -100,6 +100,13 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
         loadData();
     }, [yearFilter, monthFilter, showAllYear]);
 
+    // 當切換到當年度模式時，自動調整排序方向為升序
+    useEffect(() => {
+        if (showAllYear && sortField === 'yearMonth' && sortDirection === 'desc') {
+            setSortDirection('asc');
+        }
+    }, [showAllYear, sortField, sortDirection]);
+
     // 排序函數
     const sortPayments = (payments: RentalPayment[]): RentalPayment[] => {
         return [...payments].sort((a, b) => {
@@ -556,6 +563,10 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
                                     setShowAllYear(e.target.checked);
                                     if (e.target.checked) {
                                         setMonthFilter(new Date().getMonth() + 1);
+                                        // 當勾選當年度時，自動調整為年月升序排序
+                                        if (sortField === 'yearMonth' && sortDirection === 'desc') {
+                                            setSortDirection('asc');
+                                        }
                                     }
                                 }}
                             />
