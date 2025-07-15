@@ -671,7 +671,14 @@ class ApiService {
     }
     // 會員相關方法
     static async getMembers() {
-        return Promise.resolve(ApiService.mockMembers);
+        try {
+            const response = await this.get('/users');
+            return response.data;
+        }
+        catch (error) {
+            console.error('獲取會員資料失敗:', error);
+            return [];
+        }
     }
     static async getMember(id) {
         const member = ApiService.mockMembers.find(m => m.id === id);
