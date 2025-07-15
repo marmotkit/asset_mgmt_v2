@@ -1,4 +1,4 @@
-# 資產管理系統 V6.5
+# 資產管理系統 V6.6.3
 
 ## 系統概述
 這是一個基於 React + TypeScript 的資產管理系統，提供會員管理、會費管理、投資管理、發票管理等功能。
@@ -72,7 +72,66 @@
 - **平台**: Render
 - **連線**: 雲端 PostgreSQL 服務
 
-## 最新更新 (V6.5)
+## 最新更新 (V6.6.3)
+
+### 投資管理完整資料庫遷移 ✨
+- **租賃標準管理系統**: 完整的租賃標準 CRUD 功能，支援投資項目的租賃條件設定
+- **分潤標準管理系統**: 完整的分潤標準 CRUD 功能，支援投資項目的利潤分配規則
+- **租金收款管理系統**: 完整的租金收款管理，支援年度/月度篩選、自動生成收款項目
+- **智能排序功能**: 租金收款表格支援所有欄位排序，預設以年月排序，當年度模式自動調整排序方向
+
+### 主要新增功能
+1. **租賃標準管理**:
+   - 投資項目租賃條件設定
+   - 承租人資訊管理
+   - 租賃期間設定
+   - 租金金額管理
+   - 完整的 CRUD 操作
+
+2. **分潤標準管理**:
+   - 投資項目利潤分配規則
+   - 分潤比例設定
+   - 分潤期間管理
+   - 與租賃標準關聯
+   - 完整的 CRUD 操作
+
+3. **租金收款管理**:
+   - 年度/月度篩選功能
+   - 當年度模式（查看整年收款項目）
+   - 自動生成收款項目
+   - 收款狀態管理（待收款、已收款、逾期）
+   - 收款方式記錄
+   - 承租人/繳款人資訊管理
+   - 完整的表格排序功能
+
+4. **智能排序系統**:
+   - 支援所有欄位排序（投資項目、年月、金額、狀態等）
+   - 預設以年月降序排列（最近的在最上面）
+   - 當年度模式自動調整為升序排列（從年初到年末）
+   - 可點擊表格標頭切換排序方向
+
+### 技術改進
+- 完整的 PostgreSQL 資料庫整合
+- 原生 SQL 查詢優化
+- 前端組件效能優化
+- 完整的錯誤處理機制
+- 響應式設計改善
+
+## 歷史更新
+
+### V6.6.2 - 分潤標準管理系統
+- **完整分潤標準功能**: 建立分潤標準 CRUD 管理系統
+- **投資項目關聯**: 分潤標準與投資項目關聯，只顯示有租賃標準的項目
+- **資料庫整合**: 將分潤標準從 localStorage 改為連接 PostgreSQL 資料庫
+- **前端優化**: 改善分潤標準管理介面和使用者體驗
+
+### V6.6.1 - 租賃標準管理系統
+- **完整租賃標準功能**: 建立租賃標準 CRUD 管理系統
+- **投資項目關聯**: 租賃標準與投資項目關聯管理
+- **資料庫整合**: 將租賃標準從 localStorage 改為連接 PostgreSQL 資料庫
+- **前端優化**: 改善租賃標準管理介面和使用者體驗
+
+### V6.5 - 投資管理資料庫連結修正
 
 ### 投資管理資料庫連結修正 ✨
 - **資料庫儲存系統**: 將投資管理從 localStorage 改為使用 PostgreSQL 資料庫
@@ -196,8 +255,22 @@ Authorization: Bearer <your-jwt-token>
 - `POST /api/auth/login` - 用戶登入
 - `GET /api/users` - 獲取會員列表
 - `GET /api/fees` - 獲取會費記錄
-- `GET /api/documents` - 獲取發票/收據列表 ✨ 新增
-- `POST /api/documents` - 創建發票/收據 ✨ 新增
+- `GET /api/documents` - 獲取發票/收據列表
+- `POST /api/documents` - 創建發票/收據
+- `GET /api/rental-standards` - 獲取租賃標準列表 ✨ 新增
+- `POST /api/rental-standards` - 創建租賃標準 ✨ 新增
+- `PUT /api/rental-standards/:id` - 更新租賃標準 ✨ 新增
+- `DELETE /api/rental-standards/:id` - 刪除租賃標準 ✨ 新增
+- `GET /api/profit-sharing-standards` - 獲取分潤標準列表 ✨ 新增
+- `POST /api/profit-sharing-standards` - 創建分潤標準 ✨ 新增
+- `PUT /api/profit-sharing-standards/:id` - 更新分潤標準 ✨ 新增
+- `DELETE /api/profit-sharing-standards/:id` - 刪除分潤標準 ✨ 新增
+- `GET /api/rental-payments` - 獲取租金收款列表 ✨ 新增
+- `POST /api/rental-payments` - 創建租金收款項目 ✨ 新增
+- `PUT /api/rental-payments/:id` - 更新租金收款項目 ✨ 新增
+- `DELETE /api/rental-payments/:id` - 刪除租金收款項目 ✨ 新增
+- `POST /api/rental-payments/generate` - 自動生成租金收款項目 ✨ 新增
+- `DELETE /api/rental-payments/clear` - 清除租金收款項目 ✨ 新增
 
 ## 開發指南
 
