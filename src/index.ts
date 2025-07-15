@@ -151,16 +151,13 @@ sequelize.sync({ alter: false })
                 await sequelize.query(`
                     CREATE TABLE anomalies (
                         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        member_id VARCHAR(255) NOT NULL,
-                        member_name VARCHAR(255) NOT NULL,
-                        member_no VARCHAR(255) NOT NULL,
-                        anomaly_type VARCHAR(255) NOT NULL,
+                        type VARCHAR(255) NOT NULL,
+                        person_id VARCHAR(255),
+                        person_name VARCHAR(255) NOT NULL,
                         description TEXT NOT NULL,
-                        severity VARCHAR(255) NOT NULL DEFAULT 'medium',
-                        status VARCHAR(255) NOT NULL DEFAULT 'open',
-                        reported_date DATE NOT NULL,
-                        resolved_date DATE,
-                        resolution_notes TEXT,
+                        occurrence_date DATE NOT NULL,
+                        status VARCHAR(255) NOT NULL DEFAULT '待處理',
+                        handling_method TEXT,
                         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                     );
