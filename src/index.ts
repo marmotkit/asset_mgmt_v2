@@ -129,7 +129,7 @@ sequelize.sync({ alter: false })
                     id, "companyId", "userId", type, name, description, amount,
                     "startDate", status, "createdAt", "updatedAt"
                 ) VALUES (
-                    '1', (SELECT id FROM companies LIMIT 1), (SELECT id FROM users LIMIT 1), 
+                    gen_random_uuid(), (SELECT id FROM companies LIMIT 1), (SELECT id FROM users LIMIT 1), 
                     'movable', '設備投資A', '生產線設備', 1000000,
                     '2023-01-01', 'active', NOW(), NOW()
                 )
