@@ -3,6 +3,7 @@ import User, { UserStatus } from '../models/User';
 import bcrypt from 'bcryptjs';
 import { generateMemberNo } from '../utils/memberNoGenerator';
 import { UserRole } from '../types/user';
+import sequelize from '../db/connection';
 
 const router = Router();
 
@@ -90,7 +91,14 @@ router.post('/', async (req, res) => {
 // 獲取所有用戶
 router.get('/', async (req, res) => {
     try {
-        const users = await User.findAll();
+        // 暫時排除 plainPassword 欄位，避免資料庫欄位不存在的錯誤
+        const users = await User.findAll({
+            attributes: [
+                'id', 'memberNo', 'username', 'name', 'email',
+                'role', 'status', 'companyId', 'isFirstLogin',
+                'preferences', 'createdAt', 'updatedAt'
+            ]
+        });
         res.status(200).json(users);
     } catch (error) {
         console.error('獲取用戶列表錯誤:', error);
@@ -186,17 +194,26 @@ router.put('/:id/password', async (req, res) => {
 // 查詢用戶密碼
 router.get('/:id/password', async (req, res) => {
     try {
-        const user = await User.findByPk(req.params.id);
+        const user = await User.findByPk(req.params.id, {
+            attributes: ['id', 'plainPassword']
+        });
 
         if (!user) {
             return res.status(404).json({ message: '用戶不存在' });
         }
 
-        // 返回明文密碼（注意：這是為了管理員查詢，實際應用中應該謹慎處理）
-        res.status(200).json({
-            message: '密碼查詢成功',
-            password: user.plainPassword || '密碼未設定'
-        });
+        // 檢查是否有 plainPassword 欄位
+        if (user.plainPassword) {
+            res.status(200).json({
+                message: '密碼查詢成功',
+                password: user.plainPassword
+            });
+        } else {
+            res.status(200).json({
+                message: '密碼查詢成功',
+                password: '密碼未設定或已加密'
+            });
+        }
     } catch (error) {
         console.error('查詢密碼錯誤:', error);
         res.status(500).json({ message: '伺服器錯誤，請稍後再試' });
