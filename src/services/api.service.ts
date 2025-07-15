@@ -1089,6 +1089,54 @@ export class ApiService {
         }
     }
 
+    // 獲取單一異常記錄
+    public static async getAnomaly(id: string): Promise<any> {
+        try {
+            console.log('【API】調用真實 API 獲取異常記錄詳情');
+            const response = await this.get(`/anomalies/${id}`);
+            console.log('【API】異常記錄詳情回應:', response);
+            return response.data;
+        } catch (error) {
+            console.error('【API】獲取異常記錄詳情失敗:', error);
+            throw error;
+        }
+    }
+
+    // 更新異常記錄
+    public static async updateAnomaly(id: string, data: {
+        type: string;
+        personId?: string;
+        personName: string;
+        description: string;
+        occurrenceDate: string;
+        status: string;
+        handlingMethod?: string;
+        changeReason?: string;
+    }): Promise<any> {
+        try {
+            console.log('【API】調用真實 API 更新異常記錄');
+            const response = await this.put(`/anomalies/${id}`, data);
+            console.log('【API】更新異常記錄回應:', response);
+            return response.data;
+        } catch (error) {
+            console.error('【API】更新異常記錄失敗:', error);
+            throw error;
+        }
+    }
+
+    // 獲取異常記錄修改歷史
+    public static async getAnomalyChanges(id: string): Promise<any[]> {
+        try {
+            console.log('【API】調用真實 API 獲取異常記錄修改歷史');
+            const response = await this.get(`/anomalies/${id}/changes`);
+            console.log('【API】異常記錄修改歷史回應:', response);
+            return Array.isArray(response.data) ? response.data : [];
+        } catch (error) {
+            console.error('【API】獲取異常記錄修改歷史失敗:', error);
+            return [];
+        }
+    }
+
     // 帳務管理功能
     // 日記帳功能
     public static async getAccountRecords(): Promise<AccountRecord[]> {

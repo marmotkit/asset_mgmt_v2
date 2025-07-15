@@ -199,6 +199,38 @@ sequelize.sync({ alter: false })
             console.error('檢查/建立 anomalies 表時發生錯誤:', error);
         }
 
+        // 檢查並建立 anomaly_changes 表（修改記錄）
+        try {
+            const [changeResults] = await sequelize.query(`
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'anomaly_changes';
+            `);
+
+            if (changeResults.length === 0) {
+                console.log('建立 anomaly_changes 資料表...');
+                await sequelize.query(`
+                    CREATE TABLE anomaly_changes (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        anomaly_id UUID NOT NULL,
+                        changed_by VARCHAR(255) NOT NULL,
+                        changed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                        field_name VARCHAR(255) NOT NULL,
+                        old_value TEXT,
+                        new_value TEXT,
+                        change_reason TEXT,
+                        FOREIGN KEY (anomaly_id) REFERENCES anomalies(id) ON DELETE CASCADE
+                    );
+                `);
+                console.log('anomaly_changes 資料表建立成功');
+            } else {
+                console.log('anomaly_changes 資料表已存在');
+            }
+        } catch (error) {
+            console.error('檢查/建立 anomaly_changes 表時發生錯誤:', error);
+        }
+
         // 投資資料遷移已完成，不再自動插入測試資料
         console.log('投資資料表已準備就緒');
 

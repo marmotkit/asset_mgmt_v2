@@ -24,12 +24,16 @@ import {
     InputLabel,
     Select,
     SelectChangeEvent,
-    Grid
+    Grid,
+    IconButton,
+    Tooltip
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, History as HistoryIcon } from '@mui/icons-material';
 import { ApiService } from '../../../services/api.service';
 import { MemberProfit, PaymentStatus, RentalPayment } from '../../../types/rental';
 import { User } from '../../../types/user';
+import { EditAnomalyDialog } from './EditAnomalyDialog';
+import { AnomalyHistoryDialog } from './AnomalyHistoryDialog';
 
 // 日期格式化函數
 const formatDate = (dateStr: string | null | undefined): string => {
@@ -267,6 +271,9 @@ const OtherAnomaliesPanel: React.FC = () => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [openDialog, setOpenDialog] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+    const [selectedAnomalyId, setSelectedAnomalyId] = useState<string>('');
     const [newAnomaly, setNewAnomaly] = useState({
         type: '',
         personId: '',
@@ -382,6 +389,7 @@ const OtherAnomaliesPanel: React.FC = () => {
                             <TableCell>事件描述</TableCell>
                             <TableCell>狀態</TableCell>
                             <TableCell>處理方式</TableCell>
+                            <TableCell>操作</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -397,16 +405,42 @@ const OtherAnomaliesPanel: React.FC = () => {
                                         <TableCell>
                                             <Chip
                                                 label={anomaly.status}
-                                                color={anomaly.status === '已處理' ? 'success' : anomaly.status === '處理中' ? 'warning' : 'error'}
+                                                color={anomaly.status === '已解決' ? 'success' : anomaly.status === '處理中' ? 'warning' : 'default'}
                                                 size="small"
                                             />
                                         </TableCell>
                                         <TableCell>{anomaly.handlingMethod || '尚未處理'}</TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                <Tooltip title="編輯">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => {
+                                                            setSelectedAnomalyId(anomaly.id);
+                                                            setEditDialogOpen(true);
+                                                        }}
+                                                    >
+                                                        <EditIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="修改歷史">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => {
+                                                            setSelectedAnomalyId(anomaly.id);
+                                                            setHistoryDialogOpen(true);
+                                                        }}
+                                                    >
+                                                        <HistoryIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Box>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} align="center">
+                                <TableCell colSpan={7} align="center">
                                     無其他異常記錄
                                 </TableCell>
                             </TableRow>
@@ -546,6 +580,32 @@ const OtherAnomaliesPanel: React.FC = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* 編輯異常記錄對話框 */}
+            <EditAnomalyDialog
+                open={editDialogOpen}
+                onClose={() => setEditDialogOpen(false)}
+                anomalyId={selectedAnomalyId}
+                onSuccess={() => {
+                    // 重新載入資料
+                    const fetchData = async () => {
+                        try {
+                            const data = await ApiService.getAnomalies();
+                            setAnomalies(data);
+                        } catch (error) {
+                            console.error('無法獲取異常記錄:', error);
+                        }
+                    };
+                    fetchData();
+                }}
+            />
+
+            {/* 修改歷史對話框 */}
+            <AnomalyHistoryDialog
+                open={historyDialogOpen}
+                onClose={() => setHistoryDialogOpen(false)}
+                anomalyId={selectedAnomalyId}
+            />
         </Box>
     );
 };

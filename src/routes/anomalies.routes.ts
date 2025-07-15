@@ -114,7 +114,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
             description,
             occurrenceDate,
             status,
-            handlingMethod
+            handlingMethod,
+            changeReason
         } = req.body;
 
         // 驗證必填欄位
@@ -125,7 +126,23 @@ router.put('/:id', authMiddleware, async (req, res) => {
             });
         }
 
-        const query = `
+        // 先獲取原始資料
+        const originalQuery = `
+            SELECT type, person_id, person_name, description, occurrence_date, status, handling_method
+            FROM anomalies WHERE id = $1
+        `;
+        const originalResult = await pool.query(originalQuery, [id]);
+
+        if (originalResult.rows.length === 0) {
+            return res.status(404).json({
+                error: '異常記錄不存在'
+            });
+        }
+
+        const original = originalResult.rows[0];
+
+        // 更新異常記錄
+        const updateQuery = `
             UPDATE anomalies SET
                 type = $1,
                 person_id = $2,
@@ -144,16 +161,50 @@ router.put('/:id', authMiddleware, async (req, res) => {
         `;
 
         const values = [type, personId, personName, description, occurrenceDate, status, handlingMethod, id];
+        const result = await pool.query(updateQuery, values);
+        const updatedAnomaly = result.rows[0];
 
-        const result = await pool.query(query, values);
+        // 記錄修改歷史
+        const changedBy = req.user?.username || 'system';
+        const changes = [];
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                error: '異常記錄不存在'
-            });
+        if (original.type !== type) {
+            changes.push(['type', original.type, type]);
+        }
+        if (original.person_id !== personId) {
+            changes.push(['person_id', original.person_id, personId]);
+        }
+        if (original.person_name !== personName) {
+            changes.push(['person_name', original.person_name, personName]);
+        }
+        if (original.description !== description) {
+            changes.push(['description', original.description, description]);
+        }
+        if (original.occurrence_date !== occurrenceDate) {
+            changes.push(['occurrence_date', original.occurrence_date, occurrenceDate]);
+        }
+        if (original.status !== status) {
+            changes.push(['status', original.status, status]);
+        }
+        if (original.handling_method !== handlingMethod) {
+            changes.push(['handling_method', original.handling_method, handlingMethod]);
         }
 
-        const updatedAnomaly = result.rows[0];
+        // 插入修改記錄
+        if (changes.length > 0) {
+            const changeQuery = `
+                INSERT INTO anomaly_changes (
+                    anomaly_id, changed_by, field_name, old_value, new_value, change_reason
+                ) VALUES ($1, $2, $3, $4, $5, $6)
+            `;
+
+            for (const [fieldName, oldValue, newValue] of changes) {
+                await pool.query(changeQuery, [
+                    id, changedBy, fieldName, oldValue, newValue, changeReason || '系統更新'
+                ]);
+            }
+        }
+
         console.log('【異常記錄】更新異常記錄成功:', updatedAnomaly.id);
 
         res.json(updatedAnomaly);
@@ -230,6 +281,36 @@ router.get('/:id', authMiddleware, async (req, res) => {
         console.error('【異常記錄】查詢單一異常記錄失敗:', error);
         res.status(500).json({
             error: '查詢單一異常記錄失敗',
+            details: error instanceof Error ? error.message : '未知錯誤'
+        });
+    }
+});
+
+// 獲取異常記錄的修改歷史
+router.get('/:id/changes', authMiddleware, async (req, res) => {
+    try {
+        console.log('【異常記錄】查詢修改歷史...', req.params.id);
+
+        const { id } = req.params;
+
+        const query = `
+            SELECT 
+                id, changed_by as "changedBy", changed_at as "changedAt",
+                field_name as "fieldName", old_value as "oldValue", 
+                new_value as "newValue", change_reason as "changeReason"
+            FROM anomaly_changes
+            WHERE anomaly_id = $1
+            ORDER BY changed_at DESC
+        `;
+
+        const result = await pool.query(query, [id]);
+        console.log(`【異常記錄】找到 ${result.rows.length} 筆修改記錄`);
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error('【異常記錄】查詢修改歷史失敗:', error);
+        res.status(500).json({
+            error: '查詢修改歷史失敗',
             details: error instanceof Error ? error.message : '未知錯誤'
         });
     }
