@@ -562,54 +562,43 @@ export class ApiService {
 
     // 分潤標準設定相關方法
     public static async getProfitSharingStandards(investmentId?: string): Promise<ProfitSharingStandard[]> {
-        if (ApiService.mockProfitSharingStandards.length === 0) {
-            ApiService.loadProfitSharingStandardsFromStorage();
+        try {
+            const params = investmentId ? `?investmentId=${investmentId}` : '';
+            const response = await apiClient.get<ProfitSharingStandard[]>(`/profit-sharing-standards${params}`);
+            return response.data;
+        } catch (error) {
+            console.error('獲取分潤標準失敗:', error);
+            throw new Error('獲取分潤標準失敗');
         }
-        let standards = [...(ApiService.mockProfitSharingStandards as any)];
-        if (investmentId) {
-            standards = standards.filter(s => s.investmentId === investmentId);
-        }
-        return Promise.resolve(standards);
     }
 
     public static async createProfitSharingStandard(data: Partial<ProfitSharingStandard>): Promise<ProfitSharingStandard> {
-        const newStandard: ProfitSharingStandard = {
-            ...(data as any),
-            id: crypto.randomUUID(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        } as ProfitSharingStandard;
-
-        ApiService.mockProfitSharingStandards.push(newStandard);
-        ApiService.saveProfitSharingStandardsToStorage();
-        return Promise.resolve(newStandard);
+        try {
+            const response = await apiClient.post<ProfitSharingStandard>('/profit-sharing-standards', data);
+            return response.data;
+        } catch (error) {
+            console.error('創建分潤標準失敗:', error);
+            throw new Error('創建分潤標準失敗');
+        }
     }
 
     public static async updateProfitSharingStandard(id: string, data: Partial<ProfitSharingStandard>): Promise<ProfitSharingStandard> {
-        const index = ApiService.mockProfitSharingStandards.findIndex(s => s.id === id);
-        if (index === -1) {
-            throw new Error('分潤標準不存在');
+        try {
+            const response = await apiClient.put<ProfitSharingStandard>(`/profit-sharing-standards/${id}`, data);
+            return response.data;
+        } catch (error) {
+            console.error('更新分潤標準失敗:', error);
+            throw new Error('更新分潤標準失敗');
         }
-
-        const updatedStandard: ProfitSharingStandard = {
-            ...(ApiService.mockProfitSharingStandards[index] as any),
-            ...(data as any),
-            updatedAt: new Date().toISOString()
-        } as ProfitSharingStandard;
-
-        ApiService.mockProfitSharingStandards[index] = updatedStandard;
-        ApiService.saveProfitSharingStandardsToStorage();
-        return Promise.resolve(updatedStandard);
     }
 
     public static async deleteProfitSharingStandard(id: string): Promise<void> {
-        const index = ApiService.mockProfitSharingStandards.findIndex(s => s.id === id);
-        if (index === -1) {
-            throw new Error('分潤標準不存在');
+        try {
+            await apiClient.delete(`/profit-sharing-standards/${id}`);
+        } catch (error) {
+            console.error('刪除分潤標準失敗:', error);
+            throw new Error('刪除分潤標準失敗');
         }
-        ApiService.mockProfitSharingStandards.splice(index, 1);
-        ApiService.saveProfitSharingStandardsToStorage();
-        return Promise.resolve();
     }
 
     // 租金收款項目相關方法
