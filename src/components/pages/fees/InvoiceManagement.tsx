@@ -73,19 +73,13 @@ const DocumentListDialog: React.FC<DocumentListDialogProps> = ({
         try {
             // 從雲端資料庫獲取所有會員
             const allMembers = await ApiService.getUsers();
-
             // 獲取已收款的會費記錄
             const paidFees = await feeHistoryService.getHistories({
                 status: '已收款'
             });
-
-            // 找出有已收款記錄的會員
-            const paidMemberIds = new Set(paidFees.map(fee => fee.memberId));
-            const membersWithPaidFees = allMembers.filter(member => {
-                // 檢查會員 ID 或會員編號是否在已收款記錄中
-                return paidMemberIds.has(member.id) || paidMemberIds.has(member.memberNo);
-            });
-
+            // 只比對 memberNo
+            const paidMemberNos = new Set(paidFees.map(fee => fee.memberId));
+            const membersWithPaidFees = allMembers.filter(member => paidMemberNos.has(member.memberNo));
             setMembers(membersWithPaidFees);
         } catch (error) {
             console.error('載入會員資料失敗:', error);
