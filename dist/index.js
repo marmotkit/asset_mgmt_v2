@@ -114,6 +114,29 @@ connection_1.default.sync({ alter: false })
     catch (error) {
         console.error('檢查/建立 documents 表時發生錯誤:', error);
     }
+    // 執行投資資料遷移
+    try {
+        console.log('開始遷移投資資料...');
+        // 簡單的投資資料插入（如果表是空的）
+        const insertQuery = `
+                INSERT INTO investments (
+                    id, company_id, user_id, type, name, description, amount,
+                    start_date, status, asset_type, serial_number, manufacturer,
+                    created_at, updated_at
+                ) VALUES (
+                    '1', (SELECT id FROM companies LIMIT 1), (SELECT id FROM users LIMIT 1), 
+                    'movable', '設備投資A', '生產線設備', 1000000,
+                    '2023-01-01', 'active', '機械設備', 'EQ-001', '台灣機械',
+                    NOW(), NOW()
+                )
+                ON CONFLICT (id) DO NOTHING
+            `;
+        await connection_1.default.query(insertQuery);
+        console.log('投資資料遷移完成！');
+    }
+    catch (error) {
+        console.error('投資資料遷移失敗:', error);
+    }
     app.listen(PORT, () => {
         console.log(`服務器運行在 port ${PORT}`);
     });

@@ -21,7 +21,6 @@ import investmentRoutes from './routes/investment.routes';
 import feeRoutes from './routes/fee.routes';
 import feeSettingsRoutes from './routes/fee-settings.routes';
 import documentsRoutes from './routes/documents.routes';
-import { migrateInvestments } from './scripts/migrate-investments';
 
 // 加載環境變量
 dotenv.config();
@@ -122,7 +121,25 @@ sequelize.sync({ alter: false })
 
         // 執行投資資料遷移
         try {
-            await migrateInvestments();
+            console.log('開始遷移投資資料...');
+
+            // 簡單的投資資料插入（如果表是空的）
+            const insertQuery = `
+                INSERT INTO investments (
+                    id, company_id, user_id, type, name, description, amount,
+                    start_date, status, asset_type, serial_number, manufacturer,
+                    created_at, updated_at
+                ) VALUES (
+                    '1', (SELECT id FROM companies LIMIT 1), (SELECT id FROM users LIMIT 1), 
+                    'movable', '設備投資A', '生產線設備', 1000000,
+                    '2023-01-01', 'active', '機械設備', 'EQ-001', '台灣機械',
+                    NOW(), NOW()
+                )
+                ON CONFLICT (id) DO NOTHING
+            `;
+
+            await sequelize.query(insertQuery);
+            console.log('投資資料遷移完成！');
         } catch (error) {
             console.error('投資資料遷移失敗:', error);
         }
