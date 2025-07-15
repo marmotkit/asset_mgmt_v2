@@ -24,18 +24,39 @@ class FeeHistoryService {
     }
 
     async getHistories(filter?: FeeHistoryFilter): Promise<FeeHistory[]> {
-        await this.loadHistories();
-        if (!filter) return this.histories;
+        try {
+            // 使用雲端 API 獲取資料
+            const histories = await getHistoriesFromApi(filter);
 
-        return this.histories.filter(history => {
-            const matchStatus = !filter.status || history.action.includes(filter.status);
-            const matchMember = !filter.memberId || history.memberId === filter.memberId;
-            const matchUser = !filter.userId || history.memberId === filter.userId;
-            const matchDate = (!filter.startDate || history.date >= filter.startDate) &&
-                (!filter.endDate || history.date <= filter.endDate);
+            // 如果沒有 filter，直接回傳所有資料
+            if (!filter) return histories;
 
-            return matchStatus && matchMember && matchUser && matchDate;
-        });
+            // 如果有 filter，進行本地篩選
+            return histories.filter(history => {
+                const matchStatus = !filter.status || history.status === filter.status;
+                const matchMember = !filter.memberId || history.memberId === filter.memberId;
+                const matchUser = !filter.userId || history.memberId === filter.userId;
+                const matchDate = (!filter.startDate || history.date >= filter.startDate) &&
+                    (!filter.endDate || history.date <= filter.endDate);
+
+                return matchStatus && matchMember && matchUser && matchDate;
+            });
+        } catch (error) {
+            console.error('從 API 獲取歷史記錄失敗:', error);
+            // 如果 API 失敗，回退到 localStorage
+            await this.loadHistories();
+            if (!filter) return this.histories;
+
+            return this.histories.filter(history => {
+                const matchStatus = !filter.status || history.action.includes(filter.status);
+                const matchMember = !filter.memberId || history.memberId === filter.memberId;
+                const matchUser = !filter.userId || history.memberId === filter.userId;
+                const matchDate = (!filter.startDate || history.date >= filter.startDate) &&
+                    (!filter.endDate || history.date <= filter.endDate);
+
+                return matchStatus && matchMember && matchUser && matchDate;
+            });
+        }
     }
 
     async addHistory(record: Omit<FeeHistory, 'id'>): Promise<FeeHistory> {
