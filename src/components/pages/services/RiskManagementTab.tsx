@@ -31,6 +31,22 @@ import { ApiService } from '../../../services/api.service';
 import { MemberProfit, PaymentStatus, RentalPayment } from '../../../types/rental';
 import { User } from '../../../types/user';
 
+// 日期格式化函數
+const formatDate = (dateStr: string | null | undefined): string => {
+    if (!dateStr) return '未設定';
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return '日期格式錯誤';
+        return date.toLocaleDateString('zh-TW', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+    } catch (error) {
+        return '日期格式錯誤';
+    }
+};
+
 // 定義子頁簽介面
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -123,7 +139,7 @@ const MemberOverduePaymentsPanel: React.FC = () => {
                                                 size="small"
                                             />
                                         </TableCell>
-                                        <TableCell>{payment.dueDate || '未設定'}</TableCell>
+                                        <TableCell>{formatDate(payment.dueDate)}</TableCell>
                                     </TableRow>
                                 ))
                         ) : (
@@ -216,7 +232,7 @@ const CustomerOverdueRentalsPanel: React.FC = () => {
                                             />
                                         </TableCell>
                                         <TableCell>
-                                            {rental.startDate} - {rental.endDate}
+                                            {formatDate(rental.startDate)} - {formatDate(rental.endDate)}
                                         </TableCell>
                                     </TableRow>
                                 ))

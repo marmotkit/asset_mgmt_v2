@@ -124,7 +124,19 @@ const FeePaymentStatus: React.FC = () => {
         }
     };
 
-    const sortedPayments = [...payments].sort((a, b) => {
+    // 篩選資料
+    const filteredPayments = payments
+        .filter(payment => {
+            const matchStatus = !filter.status || payment.status === filter.status;
+            const matchType = !filter.memberType || payment.memberType === filter.memberType;
+            const matchSearch = !filter.search ||
+                payment.memberName.toLowerCase().includes(filter.search.toLowerCase()) ||
+                payment.memberId.toLowerCase().includes(filter.search.toLowerCase());
+            return matchStatus && matchType && matchSearch;
+        });
+
+    // 排序篩選後的資料
+    const sortedPayments = [...filteredPayments].sort((a, b) => {
         let aValue = a[orderBy as keyof PaymentStatusRecord];
         let bValue = b[orderBy as keyof PaymentStatusRecord];
         // 金額排序
@@ -244,21 +256,7 @@ const FeePaymentStatus: React.FC = () => {
         }));
     };
 
-    // 篩選資料
-    const filteredPayments = payments
-        .filter(payment => {
-            const matchStatus = !filter.status || payment.status === filter.status;
-            const matchType = !filter.memberType || payment.memberType === filter.memberType;
-            const matchSearch = !filter.search ||
-                payment.memberName.toLowerCase().includes(filter.search.toLowerCase()) ||
-                payment.memberId.toLowerCase().includes(filter.search.toLowerCase());
-            return matchStatus && matchType && matchSearch;
-        })
-        .sort((a, b) => {
-            const dateA = new Date(a.dueDate);
-            const dateB = new Date(b.dueDate);
-            return dateB.getTime() - dateA.getTime();
-        });
+
 
     // 取得會員類型選項
     const memberTypes = Array.from(new Set(payments.map(p => p.memberType)));
