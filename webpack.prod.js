@@ -22,7 +22,7 @@ module.exports = {
             "os": false,
             "util": false,
             "crypto": false,
-            "process": path.resolve(__dirname, 'src/polyfills/process-browser.js')
+            "process": require.resolve("process/browser")
         },
         alias: {
             "xlsx": path.resolve(__dirname, 'node_modules/xlsx')
@@ -62,7 +62,11 @@ module.exports = {
             ]
         }),
         new webpack.DefinePlugin({
-            'process.env.NODE_ENV': JSON.stringify('production')
+            'process.env.NODE_ENV': JSON.stringify('production'),
+            'process.env': JSON.stringify({})
+        }),
+        new webpack.ProvidePlugin({
+            process: require.resolve('process/browser')
         })
     ],
     optimization: {

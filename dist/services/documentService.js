@@ -171,8 +171,8 @@ class DocumentService {
                                                 type: docx_1.WidthType.PERCENTAGE
                                             },
                                             children: [
-                                                new docx_1.Paragraph(`名稱：${invoice.sellerName}`),
-                                                new docx_1.Paragraph(`統一編號：${invoice.sellerTaxId}`)
+                                                new docx_1.Paragraph(`名稱：${invoice.sellerName || '測試公司'}`),
+                                                new docx_1.Paragraph(`統一編號：${invoice.sellerTaxId || '12345678'}`)
                                             ]
                                         })
                                     ]
@@ -471,8 +471,8 @@ class DocumentService {
                                                 type: docx_1.WidthType.PERCENTAGE
                                             },
                                             children: [
-                                                new docx_1.Paragraph(`名稱：${invoice.sellerName}`),
-                                                new docx_1.Paragraph(`統一編號：${invoice.sellerTaxId}`)
+                                                new docx_1.Paragraph(`名稱：${invoice.sellerName || '測試公司'}`),
+                                                new docx_1.Paragraph(`統一編號：${invoice.sellerTaxId || '12345678'}`)
                                             ]
                                         })
                                     ]
@@ -493,8 +493,8 @@ class DocumentService {
                                                     type: docx_1.WidthType.PERCENTAGE
                                                 },
                                                 children: [
-                                                    new docx_1.Paragraph(`名稱：${invoice.buyerName}`),
-                                                    new docx_1.Paragraph(`統一編號：${invoice.buyerTaxId}`)
+                                                    new docx_1.Paragraph(`名稱：${invoice.buyerName || ''}`),
+                                                    new docx_1.Paragraph(`統一編號：${invoice.buyerTaxId || ''}`)
                                                 ]
                                             })
                                         ]
@@ -549,31 +549,58 @@ class DocumentService {
                                         })
                                     ]
                                 }),
-                                ...invoice.items.map(item => new docx_1.TableRow({
-                                    children: [
-                                        new docx_1.TableCell({
-                                            children: [new docx_1.Paragraph(item.description)]
-                                        }),
-                                        new docx_1.TableCell({
-                                            children: [new docx_1.Paragraph({
-                                                    text: item.quantity.toString(),
-                                                    alignment: docx_1.AlignmentType.RIGHT
-                                                })]
-                                        }),
-                                        new docx_1.TableCell({
-                                            children: [new docx_1.Paragraph({
-                                                    text: (0, numberUtils_1.formatCurrency)(item.unitPrice),
-                                                    alignment: docx_1.AlignmentType.RIGHT
-                                                })]
-                                        }),
-                                        new docx_1.TableCell({
-                                            children: [new docx_1.Paragraph({
-                                                    text: (0, numberUtils_1.formatCurrency)(item.amount),
-                                                    alignment: docx_1.AlignmentType.RIGHT
-                                                })]
-                                        })
-                                    ]
-                                }))
+                                ...(invoice.items && invoice.items.length > 0 ?
+                                    invoice.items.map(item => new docx_1.TableRow({
+                                        children: [
+                                            new docx_1.TableCell({
+                                                children: [new docx_1.Paragraph(item.description)]
+                                            }),
+                                            new docx_1.TableCell({
+                                                children: [new docx_1.Paragraph({
+                                                        text: item.quantity.toString(),
+                                                        alignment: docx_1.AlignmentType.RIGHT
+                                                    })]
+                                            }),
+                                            new docx_1.TableCell({
+                                                children: [new docx_1.Paragraph({
+                                                        text: (0, numberUtils_1.formatCurrency)(item.unitPrice),
+                                                        alignment: docx_1.AlignmentType.RIGHT
+                                                    })]
+                                            }),
+                                            new docx_1.TableCell({
+                                                children: [new docx_1.Paragraph({
+                                                        text: (0, numberUtils_1.formatCurrency)(item.amount),
+                                                        alignment: docx_1.AlignmentType.RIGHT
+                                                    })]
+                                            })
+                                        ]
+                                    })) : [
+                                    new docx_1.TableRow({
+                                        children: [
+                                            new docx_1.TableCell({
+                                                children: [new docx_1.Paragraph('會費')]
+                                            }),
+                                            new docx_1.TableCell({
+                                                children: [new docx_1.Paragraph({
+                                                        text: '1',
+                                                        alignment: docx_1.AlignmentType.RIGHT
+                                                    })]
+                                            }),
+                                            new docx_1.TableCell({
+                                                children: [new docx_1.Paragraph({
+                                                        text: (0, numberUtils_1.formatCurrency)(invoice.amount),
+                                                        alignment: docx_1.AlignmentType.RIGHT
+                                                    })]
+                                            }),
+                                            new docx_1.TableCell({
+                                                children: [new docx_1.Paragraph({
+                                                        text: (0, numberUtils_1.formatCurrency)(invoice.amount),
+                                                        alignment: docx_1.AlignmentType.RIGHT
+                                                    })]
+                                            })
+                                        ]
+                                    })
+                                ])
                             ]
                         }),
                         new docx_1.Paragraph({
@@ -590,7 +617,7 @@ class DocumentService {
                             alignment: docx_1.AlignmentType.RIGHT,
                             children: [
                                 new docx_1.TextRun({
-                                    text: `營業稅：${(0, numberUtils_1.formatCurrency)(invoice.taxAmount)}`,
+                                    text: `營業稅：${(0, numberUtils_1.formatCurrency)(invoice.taxAmount || 0)}`,
                                     size: 24
                                 })
                             ]
@@ -599,7 +626,7 @@ class DocumentService {
                             alignment: docx_1.AlignmentType.RIGHT,
                             children: [
                                 new docx_1.TextRun({
-                                    text: `總計：${(0, numberUtils_1.formatCurrency)(invoice.amount + invoice.taxAmount)}`,
+                                    text: `總計：${(0, numberUtils_1.formatCurrency)(invoice.amount + (invoice.taxAmount || 0))}`,
                                     size: 24,
                                     bold: true
                                 })

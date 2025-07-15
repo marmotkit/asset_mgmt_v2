@@ -2,7 +2,24 @@ import { Company } from '../types/company';
 import axios from 'axios';
 
 class CompanyService {
-    private readonly API_BASE_URL = process.env.REACT_APP_API_URL || 'https://asset-mgmt-backend.onrender.com';
+    private readonly API_BASE_URL = (() => {
+        if (typeof window === 'undefined') return 'https://asset-mgmt-backend.onrender.com';
+
+        // 優先使用環境配置
+        if (window.ENV && window.ENV.API_URL) {
+            return window.ENV.API_URL;
+        }
+
+        const hostname = window.location.hostname;
+        const isRender = hostname.includes('render.com') || hostname.includes('onrender.com');
+        const baseUrl = isRender
+            ? 'https://asset-mgmt-api-clean.onrender.com/api'  // 雲端後端 API 地址
+            : (hostname === 'localhost' || hostname === '127.0.0.1'
+                ? '/api'  // 本地開發環境
+                : 'https://asset-mgmt-api-clean.onrender.com/api'); // 其他環境也用雲端地址
+
+        return baseUrl;
+    })();
 
     private getAuthToken(): string | null {
         return localStorage.getItem('token');

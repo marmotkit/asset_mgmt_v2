@@ -174,6 +174,17 @@ const FeeReport = () => {
         if (columnId === 'hasInvoice') {
             return invoiceStatus[record.id] ? '是' : '否';
         }
+        // 特殊處理繳費日期格式
+        if (columnId === 'paymentDate') {
+            if (record.paymentDate) {
+                return new Date(record.paymentDate).toLocaleDateString('zh-TW', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            }
+            return '-';
+        }
         return record[columnId] || '-';
     };
     return ((0, jsx_runtime_1.jsxs)(material_1.Box, { children: [(0, jsx_runtime_1.jsxs)(material_1.Box, { sx: { mb: 3 }, children: [(0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "h6", sx: { mb: 2 }, children: "\u6703\u8CBB\u5831\u8868" }), (0, jsx_runtime_1.jsxs)(material_1.FormControl, { sx: { minWidth: 120 }, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { children: "\u9078\u64C7\u5E74\u5EA6" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { value: selectedYear, label: "\u9078\u64C7\u5E74\u5EA6", onChange: (e) => setSelectedYear(e.target.value), size: "small", children: [(0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "all", children: "\u5168\u90E8" }), yearOptions.map(year => ((0, jsx_runtime_1.jsxs)(material_1.MenuItem, { value: year, children: [year, "\u5E74"] }, year)))] })] })] }), (0, jsx_runtime_1.jsxs)(material_1.Grid, { container: true, spacing: 3, sx: { mb: 4 }, children: [(0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, md: 4, children: (0, jsx_runtime_1.jsx)(material_1.Card, { sx: { height: '100%', minHeight: 200 }, children: (0, jsx_runtime_1.jsxs)(material_1.CardContent, { sx: {

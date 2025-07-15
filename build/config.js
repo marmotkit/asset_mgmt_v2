@@ -1,1 +1,1 @@
-window.APP_CONFIG={API_BASE_URL:"https://asset-mgmt-api.onrender.com/api",APP_NAME:"資產管理系統",VERSION:"2.0.0",IS_DEV:!1,IS_RENDER:window.location.hostname.includes("onrender.com"),DEBUG_MODE:!1,LOG_LEVEL:"info"};
+window.APP_CONFIG={API_BASE_URL:"https://asset-mgmt-api-clean.onrender.com/api",APP_NAME:"資產管理系統",VERSION:"2.0.0",IS_DEV:!1,IS_RENDER:window.location.hostname.includes("onrender.com"),DEBUG_MODE:!1,LOG_LEVEL:"info"};

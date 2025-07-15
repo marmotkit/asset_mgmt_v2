@@ -1,8 +1,15 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.feeHistoryService = void 0;
+exports.apiGet = apiGet;
+exports.getHistoriesFromApi = getHistoriesFromApi;
 const uuid_1 = require("uuid");
 const storageService_1 = require("./storageService");
+const api_service_1 = require("./api.service");
+const axios_1 = __importDefault(require("axios"));
 const STORAGE_KEY = 'fee_history';
 class FeeHistoryService {
     constructor() {
@@ -20,17 +27,37 @@ class FeeHistoryService {
         }
     }
     async getHistories(filter) {
-        await this.loadHistories();
-        if (!filter)
-            return this.histories;
-        return this.histories.filter(history => {
-            const matchStatus = !filter.status || history.action.includes(filter.status);
-            const matchMember = !filter.memberId || history.memberId === filter.memberId;
-            const matchUser = !filter.userId || history.memberId === filter.userId;
-            const matchDate = (!filter.startDate || history.date >= filter.startDate) &&
-                (!filter.endDate || history.date <= filter.endDate);
-            return matchStatus && matchMember && matchUser && matchDate;
-        });
+        try {
+            // 使用雲端 API 獲取資料
+            const histories = await getHistoriesFromApi(filter);
+            // 如果沒有 filter，直接回傳所有資料
+            if (!filter)
+                return histories;
+            // 如果有 filter，進行本地篩選
+            return histories.filter(history => {
+                const matchStatus = !filter.status || history.status === filter.status;
+                const matchMember = !filter.memberId || history.memberId === filter.memberId;
+                const matchUser = !filter.userId || history.memberId === filter.userId;
+                const matchDate = (!filter.startDate || history.date >= filter.startDate) &&
+                    (!filter.endDate || history.date <= filter.endDate);
+                return matchStatus && matchMember && matchUser && matchDate;
+            });
+        }
+        catch (error) {
+            console.error('從 API 獲取歷史記錄失敗:', error);
+            // 如果 API 失敗，回退到 localStorage
+            await this.loadHistories();
+            if (!filter)
+                return this.histories;
+            return this.histories.filter(history => {
+                const matchStatus = !filter.status || history.action.includes(filter.status);
+                const matchMember = !filter.memberId || history.memberId === filter.memberId;
+                const matchUser = !filter.userId || history.memberId === filter.userId;
+                const matchDate = (!filter.startDate || history.date >= filter.startDate) &&
+                    (!filter.endDate || history.date <= filter.endDate);
+                return matchStatus && matchMember && matchUser && matchDate;
+            });
+        }
     }
     async addHistory(record) {
         await this.loadHistories();
@@ -66,7 +93,8 @@ class FeeHistoryService {
         return true;
     }
     async exportToExcel(filter) {
-        const histories = await this.getHistories(filter);
+        // 直接從雲端 API 取得資料
+        const histories = await getHistoriesFromApi(filter);
         // 建立 CSV 內容
         const headers = [
             '會員編號',
@@ -81,19 +109,22 @@ class FeeHistoryService {
             '狀態',
             '備註'
         ];
-        const rows = histories.map(h => [
-            h.memberId,
-            h.memberName,
-            h.memberType,
-            h.action,
-            h.amount.toString(),
-            h.date,
-            h.dueDate,
-            h.paymentDate || '',
-            h.paymentMethod || '',
-            h.status,
-            h.note
-        ]);
+        const rows = histories.map(h => {
+            var _a, _b, _c;
+            return [
+                h.memberId,
+                h.memberName,
+                h.memberType,
+                h.action,
+                (_c = (_b = (_a = h.amount) === null || _a === void 0 ? void 0 : _a.toString) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : '',
+                h.date,
+                h.dueDate,
+                h.paymentDate || '',
+                h.paymentMethod || '',
+                h.status,
+                h.note
+            ];
+        });
         const csvContent = [
             headers.join(','),
             ...rows.map(row => row.join(','))
@@ -236,3 +267,43 @@ const exportToExcel = async (filter) => {
     const csvContentWithBOM = BOM + csvContent;
     return new Blob([csvContentWithBOM], { type: 'text/csv;charset=utf-8' });
 };
+// 取得 API_BASE_URL
+function getApiBaseUrl() {
+    // @ts-ignore
+    return api_service_1.ApiService.API_BASE_URL || '';
+}
+// 取得 API 資料的工具
+async function apiGet(url, params) {
+    const token = localStorage.getItem('token');
+    const baseURL = getApiBaseUrl();
+    const response = await axios_1.default.get(baseURL + url, {
+        params,
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+    return response.data;
+}
+async function getHistoriesFromApi(filter) {
+    const params = { isHistoryPage: true };
+    const data = await apiGet('/fees', params);
+    return (data || []).map((item) => ({
+        id: item.id,
+        memberId: item.memberId,
+        memberName: item.memberName,
+        memberType: item.memberType,
+        amount: item.amount,
+        dueDate: item.dueDate,
+        paymentDate: item.paidDate,
+        paymentMethod: item.paymentMethod,
+        status: item.status,
+        note: item.note,
+        action: item.status,
+        date: item.paidDate || item.dueDate,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        userId: item.memberId || '',
+        userName: item.memberName || '',
+        paymentId: item.id || ''
+    }));
+}

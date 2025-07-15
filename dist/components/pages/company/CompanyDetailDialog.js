@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = require("react");
 const material_1 = require("@mui/material");
-const api_service_1 = require("../../../services/api.service");
+const companyService_1 = require("../../../services/companyService");
 const INDUSTRY_OPTIONS = [
     'technology',
     'finance',
@@ -38,7 +38,7 @@ const CompanyDetailDialog = ({ open, onClose, companyData, onSave, }) => {
             else {
                 // 如果是新增公司，先取得新的公司編號
                 try {
-                    const newCompanyNo = await api_service_1.ApiService.getNewCompanyNo();
+                    const newCompanyNo = await companyService_1.companyService.getNewCompanyNo();
                     setFormData({
                         companyNo: newCompanyNo,
                         taxId: '',

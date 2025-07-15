@@ -7,7 +7,7 @@ const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = require("react");
 const material_1 = require("@mui/material");
 const icons_material_1 = require("@mui/icons-material");
-const services_1 = require("../../../services");
+const companyService_1 = require("../../../services/companyService");
 const LoadingSpinner_1 = __importDefault(require("../../common/LoadingSpinner"));
 const ErrorAlert_1 = __importDefault(require("../../common/ErrorAlert"));
 const CompanyDetailDialog_1 = __importDefault(require("./CompanyDetailDialog"));
@@ -24,7 +24,7 @@ const CompanyManagement = () => {
     const loadCompanies = async () => {
         setLoading(true);
         try {
-            const data = await services_1.ApiService.getCompanies();
+            const data = await companyService_1.companyService.getCompanies();
             setCompanies(data);
         }
         catch (err) {
@@ -47,7 +47,7 @@ const CompanyManagement = () => {
             return;
         setLoading(true);
         try {
-            await services_1.ApiService.deleteCompany(id);
+            await companyService_1.companyService.deleteCompany(id);
             await loadCompanies();
         }
         catch (err) {
@@ -61,10 +61,10 @@ const CompanyManagement = () => {
         setLoading(true);
         try {
             if (companyData.id) {
-                await services_1.ApiService.updateCompany(companyData.id, companyData);
+                await companyService_1.companyService.updateCompany(companyData.id, companyData);
             }
             else {
-                await services_1.ApiService.createCompany(companyData);
+                await companyService_1.companyService.createCompany(companyData);
             }
             await loadCompanies();
             setDialogOpen(false);
