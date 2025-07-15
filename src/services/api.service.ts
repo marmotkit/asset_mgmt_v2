@@ -582,6 +582,16 @@ export class ApiService {
         }
     }
 
+    public static async getAvailableInvestmentsForRentalPayments(): Promise<Investment[]> {
+        try {
+            const response = await apiClient.get<Investment[]>('/rental-standards/available-investments');
+            return response.data;
+        } catch (error) {
+            console.error('獲取有租賃標準的投資項目失敗:', error);
+            throw new Error('獲取有租賃標準的投資項目失敗');
+        }
+    }
+
     public static async createProfitSharingStandard(data: Partial<ProfitSharingStandard>): Promise<ProfitSharingStandard> {
         try {
             const response = await apiClient.post<ProfitSharingStandard>('/profit-sharing-standards', data);

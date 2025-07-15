@@ -55,12 +55,14 @@ interface InvestmentSelection {
 
 const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
     const [rentalPayments, setRentalPayments] = useState<RentalPayment[]>([]);
+    const [availableInvestments, setAvailableInvestments] = useState<Investment[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedPayment, setSelectedPayment] = useState<RentalPayment | null>(null);
     const [yearFilter, setYearFilter] = useState<number>(new Date().getFullYear());
     const [monthFilter, setMonthFilter] = useState<number>(new Date().getMonth() + 1);
+    const [showAllYear, setShowAllYear] = useState<boolean>(false);
     const { enqueueSnackbar } = useSnackbar();
     const [formData, setFormData] = useState<Partial<RentalPayment>>({
         investmentId: '',
@@ -84,13 +86,21 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
 
     useEffect(() => {
         loadData();
-    }, [yearFilter, monthFilter]);
+    }, [yearFilter, monthFilter, showAllYear]);
 
     const loadData = async () => {
         setLoading(true);
         try {
+            // 載入有租賃標準的投資項目
+            const availableInvestmentsData = await ApiService.getAvailableInvestmentsForRentalPayments();
+            setAvailableInvestments(availableInvestmentsData);
+
             // 載入租金收款資料
-            const paymentsData = await ApiService.getRentalPayments(undefined, yearFilter, monthFilter);
+            const paymentsData = await ApiService.getRentalPayments(
+                undefined,
+                yearFilter,
+                showAllYear ? undefined : monthFilter
+            );
 
             // 載入所有相關的租賃標準
             const investmentIds = Array.from(new Set(paymentsData.map(p => p.investmentId)));
@@ -137,8 +147,8 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
             // 載入最新的收款資料以檢查重複
             const existingPayments = await ApiService.getRentalPayments(undefined, yearFilter);
 
-            // 準備投資項目選擇清單
-            const selections: InvestmentSelection[] = investments.map(inv => ({
+            // 準備有租賃標準的投資項目選擇清單
+            const selections: InvestmentSelection[] = availableInvestments.map(inv => ({
                 id: inv.id,
                 name: inv.name,
                 selected: false,
@@ -160,8 +170,8 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
     // 確認清除租金項目
     const handleClearConfirm = async () => {
         try {
-            await ApiService.clearRentalPayments(yearFilter, monthFilter);
-            enqueueSnackbar(`已清除 ${yearFilter}年${monthFilter ? monthFilter + '月' : ''}的租金項目`, { variant: 'success' });
+            await ApiService.clearRentalPayments(yearFilter, showAllYear ? undefined : monthFilter);
+            enqueueSnackbar(`已清除 ${yearFilter}年${showAllYear ? '' : monthFilter + '月'}的租金項目`, { variant: 'success' });
             await loadData();
         } catch (err) {
             enqueueSnackbar('清除租金項目失敗', { variant: 'error' });
@@ -411,6 +421,7 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
                             value={monthFilter.toString()}
                             label="月份"
                             onChange={(e) => setMonthFilter(Number(e.target.value))}
+                            disabled={showAllYear}
                             inputProps={{
                                 'aria-labelledby': 'month-filter-label'
                             }}
@@ -426,6 +437,21 @@ const RentalPaymentTab: React.FC<RentalPaymentTabProps> = ({ investments }) => {
                             ))}
                         </Select>
                     </FormControl>
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={showAllYear}
+                                onChange={(e) => {
+                                    setShowAllYear(e.target.checked);
+                                    if (e.target.checked) {
+                                        setMonthFilter(new Date().getMonth() + 1);
+                                    }
+                                }}
+                            />
+                        }
+                        label="當年度"
+                        sx={{ mr: 2 }}
+                    />
                     <Button
                         variant="contained"
                         startIcon={<RefreshIcon />}
