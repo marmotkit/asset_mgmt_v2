@@ -25,6 +25,9 @@ import memberProfitRoutes from './routes/member-profit.routes';
 import feeRoutes from './routes/fee.routes';
 import feeSettingsRoutes from './routes/fee-settings.routes';
 import documentsRoutes from './routes/documents.routes';
+import annualActivitiesRoutes from './routes/annual-activities.routes';
+import activityRegistrationsRoutes from './routes/activity-registrations.routes';
+import memberCaresRoutes from './routes/member-cares.routes';
 
 // 加載環境變量
 dotenv.config();
@@ -48,6 +51,9 @@ app.use('/api/member-profits', memberProfitRoutes);
 app.use('/api/fees', feeRoutes);
 app.use('/api/fee-settings', feeSettingsRoutes);
 app.use('/api/documents', documentsRoutes);
+app.use('/api/annual-activities', annualActivitiesRoutes);
+app.use('/api/activity-registrations', activityRegistrationsRoutes);
+app.use('/api/member-cares', memberCaresRoutes);
 
 // 基本路由測試
 app.get('/', (req, res) => {

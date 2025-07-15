@@ -27,6 +27,9 @@ const member_profit_routes_1 = __importDefault(require("./routes/member-profit.r
 const fee_routes_1 = __importDefault(require("./routes/fee.routes"));
 const fee_settings_routes_1 = __importDefault(require("./routes/fee-settings.routes"));
 const documents_routes_1 = __importDefault(require("./routes/documents.routes"));
+const annual_activities_routes_1 = __importDefault(require("./routes/annual-activities.routes"));
+const activity_registrations_routes_1 = __importDefault(require("./routes/activity-registrations.routes"));
+const member_cares_routes_1 = __importDefault(require("./routes/member-cares.routes"));
 // 加載環境變量
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -46,6 +49,9 @@ app.use('/api/member-profits', member_profit_routes_1.default);
 app.use('/api/fees', fee_routes_1.default);
 app.use('/api/fee-settings', fee_settings_routes_1.default);
 app.use('/api/documents', documents_routes_1.default);
+app.use('/api/annual-activities', annual_activities_routes_1.default);
+app.use('/api/activity-registrations', activity_registrations_routes_1.default);
+app.use('/api/member-cares', member_cares_routes_1.default);
 // 基本路由測試
 app.get('/', (req, res) => {
     res.send('資產管理系統 API 服務運行中');
