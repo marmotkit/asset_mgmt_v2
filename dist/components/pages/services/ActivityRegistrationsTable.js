@@ -92,7 +92,6 @@ const ActivityRegistrationsTable = ({ activityId, members, onReload }) => {
     };
     const handleStatusChange = (e) => {
         const newStatus = e.target.value;
-        console.log('狀態變更:', { oldStatus: registrationForm.status, newStatus }); // 除錯用
         setRegistrationForm({
             ...registrationForm,
             status: newStatus
@@ -129,14 +128,11 @@ const ActivityRegistrationsTable = ({ activityId, members, onReload }) => {
             setLoading(true);
             if (editMode && selectedRegistration) {
                 // 更新現有報名記錄
-                console.log('更新報名記錄，狀態:', registrationForm.status); // 除錯用
-                console.log('更新報名記錄，完整資料:', registrationForm); // 除錯用
                 const updateData = {
                     status: registrationForm.status,
                     notes: registrationForm.notes || '',
                     companions: registrationForm.companions || 0
                 };
-                console.log('發送到後端的資料:', updateData); // 除錯用
                 await memberServiceAPI_1.MemberServiceAPI.updateRegistration(selectedRegistration.id, updateData);
                 enqueueSnackbar('報名記錄更新成功', { variant: 'success' });
             }

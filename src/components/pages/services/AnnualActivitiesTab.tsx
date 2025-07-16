@@ -458,10 +458,23 @@ const AnnualActivitiesTab: React.FC = () => {
 
             enqueueSnackbar('報名成功！', { variant: 'success' });
             handleCloseRegistrationDialog();
+
+            // 重新載入活動列表和我的報名記錄
             await loadActivities();
             if (!isAdmin) {
                 await loadMyRegistrations();
             }
+
+            // 強制更新組件狀態
+            setRegistrationForm({
+                activityId: '',
+                memberName: '',
+                totalParticipants: 1,
+                maleCount: 0,
+                femaleCount: 0,
+                phoneNumber: '',
+                notes: ''
+            });
         } catch (error: any) {
             console.error('報名失敗', error);
             enqueueSnackbar(error.message || '報名失敗', { variant: 'error' });
@@ -704,14 +717,23 @@ const AnnualActivitiesTab: React.FC = () => {
                                                         </>
                                                     ) : (
                                                         activity.status === ActivityStatus.REGISTRATION && activity.isVisible && (
-                                                            <Button
-                                                                variant="contained"
-                                                                size="small"
-                                                                startIcon={<PersonAddIcon />}
-                                                                onClick={() => handleOpenRegistrationDialog(activity)}
-                                                            >
-                                                                報名活動
-                                                            </Button>
+                                                            // 檢查是否已經報名過這個活動
+                                                            myRegistrations.some(reg => reg.activityId === activity.id) ? (
+                                                                <Chip
+                                                                    label="已報名"
+                                                                    color="success"
+                                                                    size="small"
+                                                                />
+                                                            ) : (
+                                                                <Button
+                                                                    variant="contained"
+                                                                    size="small"
+                                                                    startIcon={<PersonAddIcon />}
+                                                                    onClick={() => handleOpenRegistrationDialog(activity)}
+                                                                >
+                                                                    報名活動
+                                                                </Button>
+                                                            )
                                                         )
                                                     )}
                                                 </TableCell>
