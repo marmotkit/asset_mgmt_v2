@@ -60,9 +60,16 @@ const ActivityRegistrationsTable = ({ activityId, members, onReload }) => {
             setSelectedRegistration(registration);
         }
         else {
+            // 新增報名時，自動帶出當前登入會員資訊
+            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            console.log('當前用戶資訊:', currentUser); // 除錯用
+            // 找到對應的會員ID
+            const currentMember = members.find(m => m.id === currentUser.id ||
+                m.name === currentUser.name ||
+                m.username === currentUser.username);
             setRegistrationForm({
                 activityId,
-                memberId: '',
+                memberId: (currentMember === null || currentMember === void 0 ? void 0 : currentMember.id) || '',
                 companions: 0,
                 notes: '',
                 status: services_1.RegistrationStatus.PENDING

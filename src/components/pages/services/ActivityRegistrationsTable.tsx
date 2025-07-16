@@ -97,9 +97,20 @@ const ActivityRegistrationsTable: React.FC<ActivityRegistrationsTableProps> = ({
             setEditMode(true);
             setSelectedRegistration(registration);
         } else {
+            // 新增報名時，自動帶出當前登入會員資訊
+            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            console.log('當前用戶資訊:', currentUser); // 除錯用
+
+            // 找到對應的會員ID
+            const currentMember = members.find(m =>
+                m.id === currentUser.id ||
+                m.name === currentUser.name ||
+                m.username === currentUser.username
+            );
+
             setRegistrationForm({
                 activityId,
-                memberId: '',
+                memberId: currentMember?.id || '',
                 companions: 0,
                 notes: '',
                 status: RegistrationStatus.PENDING

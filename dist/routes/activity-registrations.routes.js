@@ -149,10 +149,12 @@ router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
             INSERT INTO activity_registrations (
                 activity_id, member_id, member_name, phone_number, 
                 total_participants, male_count, female_count, 
-                status, notes, registration_date
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
+                status, notes, registration_date, companions
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, $10)
             RETURNING *
         `;
+        // 計算隨行人數：總人數 - 1（報名者本人）
+        const companions = Math.max(0, (totalParticipants || 1) - 1);
         const values = [
             activityId,
             memberId || null,
@@ -162,7 +164,8 @@ router.post('/', auth_middleware_1.authMiddleware, async (req, res) => {
             maleCount || 0,
             femaleCount || 0,
             'pending',
-            notes || ''
+            notes || '',
+            companions
         ];
         const result = await client.query(query, values);
         res.status(201).json(result.rows[0]);
