@@ -86,8 +86,13 @@ const ActivityRegistrationsTable: React.FC<ActivityRegistrationsTableProps> = ({
 
     const handleOpenDialog = (registration?: ActivityRegistration) => {
         if (registration) {
+            console.log('編輯報名記錄:', registration); // 除錯用
             setRegistrationForm({
-                ...registration
+                activityId: registration.activityId,
+                memberId: registration.memberId,
+                companions: registration.companions || 0,
+                notes: registration.notes || '',
+                status: registration.status
             });
             setEditMode(true);
             setSelectedRegistration(registration);
@@ -314,7 +319,7 @@ const ActivityRegistrationsTable: React.FC<ActivityRegistrationsTableProps> = ({
                                     <TableRow key={registration.id}>
                                         <TableCell>{getMemberName(registration.memberId, registration.memberName)}</TableCell>
                                         <TableCell>{formatDate(registration.registrationDate)}</TableCell>
-                                        <TableCell>{registration.companions} 人</TableCell>
+                                        <TableCell>{registration.companions || 0} 人</TableCell>
                                         <TableCell>{registration.notes}</TableCell>
                                         <TableCell>{getStatusChip(registration.status)}</TableCell>
                                         <TableCell align="right">

@@ -121,7 +121,25 @@ class MemberServiceAPI {
             if (!response.ok) {
                 throw new Error('載入活動報名記錄失敗');
             }
-            return await response.json();
+            const data = await response.json();
+            // 轉換API回傳的snake_case格式為camelCase格式
+            return data.map((item) => ({
+                id: item.id,
+                activityId: item.activity_id,
+                memberId: item.member_id,
+                registrationDate: item.registration_date,
+                status: item.status,
+                notes: item.notes,
+                companions: item.companions || 0,
+                specialRequests: item.special_requests,
+                memberName: item.member_name,
+                phoneNumber: item.phone_number,
+                totalParticipants: item.total_participants,
+                maleCount: item.male_count,
+                femaleCount: item.female_count,
+                createdAt: item.created_at,
+                updatedAt: item.updated_at
+            }));
         }
         catch (error) {
             console.error('獲取活動報名記錄失敗:', error);
