@@ -126,7 +126,9 @@ const JournalTab: React.FC = () => {
         setLoading(true);
         try {
             const data = await accountingJournalService.getJournalEntries();
-            setRecords(data);
+            // 確保資料是陣列格式
+            const recordsArray = Array.isArray(data) ? data : [];
+            setRecords(recordsArray);
         } catch (error) {
             console.error('獲取帳務記錄失敗:', error);
             setSnackbar({
@@ -134,6 +136,8 @@ const JournalTab: React.FC = () => {
                 message: '獲取帳務記錄失敗',
                 severity: 'error'
             });
+            // 確保錯誤時也設置為空陣列
+            setRecords([]);
         } finally {
             setLoading(false);
         }
@@ -142,26 +146,34 @@ const JournalTab: React.FC = () => {
     const loadAccounts = async () => {
         try {
             const data = await accountingJournalService.getAccounts();
-            setAccounts(data);
+            // 確保資料是陣列格式
+            const accountsArray = Array.isArray(data) ? data : [];
+            setAccounts(accountsArray);
         } catch (error) {
             setSnackbar({
                 open: true,
                 message: '取得會計科目失敗',
                 severity: 'error'
             });
+            // 確保錯誤時也設置為空陣列
+            setAccounts([]);
         }
     };
 
     const loadCategories = async () => {
         try {
             const data = await accountingJournalService.getCategories();
-            setCategories(data);
+            // 確保資料是陣列格式
+            const categoriesArray = Array.isArray(data) ? data : [];
+            setCategories(categoriesArray);
         } catch (error) {
             setSnackbar({
                 open: true,
                 message: '取得交易類別失敗',
                 severity: 'error'
             });
+            // 確保錯誤時也設置為空陣列
+            setCategories([]);
         }
     };
 
