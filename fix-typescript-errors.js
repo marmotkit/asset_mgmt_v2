@@ -1,60 +1,86 @@
 const fs = require('fs');
 const path = require('path');
 
-// 修正 accounting-journal.routes.ts
-const journalPath = 'src/routes/accounting-journal.routes.ts';
-let journalContent = fs.readFileSync(journalPath, 'utf8');
-journalContent = journalContent.replace(
-    /const total = parseInt\(countResult\[0\]\.total\);/g,
-    'const total = parseInt((countResult[0] as any).total);'
-);
-fs.writeFileSync(journalPath, journalContent);
-console.log('✓ 修正 accounting-journal.routes.ts');
+// 修正 accounting-reports.routes.ts 中的類型錯誤
+function fixAccountingReportsRoutes() {
+    const filePath = path.join(__dirname, 'src', 'routes', 'accounting-reports.routes.ts');
 
-// 修正 accounting-receivables.routes.ts
-const receivablesPath = 'src/routes/accounting-receivables.routes.ts';
-let receivablesContent = fs.readFileSync(receivablesPath, 'utf8');
-receivablesContent = receivablesContent.replace(
-    /const total = parseInt\(countResult\[0\]\.total\);/g,
-    'const total = parseInt((countResult[0] as any).total);'
-);
-receivablesContent = receivablesContent.replace(
-    /if \(existing\[0\]\.status === 'paid'\)/g,
-    "if ((existing[0] as any).status === 'paid')"
-);
-receivablesContent = receivablesContent.replace(
-    /const receivable = existing\[0\];/g,
-    'const receivable = existing[0] as any;'
-);
-fs.writeFileSync(receivablesPath, receivablesContent);
-console.log('✓ 修正 accounting-receivables.routes.ts');
+    if (!fs.existsSync(filePath)) {
+        console.log('accounting-reports.routes.ts 檔案不存在');
+        return;
+    }
 
-// 修正 accounting-payables.routes.ts
-const payablesPath = 'src/routes/accounting-payables.routes.ts';
-let payablesContent = fs.readFileSync(payablesPath, 'utf8');
-payablesContent = payablesContent.replace(
-    /const total = parseInt\(countResult\[0\]\.total\);/g,
-    'const total = parseInt((countResult[0] as any).total);'
-);
-payablesContent = payablesContent.replace(
-    /if \(\(existing\[0\] as any\)\.status === 'paid'\)/g,
-    "if ((existing[0] as any).status === 'paid')"
-);
-payablesContent = payablesContent.replace(
-    /const payable = existing\[0\] as any;/g,
-    'const payable = existing[0] as any;'
-);
-fs.writeFileSync(payablesPath, payablesContent);
-console.log('✓ 修正 accounting-payables.routes.ts');
+    let content = fs.readFileSync(filePath, 'utf8');
 
-// 修正 accounting-monthly-closings.routes.ts
-const closingsPath = 'src/routes/accounting-monthly-closings.routes.ts';
-let closingsContent = fs.readFileSync(closingsPath, 'utf8');
-closingsContent = closingsContent.replace(
-    /const total = parseInt\(countResult\[0\]\.total\);/g,
-    'const total = parseInt((countResult[0] as any).total);'
-);
-fs.writeFileSync(closingsPath, closingsContent);
-console.log('✓ 修正 accounting-monthly-closings.routes.ts');
+    // 修正所有 Sequelize 查詢結果的類型錯誤
+    const fixes = [
+        // 修正損益表計算
+        {
+            from: /const totalRevenue = revenue\.reduce\(/g,
+            to: 'const totalRevenue = (revenue as any[]).reduce('
+        },
+        {
+            from: /const totalExpenses = expenses\.reduce\(/g,
+            to: 'const totalExpenses = (expenses as any[]).reduce('
+        },
 
-console.log('🎉 所有 TypeScript 類型錯誤修正完成！'); 
+        // 修正資產負債表計算
+        {
+            from: /const totalAssets = assets\.reduce\(/g,
+            to: 'const totalAssets = (assets as any[]).reduce('
+        },
+        {
+            from: /const totalLiabilities = liabilities\.reduce\(/g,
+            to: 'const totalLiabilities = (liabilities as any[]).reduce('
+        },
+        {
+            from: /const totalEquity = equity\.reduce\(/g,
+            to: 'const totalEquity = (equity as any[]).reduce('
+        },
+
+        // 修正現金流量表計算
+        {
+            from: /const operatingCashFlow = operatingActivities\.reduce\(/g,
+            to: 'const operatingCashFlow = (operatingActivities as any[]).reduce('
+        },
+        {
+            from: /const investingCashFlow = investingActivities\.reduce\(/g,
+            to: 'const investingCashFlow = (investingActivities as any[]).reduce('
+        },
+        {
+            from: /const financingCashFlow = financingActivities\.reduce\(/g,
+            to: 'const financingCashFlow = (financingActivities as any[]).reduce('
+        },
+
+        // 修正科目餘額表計算
+        {
+            from: /const totalDebit = trialBalance\.reduce\(/g,
+            to: 'const totalDebit = (trialBalance as any[]).reduce('
+        },
+        {
+            from: /const totalCredit = trialBalance\.reduce\(/g,
+            to: 'const totalCredit = (trialBalance as any[]).reduce('
+        }
+    ];
+
+    let fixed = false;
+    fixes.forEach(fix => {
+        if (content.match(fix.from)) {
+            content = content.replace(fix.from, fix.to);
+            fixed = true;
+            console.log(`已修正: ${fix.from.source}`);
+        }
+    });
+
+    if (fixed) {
+        fs.writeFileSync(filePath, content, 'utf8');
+        console.log('✅ accounting-reports.routes.ts 類型錯誤修正完成');
+    } else {
+        console.log('ℹ️ accounting-reports.routes.ts 無需修正');
+    }
+}
+
+// 執行修正
+console.log('🔧 開始修正 TypeScript 類型錯誤...');
+fixAccountingReportsRoutes();
+console.log('✅ 所有類型錯誤修正完成！'); 

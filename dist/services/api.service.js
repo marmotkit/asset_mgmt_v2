@@ -886,25 +886,68 @@ class ApiService {
     }
     // 記錄其他異常事件
     static async recordAnomaly(data) {
-        // 從本地存儲獲取異常記錄
-        const storedAnomalies = localStorage.getItem('anomalies') || '[]';
-        const anomalies = JSON.parse(storedAnomalies);
-        // 建立新的異常記錄
-        const newAnomaly = {
-            id: crypto.randomUUID(),
-            ...data,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        // 添加到列表並儲存
-        anomalies.push(newAnomaly);
-        localStorage.setItem('anomalies', JSON.stringify(anomalies));
-        return Promise.resolve(newAnomaly);
+        try {
+            console.log('【API】調用真實 API 新增異常記錄');
+            const response = await this.post('/anomalies', data);
+            console.log('【API】新增異常記錄回應:', response);
+            return response.data;
+        }
+        catch (error) {
+            console.error('【API】新增異常記錄失敗:', error);
+            throw error;
+        }
     }
     // 獲取異常記錄列表
     static async getAnomalies() {
-        const storedAnomalies = localStorage.getItem('anomalies') || '[]';
-        return Promise.resolve(JSON.parse(storedAnomalies));
+        try {
+            console.log('【API】調用真實 API 獲取異常記錄');
+            const response = await this.get('/anomalies');
+            console.log('【API】異常記錄回應:', response);
+            return Array.isArray(response.data) ? response.data : [];
+        }
+        catch (error) {
+            console.error('【API】獲取異常記錄失敗:', error);
+            return [];
+        }
+    }
+    // 獲取單一異常記錄
+    static async getAnomaly(id) {
+        try {
+            console.log('【API】調用真實 API 獲取異常記錄詳情');
+            const response = await this.get(`/anomalies/${id}`);
+            console.log('【API】異常記錄詳情回應:', response);
+            return response.data;
+        }
+        catch (error) {
+            console.error('【API】獲取異常記錄詳情失敗:', error);
+            throw error;
+        }
+    }
+    // 更新異常記錄
+    static async updateAnomaly(id, data) {
+        try {
+            console.log('【API】調用真實 API 更新異常記錄');
+            const response = await this.put(`/anomalies/${id}`, data);
+            console.log('【API】更新異常記錄回應:', response);
+            return response.data;
+        }
+        catch (error) {
+            console.error('【API】更新異常記錄失敗:', error);
+            throw error;
+        }
+    }
+    // 獲取異常記錄修改歷史
+    static async getAnomalyChanges(id) {
+        try {
+            console.log('【API】調用真實 API 獲取異常記錄修改歷史');
+            const response = await this.get(`/anomalies/${id}/changes`);
+            console.log('【API】異常記錄修改歷史回應:', response);
+            return Array.isArray(response.data) ? response.data : [];
+        }
+        catch (error) {
+            console.error('【API】獲取異常記錄修改歷史失敗:', error);
+            return [];
+        }
     }
     // 帳務管理功能
     // 日記帳功能
