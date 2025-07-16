@@ -37,6 +37,7 @@ import {
     Settings as SettingsIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
 import { InvestmentOpportunity, InvestmentFilter } from '../../../types/investment-opportunity';
 import { investmentOpportunityService } from '../../../services/investmentOpportunity.service';
 
@@ -166,6 +167,8 @@ const InvestmentDashboard: React.FC = () => {
         navigate('/investment-dashboard-management');
     };
 
+    const { user } = useAuth();
+
     return (
         <Box sx={{
             minHeight: '100vh',
@@ -199,22 +202,24 @@ const InvestmentDashboard: React.FC = () => {
                     </Typography>
 
                     {/* 管理按鈕 */}
-                    <Box sx={{ position: 'absolute', top: 0, right: 0 }}>
-                        <Tooltip title="管理投資標的">
-                            <IconButton
-                                onClick={handleManageClick}
-                                sx={{
-                                    color: 'white',
-                                    backgroundColor: 'rgba(255,255,255,0.2)',
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(255,255,255,0.3)',
-                                    }
-                                }}
-                            >
-                                <SettingsIcon />
-                            </IconButton>
-                        </Tooltip>
-                    </Box>
+                    {user?.role === 'admin' && (
+                        <Box sx={{ position: 'absolute', top: 0, right: 0 }}>
+                            <Tooltip title="管理投資標的">
+                                <IconButton
+                                    onClick={handleManageClick}
+                                    sx={{
+                                        color: 'white',
+                                        backgroundColor: 'rgba(255,255,255,0.2)',
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(255,255,255,0.3)',
+                                        }
+                                    }}
+                                >
+                                    <SettingsIcon />
+                                </IconButton>
+                            </Tooltip>
+                        </Box>
+                    )}
                 </Box>
 
                 {/* 搜尋和篩選區域 */}
