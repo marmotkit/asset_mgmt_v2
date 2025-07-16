@@ -105,8 +105,8 @@ const InvestmentDashboardManagement: React.FC = () => {
     const loadOpportunities = async () => {
         try {
             setLoading(true);
-            const data = await investmentOpportunityService.getAllOpportunities();
-            setOpportunities(Array.isArray(data) ? data : []);
+            const result = await investmentOpportunityService.getInvestmentOpportunities();
+            setOpportunities(result.opportunities || []);
         } catch (err) {
             setError('載入投資標的失敗');
             console.error('載入投資標的失敗:', err);
@@ -160,7 +160,7 @@ const InvestmentDashboardManagement: React.FC = () => {
     const handleDelete = async (id: number) => {
         if (window.confirm('確定要刪除此投資標的嗎？')) {
             try {
-                await investmentOpportunityService.deleteOpportunity(id);
+                await investmentOpportunityService.deleteInvestmentOpportunity(id.toString());
                 await loadOpportunities();
             } catch (err) {
                 setError('刪除投資標的失敗');
@@ -172,9 +172,9 @@ const InvestmentDashboardManagement: React.FC = () => {
     const handleSave = async () => {
         try {
             if (editingOpportunity) {
-                await investmentOpportunityService.updateOpportunity(editingOpportunity.id, formData);
+                await investmentOpportunityService.updateInvestmentOpportunity(editingOpportunity.id.toString(), formData);
             } else {
-                await investmentOpportunityService.createOpportunity(formData);
+                await investmentOpportunityService.createInvestmentOpportunity(formData);
             }
             setDialogOpen(false);
             await loadOpportunities();
