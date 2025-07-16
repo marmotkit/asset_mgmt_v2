@@ -25,7 +25,9 @@ import {
     DialogActions,
     Snackbar,
     Alert,
-    TableSortLabel
+    TableSortLabel,
+    Chip,
+    FormHelperText
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -37,7 +39,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { AccountRecord } from '../../../../types/payment';
-import { journalApiService } from '../../../../services/accountingApi.service';
+import { accountingJournalService, JournalEntry, CreateJournalEntry } from '../../../../services/accountingJournal.service';
 
 // 排序類型定義
 type Order = 'asc' | 'desc';
