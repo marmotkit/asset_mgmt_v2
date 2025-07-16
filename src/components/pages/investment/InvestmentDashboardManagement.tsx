@@ -35,7 +35,7 @@ import {
     Delete as DeleteIcon,
     Visibility as ViewIcon
 } from '@mui/icons-material';
-import { investmentOpportunityService } from '../../../services/investmentOpportunityService';
+import { investmentOpportunityService } from '../../../services/investmentOpportunity.service';
 
 interface InvestmentOpportunity {
     id: number;
