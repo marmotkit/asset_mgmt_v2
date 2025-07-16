@@ -36,8 +36,8 @@ import {
     CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 import dayjs, { Dayjs } from 'dayjs';
-import { AccountReceivable } from '../../../types/payment';
-import { receivablesApiService } from '../../../services/accountingApi.service';
+import { AccountReceivable } from '../../../../types/payment';
+import { receivablesApiService } from '../../../../services/accountingApi.service';
 
 interface TabPanelProps {
     children?: React.ReactNode;
