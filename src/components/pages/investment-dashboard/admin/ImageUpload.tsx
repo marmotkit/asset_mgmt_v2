@@ -99,10 +99,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                     throw new Error(`檔案大小不能超過 ${maxFileSize}MB`);
                 }
 
-                // 轉換為 base64
-                const base64 = await fileToBase64(file);
+                // 壓縮圖片並轉換為 base64
+                const compressedBase64 = await compressAndConvertToBase64(file);
                 newImages.push({
-                    image_url: base64,
+                    image_url: compressedBase64,
                     image_type: 'gallery',
                     sort_order: images.length + newImages.length
                 });
@@ -119,6 +119,58 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         } finally {
             setUploading(false);
         }
+    };
+
+    // 壓縮圖片並轉換為 base64
+    const compressAndConvertToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+
+            img.onload = () => {
+                // 計算壓縮後的尺寸，最大寬度 800px
+                const maxWidth = 800;
+                const maxHeight = 600;
+                let { width, height } = img;
+
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+
+                if (height > maxHeight) {
+                    width = (width * maxHeight) / height;
+                    height = maxHeight;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                // 繪製壓縮後的圖片
+                ctx?.drawImage(img, 0, 0, width, height);
+
+                // 轉換為 base64，使用較低的品質
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+                // 檢查 base64 長度，如果還是太長就進一步壓縮
+                if (compressedBase64.length > 100000) { // 約 100KB
+                    const furtherCompressed = canvas.toDataURL('image/jpeg', 0.5);
+                    resolve(furtherCompressed);
+                } else {
+                    resolve(compressedBase64);
+                }
+            };
+
+            img.onerror = () => reject(new Error('圖片載入失敗'));
+
+            // 從檔案建立 URL
+            const url = URL.createObjectURL(file);
+            img.src = url;
+
+            // 清理 URL
+            img.onload = () => URL.revokeObjectURL(url);
+        });
     };
 
     const fileToBase64 = (file: File): Promise<string> => {

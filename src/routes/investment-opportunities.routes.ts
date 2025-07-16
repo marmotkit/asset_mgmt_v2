@@ -229,7 +229,7 @@ router.post('/investment-opportunities', authMiddleware, async (req, res) => {
                     // 如果是 base64 資料，截斷或使用預設圖片
                     if (imageUrl.startsWith('data:image')) {
                         console.log('圖片資料過長，使用預設圖片');
-                        imageUrl = 'https://via.placeholder.com/400x300?text=圖片';
+                        imageUrl = 'https://picsum.photos/400/300?random=1';
                     } else {
                         // 如果是 URL，截斷到 500 字元
                         imageUrl = imageUrl.substring(0, 500);
@@ -337,7 +337,7 @@ router.put('/investment-opportunities/:id', authMiddleware, async (req, res) => 
                         // 如果是 base64 資料，截斷或使用預設圖片
                         if (imageUrl.startsWith('data:image')) {
                             console.log('圖片資料過長，使用預設圖片');
-                            imageUrl = 'https://via.placeholder.com/400x300?text=圖片';
+                            imageUrl = 'https://picsum.photos/400/300?random=1';
                         } else {
                             // 如果是 URL，截斷到 500 字元
                             imageUrl = imageUrl.substring(0, 500);
