@@ -398,7 +398,7 @@ const ReceivablesTab: React.FC = () => {
                     </Grid>
                     <Grid item xs={12} md={4} sx={{ textAlign: 'right' }}>
                         <Typography>
-                            總計: {filteredReceivables.reduce((sum, item) => sum + (item.amount - item.paidAmount), 0).toLocaleString()} 元
+                            總計: {filteredReceivables.reduce((sum, item) => sum + ((item.amount || 0) - (item.paidAmount || 0)), 0).toLocaleString()} 元
                         </Typography>
                         <Typography>
                             共 {filteredReceivables.length} 筆記錄
@@ -437,7 +437,7 @@ const ReceivablesTab: React.FC = () => {
                             ) : (
                                 filteredReceivables.map(receivable => {
                                     const age = calculateAge(receivable.dueDate);
-                                    const balance = receivable.amount - receivable.paidAmount;
+                                    const balance = (receivable.amount || 0) - (receivable.paidAmount || 0);
 
                                     return (
                                         <TableRow
@@ -454,9 +454,9 @@ const ReceivablesTab: React.FC = () => {
                                                     </Typography>
                                                 )}
                                             </TableCell>
-                                            <TableCell>{receivable.description}</TableCell>
-                                            <TableCell align="right">{receivable.amount.toLocaleString()}</TableCell>
-                                            <TableCell align="right">{receivable.paidAmount.toLocaleString()}</TableCell>
+                                            <TableCell>{receivable.description || '-'}</TableCell>
+                                            <TableCell align="right">{(receivable.amount || 0).toLocaleString()}</TableCell>
+                                            <TableCell align="right">{(receivable.paidAmount || 0).toLocaleString()}</TableCell>
                                             <TableCell
                                                 align="right"
                                                 sx={{
@@ -464,7 +464,7 @@ const ReceivablesTab: React.FC = () => {
                                                     color: balance > 0 ? 'error.main' : 'success.main'
                                                 }}
                                             >
-                                                {balance.toLocaleString()}
+                                                {(balance || 0).toLocaleString()}
                                             </TableCell>
                                             <TableCell>{getStatusChip(receivable.status)}</TableCell>
                                             <TableCell align="right">
@@ -654,17 +654,17 @@ const ReceivablesTab: React.FC = () => {
                             </Grid>
                             <Grid item xs={6}>
                                 <Typography variant="body2">
-                                    總金額: {editingReceivable.amount.toLocaleString()}
+                                    總金額: {(editingReceivable.amount || 0).toLocaleString()}
                                 </Typography>
                             </Grid>
                             <Grid item xs={6}>
                                 <Typography variant="body2">
-                                    已付金額: {editingReceivable.paidAmount.toLocaleString()}
+                                    已付金額: {(editingReceivable.paidAmount || 0).toLocaleString()}
                                 </Typography>
                             </Grid>
                             <Grid item xs={12}>
                                 <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                    尚欠金額: {(editingReceivable.amount - editingReceivable.paidAmount).toLocaleString()}
+                                    尚欠金額: {((editingReceivable.amount || 0) - (editingReceivable.paidAmount || 0)).toLocaleString()}
                                 </Typography>
                             </Grid>
                             <Grid item xs={12} sx={{ mt: 2 }}>

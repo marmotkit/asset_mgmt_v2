@@ -416,7 +416,7 @@ const PayablesTab: React.FC = () => {
                     </Grid>
                     <Grid item xs={12} md={4} sx={{ textAlign: 'right' }}>
                         <Typography>
-                            總計: {filteredPayables.reduce((sum, item) => sum + (item.amount - item.paidAmount), 0).toLocaleString()} 元
+                            總計: {filteredPayables.reduce((sum, item) => sum + ((item.amount || 0) - (item.paidAmount || 0)), 0).toLocaleString()} 元
                         </Typography>
                         <Typography>
                             共 {filteredPayables.length} 筆記錄
@@ -455,7 +455,7 @@ const PayablesTab: React.FC = () => {
                             ) : (
                                 filteredPayables.map(payable => {
                                     const age = calculateAge(payable.dueDate);
-                                    const balance = payable.amount - payable.paidAmount;
+                                    const balance = (payable.amount || 0) - (payable.paidAmount || 0);
 
                                     return (
                                         <TableRow
@@ -472,9 +472,9 @@ const PayablesTab: React.FC = () => {
                                                     </Typography>
                                                 )}
                                             </TableCell>
-                                            <TableCell>{payable.description}</TableCell>
-                                            <TableCell align="right">{payable.amount.toLocaleString()}</TableCell>
-                                            <TableCell align="right">{payable.paidAmount.toLocaleString()}</TableCell>
+                                            <TableCell>{payable.description || '-'}</TableCell>
+                                            <TableCell align="right">{(payable.amount || 0).toLocaleString()}</TableCell>
+                                            <TableCell align="right">{(payable.paidAmount || 0).toLocaleString()}</TableCell>
                                             <TableCell
                                                 align="right"
                                                 sx={{
@@ -482,7 +482,7 @@ const PayablesTab: React.FC = () => {
                                                     color: balance > 0 ? 'error.main' : 'success.main'
                                                 }}
                                             >
-                                                {balance.toLocaleString()}
+                                                {(balance || 0).toLocaleString()}
                                             </TableCell>
                                             <TableCell>{getStatusChip(payable.status)}</TableCell>
                                             <TableCell align="right">
@@ -677,17 +677,17 @@ const PayablesTab: React.FC = () => {
                             </Grid>
                             <Grid item xs={6}>
                                 <Typography variant="body2">
-                                    總金額: {editingPayable.amount.toLocaleString()}
+                                    總金額: {(editingPayable.amount || 0).toLocaleString()}
                                 </Typography>
                             </Grid>
                             <Grid item xs={6}>
                                 <Typography variant="body2">
-                                    已付金額: {editingPayable.paidAmount.toLocaleString()}
+                                    已付金額: {(editingPayable.paidAmount || 0).toLocaleString()}
                                 </Typography>
                             </Grid>
                             <Grid item xs={12}>
                                 <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                    尚欠金額: {(editingPayable.amount - editingPayable.paidAmount).toLocaleString()}
+                                    尚欠金額: {((editingPayable.amount || 0) - (editingPayable.paidAmount || 0)).toLocaleString()}
                                 </Typography>
                             </Grid>
                             <Grid item xs={12} sx={{ mt: 2 }}>
