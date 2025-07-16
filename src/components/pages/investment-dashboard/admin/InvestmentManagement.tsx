@@ -174,7 +174,7 @@ const InvestmentManagement: React.FC = () => {
     };
 
     // 處理表單提交
-    const handleFormSubmit = async (data: CreateInvestmentOpportunity | UpdateInvestmentOpportunity) => {
+    const handleFormSubmit = async (data: CreateInvestmentOpportunity | UpdateInvestmentOpportunity, images?: CreateInvestmentImage[]) => {
         try {
             if (editingOpportunity) {
                 // 更新

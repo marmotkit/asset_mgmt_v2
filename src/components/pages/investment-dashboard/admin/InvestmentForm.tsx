@@ -15,11 +15,12 @@ import {
     Typography,
     Divider
 } from '@mui/material';
-import { InvestmentOpportunity, CreateInvestmentOpportunity, UpdateInvestmentOpportunity } from '../../../../types/investment-opportunity';
+import { InvestmentOpportunity, CreateInvestmentOpportunity, UpdateInvestmentOpportunity, CreateInvestmentImage } from '../../../../types/investment-opportunity';
+import ImageUpload from './ImageUpload';
 
 interface InvestmentFormProps {
     opportunity?: InvestmentOpportunity | null;
-    onSubmit: (data: CreateInvestmentOpportunity | UpdateInvestmentOpportunity) => Promise<void>;
+    onSubmit: (data: CreateInvestmentOpportunity | UpdateInvestmentOpportunity, images?: CreateInvestmentImage[]) => Promise<void>;
 }
 
 const InvestmentForm: React.FC<InvestmentFormProps> = ({ opportunity, onSubmit }) => {
@@ -42,6 +43,7 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ opportunity, onSubmit }
         sort_order: 0
     });
 
+    const [images, setImages] = useState<CreateInvestmentImage[]>([]);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [loading, setLoading] = useState(false);
 
@@ -66,6 +68,15 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ opportunity, onSubmit }
                 featured: opportunity.featured,
                 sort_order: opportunity.sort_order
             });
+
+            // 初始化圖片資料
+            if (opportunity.images) {
+                setImages(opportunity.images.map(img => ({
+                    image_url: img.image_url,
+                    image_type: img.image_type,
+                    sort_order: img.sort_order
+                })));
+            }
         }
     }, [opportunity]);
 
@@ -81,6 +92,11 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ opportunity, onSubmit }
                 return newErrors;
             });
         }
+    };
+
+    // 處理圖片變更
+    const handleImagesChange = (newImages: CreateInvestmentImage[]) => {
+        setImages(newImages);
     };
 
     // 表單驗證
@@ -134,7 +150,7 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ opportunity, onSubmit }
 
         setLoading(true);
         try {
-            await onSubmit(formData);
+            await onSubmit(formData, images);
         } catch (error) {
             console.error('提交失敗:', error);
             setErrors({ submit: '提交失敗，請稍後再試' });
@@ -200,6 +216,26 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ opportunity, onSubmit }
                             multiline
                             rows={6}
                             required
+                        />
+                    </Grid>
+
+                    {/* 圖片上傳 */}
+                    <Grid item xs={12}>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mt: 2 }}>
+                            標的圖片
+                        </Typography>
+                        <Divider sx={{ mb: 2 }} />
+                        <ImageUpload
+                            images={images.map((img, index) => ({
+                                id: `temp-${index}`,
+                                investment_id: opportunity?.id || '',
+                                image_url: img.image_url,
+                                image_type: img.image_type,
+                                sort_order: img.sort_order,
+                                created_at: new Date().toISOString()
+                            }))}
+                            onImagesChange={handleImagesChange}
+                            maxImages={10}
                         />
                     </Grid>
 
