@@ -26,7 +26,8 @@ import {
     Snackbar,
     CircularProgress,
     InputAdornment,
-    FormHelperText
+    FormHelperText,
+    TableSortLabel
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -42,6 +43,16 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { AccountPayable } from '../../../../types/payment';
 import { payablesApiService } from '../../../../services/accountingApi.service';
+
+// 排序類型定義
+type Order = 'asc' | 'desc';
+type OrderBy = 'supplier_name' | 'due_date' | 'amount' | 'payment_amount' | 'status' | 'description';
+
+// 排序狀態介面
+interface SortState {
+    order: Order;
+    orderBy: OrderBy;
+}
 
 // 應付帳款狀態選項
 const statusOptions = [
@@ -105,6 +116,12 @@ const PayablesTab: React.FC = () => {
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [payableToDelete, setPayableToDelete] = useState<string | null>(null);
 
+    // 排序狀態
+    const [sort, setSort] = useState<SortState>({
+        order: 'asc',
+        orderBy: 'due_date'
+    });
+
     // 載入資料
     useEffect(() => {
         loadPayables();
@@ -141,6 +158,9 @@ const PayablesTab: React.FC = () => {
             (payable.invoice_number && payable.invoice_number.toLowerCase().includes(searchLower))
         );
     });
+
+    // 應用排序
+    const sortedPayables = stableSort(filteredPayables, getComparator(sort.order, sort.orderBy));
 
     // 處理對話框
     const handleOpenDialog = (payable?: AccountPayable) => {
@@ -374,6 +394,62 @@ const PayablesTab: React.FC = () => {
         );
     };
 
+    // 排序邏輯
+    const stableSort = <T extends { id: string }>(array: T[], comparator: (a: T, b: T) => number) => {
+        const stabilizedThis = array.map((el, index) => [el, index] as [T, number]);
+        stabilizedThis.sort((a, b) => {
+            const order = comparator(a[0], b[0]);
+            if (order !== 0) {
+                return order;
+            }
+            return a[1] - b[1];
+        });
+        return stabilizedThis.map((el) => el[0]);
+    };
+
+    const getComparator = (
+        order: Order,
+        orderBy: OrderBy,
+    ): ((a: AccountPayable, b: AccountPayable) => number) => {
+        return order === 'desc'
+            ? (a, b) => descendingComparator(a, b, orderBy)
+            : (a, b) => -descendingComparator(a, b, orderBy);
+    };
+
+    const descendingComparator = (a: AccountPayable, b: AccountPayable, orderBy: OrderBy) => {
+        let aValue: any = a[orderBy];
+        let bValue: any = b[orderBy];
+
+        // 特殊處理日期和數值
+        if (orderBy === 'due_date') {
+            aValue = aValue ? new Date(aValue).getTime() : 0;
+            bValue = bValue ? new Date(bValue).getTime() : 0;
+        } else if (orderBy === 'amount' || orderBy === 'payment_amount') {
+            aValue = aValue || 0;
+            bValue = bValue || 0;
+        } else {
+            aValue = aValue || '';
+            bValue = bValue || '';
+        }
+
+        if (bValue < aValue) {
+            return -1;
+        }
+        if (bValue > aValue) {
+            return 1;
+        }
+        return 0;
+    };
+
+    // 處理排序請求
+    const handleRequestSort = (property: OrderBy) => {
+        const isAsc = sort.orderBy === property && sort.order === 'asc';
+        setSort({
+            order: isAsc ? 'desc' : 'asc',
+            orderBy: property
+        });
+    };
+
     // 渲染內容
     return (
         <Box>
@@ -443,24 +519,73 @@ const PayablesTab: React.FC = () => {
                     <Table>
                         <TableHead>
                             <TableRow>
-                                <TableCell>供應商</TableCell>
-                                <TableCell>描述</TableCell>
-                                <TableCell align="right">金額</TableCell>
-                                <TableCell align="right">已付金額</TableCell>
+                                <TableCell>
+                                    <TableSortLabel
+                                        active={sort.orderBy === 'supplier_name'}
+                                        direction={sort.orderBy === 'supplier_name' ? sort.order : 'asc'}
+                                        onClick={() => handleRequestSort('supplier_name')}
+                                    >
+                                        供應商
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell>
+                                    <TableSortLabel
+                                        active={sort.orderBy === 'due_date'}
+                                        direction={sort.orderBy === 'due_date' ? sort.order : 'asc'}
+                                        onClick={() => handleRequestSort('due_date')}
+                                    >
+                                        到期日
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell>
+                                    <TableSortLabel
+                                        active={sort.orderBy === 'description'}
+                                        direction={sort.orderBy === 'description' ? sort.order : 'asc'}
+                                        onClick={() => handleRequestSort('description')}
+                                    >
+                                        描述
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell align="right">
+                                    <TableSortLabel
+                                        active={sort.orderBy === 'amount'}
+                                        direction={sort.orderBy === 'amount' ? sort.order : 'asc'}
+                                        onClick={() => handleRequestSort('amount')}
+                                    >
+                                        金額
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell align="right">
+                                    <TableSortLabel
+                                        active={sort.orderBy === 'payment_amount'}
+                                        direction={sort.orderBy === 'payment_amount' ? sort.order : 'asc'}
+                                        onClick={() => handleRequestSort('payment_amount')}
+                                    >
+                                        已付金額
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell align="right">餘額</TableCell>
-                                <TableCell>狀態</TableCell>
+                                <TableCell>
+                                    <TableSortLabel
+                                        active={sort.orderBy === 'status'}
+                                        direction={sort.orderBy === 'status' ? sort.order : 'asc'}
+                                        onClick={() => handleRequestSort('status')}
+                                    >
+                                        狀態
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell align="right">操作</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredPayables.length === 0 ? (
+                            {sortedPayables.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={7} align="center">
                                         無符合條件的應付帳款
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredPayables.map(payable => {
+                                sortedPayables.map(payable => {
                                     const balance = (payable.amount || 0) - (payable.payment_amount || 0);
 
                                     return (
@@ -469,6 +594,7 @@ const PayablesTab: React.FC = () => {
                                             sx={balance > 0 ? { bgcolor: 'rgba(255, 152, 0, 0.05)' } : {}}
                                         >
                                             <TableCell>{payable.supplier_name || '-'}</TableCell>
+                                            <TableCell>{payable.due_date ? dayjs(payable.due_date).format('YYYY/MM/DD') : '-'}</TableCell>
                                             <TableCell>{payable.description || '-'}</TableCell>
                                             <TableCell align="right">{(payable.amount || 0).toLocaleString()}</TableCell>
                                             <TableCell align="right">{(payable.payment_amount || 0).toLocaleString()}</TableCell>

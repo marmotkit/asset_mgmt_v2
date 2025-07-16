@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box,
-    Button,
     Paper,
     Table,
     TableBody,
@@ -9,38 +8,46 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    Typography,
+    IconButton,
+    Button,
     TextField,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
     FormControl,
     InputLabel,
     Select,
     MenuItem,
     Grid,
-    Typography,
-    IconButton,
-    Chip,
-    Alert,
-    Snackbar,
-    CircularProgress,
     InputAdornment,
-    FormHelperText
+    CircularProgress,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Snackbar,
+    Alert,
+    TableSortLabel
 } from '@mui/material';
 import {
+    Search as SearchIcon,
     Add as AddIcon,
     Edit as EditIcon,
-    Delete as DeleteIcon,
-    Search as SearchIcon,
-    FilterList as FilterIcon
+    Delete as DeleteIcon
 } from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
-import { AccountRecord, PaymentMethod, TransactionType } from '../../../../types/payment';
-import { accountingJournalService, JournalEntry, CreateJournalEntry } from '../../../../services/accountingJournal.service';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { AccountRecord } from '../../../../types/payment';
+import { journalApiService } from '../../../../services/accountingApi.service';
+
+// 排序類型定義
+type Order = 'asc' | 'desc';
+type OrderBy = 'date' | 'type' | 'category' | 'amount' | 'description' | 'paymentMethod';
+
+// 排序狀態介面
+interface SortState {
+    order: Order;
+    orderBy: OrderBy;
+}
 
 const paymentMethodOptions = [
     { value: 'cash', label: '現金' },

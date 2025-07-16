@@ -26,7 +26,8 @@ import {
     Snackbar,
     CircularProgress,
     InputAdornment,
-    FormHelperText
+    FormHelperText,
+    TableSortLabel
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -50,6 +51,16 @@ const statusOptions = [
     { value: 'paid', label: '已付款', color: 'success' },
     { value: 'overdue', label: '逾期', color: 'error' }
 ];
+
+// 排序類型定義
+type Order = 'asc' | 'desc';
+type OrderBy = 'customer_name' | 'due_date' | 'amount' | 'payment_amount' | 'status' | 'description';
+
+// 排序狀態介面
+interface SortState {
+    order: Order;
+    orderBy: OrderBy;
+}
 
 // 初始表單數據
 const initialFormData = {
@@ -93,6 +104,12 @@ const ReceivablesTab: React.FC = () => {
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [receivableToDelete, setReceivableToDelete] = useState<string | null>(null);
 
+    // 排序狀態
+    const [sortState, setSortState] = useState<SortState>({
+        order: 'desc',
+        orderBy: 'due_date'
+    });
+
     // 載入資料
     useEffect(() => {
         loadReceivables();
@@ -113,6 +130,84 @@ const ReceivablesTab: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // 取得業務類型
+    const getBusinessType = (description: string): string => {
+        const desc = description.toLowerCase();
+
+        // 會費識別
+        if (desc.includes('會費') || desc.includes('membership') || desc.includes('fee')) {
+            return '會費';
+        }
+
+        // 租金識別 - 支援多種模式
+        if (desc.includes('租金') ||
+            desc.includes('rental') ||
+            desc.includes('租賃') ||
+            desc.includes('lease') ||
+            desc.startsWith('租金 -') ||
+            desc.includes('年') && desc.includes('月')) {
+            return '租金';
+        }
+
+        return '其他';
+    };
+
+    // 排序邏輯
+    const stableSort = <T extends { id: string }>(array: T[], comparator: (a: T, b: T) => number) => {
+        const stabilizedThis = array.map((el, index) => [el, index] as [T, number]);
+        stabilizedThis.sort((a, b) => {
+            const order = comparator(a[0], b[0]);
+            if (order !== 0) {
+                return order;
+            }
+            return a[1] - b[1];
+        });
+        return stabilizedThis.map((el) => el[0]);
+    };
+
+    const getComparator = (
+        order: Order,
+        orderBy: OrderBy,
+    ): ((a: AccountReceivable, b: AccountReceivable) => number) => {
+        return order === 'desc'
+            ? (a, b) => descendingComparator(a, b, orderBy)
+            : (a, b) => -descendingComparator(a, b, orderBy);
+    };
+
+    const descendingComparator = (a: AccountReceivable, b: AccountReceivable, orderBy: OrderBy) => {
+        let aValue: any = a[orderBy];
+        let bValue: any = b[orderBy];
+
+        // 特殊處理日期和數值
+        if (orderBy === 'due_date') {
+            aValue = aValue ? new Date(aValue).getTime() : 0;
+            bValue = bValue ? new Date(bValue).getTime() : 0;
+        } else if (orderBy === 'amount' || orderBy === 'payment_amount') {
+            aValue = aValue || 0;
+            bValue = bValue || 0;
+        } else {
+            aValue = aValue || '';
+            bValue = bValue || '';
+        }
+
+        if (bValue < aValue) {
+            return -1;
+        }
+        if (bValue > aValue) {
+            return 1;
+        }
+        return 0;
+    };
+
+    // 處理排序請求
+    const handleRequestSort = (property: OrderBy) => {
+        const isAsc = sortState.orderBy === property && sortState.order === 'asc';
+        setSortState({
+            order: isAsc ? 'desc' : 'asc',
+            orderBy: property
+        });
     };
 
     // 過濾和搜尋記錄
@@ -139,6 +234,9 @@ const ReceivablesTab: React.FC = () => {
             (receivable.invoice_number && receivable.invoice_number.toLowerCase().includes(searchLower))
         );
     });
+
+    // 應用排序
+    const sortedReceivables = stableSort(filteredReceivables, getComparator(sortState.order, sortState.orderBy));
 
     // 處理對話框
     const handleOpenDialog = (receivable?: AccountReceivable) => {
@@ -367,28 +465,6 @@ const ReceivablesTab: React.FC = () => {
         );
     };
 
-    // 取得業務類型
-    const getBusinessType = (description: string): string => {
-        const desc = description.toLowerCase();
-
-        // 會費識別
-        if (desc.includes('會費') || desc.includes('membership') || desc.includes('fee')) {
-            return '會費';
-        }
-
-        // 租金識別 - 支援多種模式
-        if (desc.includes('租金') ||
-            desc.includes('rental') ||
-            desc.includes('租賃') ||
-            desc.includes('lease') ||
-            desc.startsWith('租金 -') ||
-            desc.includes('年') && desc.includes('月')) {
-            return '租金';
-        }
-
-        return '其他';
-    };
-
     // 渲染內容
     return (
         <Box>
@@ -485,26 +561,74 @@ const ReceivablesTab: React.FC = () => {
                     <Table>
                         <TableHead>
                             <TableRow>
-                                <TableCell>客戶</TableCell>
+                                <TableCell>
+                                    <TableSortLabel
+                                        active={sortState.orderBy === 'customer_name'}
+                                        direction={sortState.orderBy === 'customer_name' ? sortState.order : 'asc'}
+                                        onClick={() => handleRequestSort('customer_name')}
+                                    >
+                                        客戶
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell>業務類型</TableCell>
-                                <TableCell>到期日</TableCell>
-                                <TableCell>描述</TableCell>
-                                <TableCell align="right">金額</TableCell>
-                                <TableCell align="right">已付金額</TableCell>
+                                <TableCell>
+                                    <TableSortLabel
+                                        active={sortState.orderBy === 'due_date'}
+                                        direction={sortState.orderBy === 'due_date' ? sortState.order : 'asc'}
+                                        onClick={() => handleRequestSort('due_date')}
+                                    >
+                                        到期日
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell>
+                                    <TableSortLabel
+                                        active={sortState.orderBy === 'description'}
+                                        direction={sortState.orderBy === 'description' ? sortState.order : 'asc'}
+                                        onClick={() => handleRequestSort('description')}
+                                    >
+                                        描述
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell align="right">
+                                    <TableSortLabel
+                                        active={sortState.orderBy === 'amount'}
+                                        direction={sortState.orderBy === 'amount' ? sortState.order : 'asc'}
+                                        onClick={() => handleRequestSort('amount')}
+                                    >
+                                        金額
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell align="right">
+                                    <TableSortLabel
+                                        active={sortState.orderBy === 'payment_amount'}
+                                        direction={sortState.orderBy === 'payment_amount' ? sortState.order : 'asc'}
+                                        onClick={() => handleRequestSort('payment_amount')}
+                                    >
+                                        已付金額
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell align="right">餘額</TableCell>
-                                <TableCell>狀態</TableCell>
+                                <TableCell>
+                                    <TableSortLabel
+                                        active={sortState.orderBy === 'status'}
+                                        direction={sortState.orderBy === 'status' ? sortState.order : 'asc'}
+                                        onClick={() => handleRequestSort('status')}
+                                    >
+                                        狀態
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell align="right">操作</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredReceivables.length === 0 ? (
+                            {sortedReceivables.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={9} align="center">
                                         無符合條件的應收帳款
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredReceivables.map((receivable) => {
+                                sortedReceivables.map((receivable) => {
                                     const balance = (receivable.amount || 0) - (receivable.payment_amount || 0);
                                     const businessType = getBusinessType(receivable.description || '');
 
