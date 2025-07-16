@@ -70,6 +70,11 @@ const Sidebar = () => {
             path: '/payment'
         },
         {
+            text: '投資看板',
+            icon: (0, jsx_runtime_1.jsx)(icons_material_1.Dashboard, {}),
+            path: '/investment-dashboard'
+        },
+        {
             text: '通知提醒',
             icon: (0, jsx_runtime_1.jsx)(icons_material_1.Notifications, {}),
             path: '/notifications'

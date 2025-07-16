@@ -31,6 +31,7 @@ router.use(authMiddleware);
 router.get('/', async (req, res) => {
     try {
         const { investmentId, memberId, year, month } = req.query;
+        const user = (req as any).user; // 從認證中間件獲取用戶資訊
 
         let query = `
             SELECT 
@@ -49,6 +50,13 @@ router.get('/', async (req, res) => {
 
         const params: any[] = [];
         let paramIndex = 1;
+
+        // 權限控制：一般會員只能看到自己的分潤資料
+        if (user && user.role !== 'admin' && user.role !== 'business' && user.role !== 'lifetime') {
+            query += ` AND mp."memberId" = $${paramIndex}`;
+            params.push(user.id);
+            paramIndex++;
+        }
 
         if (investmentId) {
             query += ` AND mp."investmentId" = $${paramIndex}`;

@@ -9,6 +9,7 @@ const router = express.Router();
 router.get('/', authMiddleware, async (req, res) => {
     try {
         const { investmentId, year, month } = req.query;
+        const user = (req as any).user; // 從認證中間件獲取用戶資訊
 
         let query = `
             SELECT 
@@ -21,11 +22,16 @@ router.get('/', authMiddleware, async (req, res) => {
             LEFT JOIN investments i ON rp."investmentId" = i.id
             LEFT JOIN companies c ON i."companyId" = c.id
             LEFT JOIN users u ON i."userId" = u.id
-            ORDER BY rp.year DESC, rp.month DESC, rp."createdAt" DESC
         `;
 
         let replacements: any = {};
         let whereConditions: string[] = [];
+
+        // 權限控制：一般會員只能看到自己的資料
+        if (user && user.role !== 'admin' && user.role !== 'business' && user.role !== 'lifetime') {
+            whereConditions.push('i."userId" = :userId');
+            replacements.userId = user.id;
+        }
 
         if (investmentId) {
             whereConditions.push('rp."investmentId" = :investmentId');
@@ -43,8 +49,10 @@ router.get('/', authMiddleware, async (req, res) => {
         }
 
         if (whereConditions.length > 0) {
-            query = query.replace('ORDER BY', `WHERE ${whereConditions.join(' AND ')} ORDER BY`);
+            query += ` WHERE ${whereConditions.join(' AND ')}`;
         }
+
+        query += ` ORDER BY rp.year DESC, rp.month DESC, rp."createdAt" DESC`;
 
         const rentalPayments = await sequelize.query(query, {
             replacements,

@@ -3,19 +3,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ApiServiceInstance = exports.ApiService = void 0;
+exports.ApiServiceInstance = exports.ApiService = exports.apiClient = void 0;
 const memberNoGenerator_1 = require("../utils/memberNoGenerator");
 const axios_1 = __importDefault(require("axios"));
 const rental_1 = require("../types/rental");
 // 設置一個axios實例
-const apiClient = axios_1.default.create({
+exports.apiClient = axios_1.default.create({
     baseURL: 'https://asset-mgmt-api-clean.onrender.com/api',
     headers: {
         'Content-Type': 'application/json',
     },
 });
 // 添加請求攔截器，用於設置JWT token
-apiClient.interceptors.request.use((config) => {
+exports.apiClient.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -149,7 +149,7 @@ class ApiService {
     static async getInvestments() {
         console.log('獲取所有投資項目...');
         try {
-            const response = await apiClient.get('/investments');
+            const response = await exports.apiClient.get('/investments');
             console.log(`返回 ${response.data.length} 筆投資項目`);
             return response.data;
         }
@@ -162,7 +162,7 @@ class ApiService {
         var _a;
         console.log(`正在查找投資項目 ID: ${id}`);
         try {
-            const response = await apiClient.get(`/investments/${id}`);
+            const response = await exports.apiClient.get(`/investments/${id}`);
             console.log('查找結果: 找到項目');
             return response.data;
         }
@@ -178,7 +178,7 @@ class ApiService {
     static async createInvestment(investment) {
         console.log('創建投資項目:', investment);
         try {
-            const response = await apiClient.post('/investments', investment);
+            const response = await exports.apiClient.post('/investments', investment);
             console.log('投資項目創建成功');
             return response.data;
         }
@@ -190,7 +190,7 @@ class ApiService {
     static async updateInvestment(investment) {
         console.log('更新投資項目:', investment);
         try {
-            const response = await apiClient.put(`/investments/${investment.id}`, investment);
+            const response = await exports.apiClient.put(`/investments/${investment.id}`, investment);
             console.log('投資項目更新成功');
             return response.data;
         }
@@ -202,7 +202,7 @@ class ApiService {
     static async deleteInvestment(id) {
         console.log('刪除投資項目 ID:', id);
         try {
-            await apiClient.delete(`/investments/${id}`);
+            await exports.apiClient.delete(`/investments/${id}`);
             console.log('投資項目刪除成功');
         }
         catch (error) {
@@ -400,7 +400,7 @@ class ApiService {
     static async getRentalStandards(investmentId) {
         try {
             const params = investmentId ? `?investmentId=${investmentId}` : '';
-            const response = await apiClient.get(`/rental-standards${params}`);
+            const response = await exports.apiClient.get(`/rental-standards${params}`);
             return response.data;
         }
         catch (error) {
@@ -410,7 +410,7 @@ class ApiService {
     }
     static async createRentalStandard(data) {
         try {
-            const response = await apiClient.post('/rental-standards', data);
+            const response = await exports.apiClient.post('/rental-standards', data);
             return response.data;
         }
         catch (error) {
@@ -420,7 +420,7 @@ class ApiService {
     }
     static async updateRentalStandard(id, data) {
         try {
-            const response = await apiClient.put(`/rental-standards/${id}`, data);
+            const response = await exports.apiClient.put(`/rental-standards/${id}`, data);
             return response.data;
         }
         catch (error) {
@@ -430,7 +430,7 @@ class ApiService {
     }
     static async deleteRentalStandard(id) {
         try {
-            await apiClient.delete(`/rental-standards/${id}`);
+            await exports.apiClient.delete(`/rental-standards/${id}`);
         }
         catch (error) {
             console.error('刪除租賃標準失敗:', error);
@@ -441,7 +441,7 @@ class ApiService {
     static async getProfitSharingStandards(investmentId) {
         try {
             const params = investmentId ? `?investmentId=${investmentId}` : '';
-            const response = await apiClient.get(`/profit-sharing-standards${params}`);
+            const response = await exports.apiClient.get(`/profit-sharing-standards${params}`);
             return response.data;
         }
         catch (error) {
@@ -451,7 +451,7 @@ class ApiService {
     }
     static async getAvailableInvestmentsForProfitSharing() {
         try {
-            const response = await apiClient.get('/profit-sharing-standards/available-investments');
+            const response = await exports.apiClient.get('/profit-sharing-standards/available-investments');
             return response.data;
         }
         catch (error) {
@@ -461,7 +461,7 @@ class ApiService {
     }
     static async getAvailableInvestmentsForRentalPayments() {
         try {
-            const response = await apiClient.get('/rental-standards/available-investments');
+            const response = await exports.apiClient.get('/rental-standards/available-investments');
             return response.data;
         }
         catch (error) {
@@ -471,7 +471,7 @@ class ApiService {
     }
     static async createProfitSharingStandard(data) {
         try {
-            const response = await apiClient.post('/profit-sharing-standards', data);
+            const response = await exports.apiClient.post('/profit-sharing-standards', data);
             return response.data;
         }
         catch (error) {
@@ -481,7 +481,7 @@ class ApiService {
     }
     static async updateProfitSharingStandard(id, data) {
         try {
-            const response = await apiClient.put(`/profit-sharing-standards/${id}`, data);
+            const response = await exports.apiClient.put(`/profit-sharing-standards/${id}`, data);
             return response.data;
         }
         catch (error) {
@@ -491,7 +491,7 @@ class ApiService {
     }
     static async deleteProfitSharingStandard(id) {
         try {
-            await apiClient.delete(`/profit-sharing-standards/${id}`);
+            await exports.apiClient.delete(`/profit-sharing-standards/${id}`);
         }
         catch (error) {
             console.error('刪除分潤標準失敗:', error);
@@ -953,7 +953,7 @@ class ApiService {
     // 日記帳功能
     static async getAccountRecords() {
         try {
-            const response = await apiClient.get('/accounting/records');
+            const response = await exports.apiClient.get('/accounting/records');
             return response.data;
         }
         catch (error) {
@@ -964,7 +964,7 @@ class ApiService {
     }
     static async addAccountRecord(data) {
         try {
-            const response = await apiClient.post('/accounting/records', data);
+            const response = await exports.apiClient.post('/accounting/records', data);
             return response.data;
         }
         catch (error) {
@@ -980,7 +980,7 @@ class ApiService {
     }
     static async updateAccountRecord(id, data) {
         try {
-            const response = await apiClient.put(`/accounting/records/${id}`, data);
+            const response = await exports.apiClient.put(`/accounting/records/${id}`, data);
             return response.data;
         }
         catch (error) {
@@ -991,7 +991,7 @@ class ApiService {
     }
     static async deleteAccountRecord(id) {
         try {
-            await apiClient.delete(`/accounting/records/${id}`);
+            await exports.apiClient.delete(`/accounting/records/${id}`);
             return true;
         }
         catch (error) {
@@ -1002,7 +1002,7 @@ class ApiService {
     // 應收帳款功能
     static async getReceivables() {
         try {
-            const response = await apiClient.get('/accounting/receivables');
+            const response = await exports.apiClient.get('/accounting/receivables');
             return response.data;
         }
         catch (error) {
@@ -1012,7 +1012,7 @@ class ApiService {
     }
     static async addReceivable(data) {
         try {
-            const response = await apiClient.post('/accounting/receivables', data);
+            const response = await exports.apiClient.post('/accounting/receivables', data);
             return response.data;
         }
         catch (error) {
@@ -1028,7 +1028,7 @@ class ApiService {
     }
     static async updateReceivable(id, data) {
         try {
-            const response = await apiClient.put(`/accounting/receivables/${id}`, data);
+            const response = await exports.apiClient.put(`/accounting/receivables/${id}`, data);
             return response.data;
         }
         catch (error) {
@@ -1039,7 +1039,7 @@ class ApiService {
     }
     static async deleteReceivable(id) {
         try {
-            await apiClient.delete(`/accounting/receivables/${id}`);
+            await exports.apiClient.delete(`/accounting/receivables/${id}`);
             return true;
         }
         catch (error) {
@@ -1050,7 +1050,7 @@ class ApiService {
     // 應付帳款功能
     static async getPayables() {
         try {
-            const response = await apiClient.get('/accounting/payables');
+            const response = await exports.apiClient.get('/accounting/payables');
             return response.data;
         }
         catch (error) {
@@ -1060,7 +1060,7 @@ class ApiService {
     }
     static async addPayable(data) {
         try {
-            const response = await apiClient.post('/accounting/payables', data);
+            const response = await exports.apiClient.post('/accounting/payables', data);
             return response.data;
         }
         catch (error) {
@@ -1076,7 +1076,7 @@ class ApiService {
     }
     static async updatePayable(id, data) {
         try {
-            const response = await apiClient.put(`/accounting/payables/${id}`, data);
+            const response = await exports.apiClient.put(`/accounting/payables/${id}`, data);
             return response.data;
         }
         catch (error) {
@@ -1087,7 +1087,7 @@ class ApiService {
     }
     static async deletePayable(id) {
         try {
-            await apiClient.delete(`/accounting/payables/${id}`);
+            await exports.apiClient.delete(`/accounting/payables/${id}`);
             return true;
         }
         catch (error) {
@@ -1098,7 +1098,7 @@ class ApiService {
     // 月結功能
     static async getMonthlyClosings() {
         try {
-            const response = await apiClient.get('/accounting/monthly-closings');
+            const response = await exports.apiClient.get('/accounting/monthly-closings');
             return response.data;
         }
         catch (error) {
@@ -1108,7 +1108,7 @@ class ApiService {
     }
     static async getMonthlyClosingDetail(id) {
         try {
-            const response = await apiClient.get(`/accounting/monthly-closings/${id}`);
+            const response = await exports.apiClient.get(`/accounting/monthly-closings/${id}`);
             return response.data;
         }
         catch (error) {
@@ -1119,7 +1119,7 @@ class ApiService {
     }
     static async createMonthlyClosing(data) {
         try {
-            const response = await apiClient.post('/accounting/monthly-closings', data);
+            const response = await exports.apiClient.post('/accounting/monthly-closings', data);
             return response.data;
         }
         catch (error) {
@@ -1135,7 +1135,7 @@ class ApiService {
     }
     static async finalizeMonthlyClosing(id) {
         try {
-            const response = await apiClient.put(`/accounting/monthly-closings/${id}/finalize`);
+            const response = await exports.apiClient.put(`/accounting/monthly-closings/${id}/finalize`);
             return response.data;
         }
         catch (error) {
@@ -1148,7 +1148,7 @@ class ApiService {
     static async getFinancialReport(year, month) {
         try {
             const url = month ? `/accounting/reports/income-expense/${year}/${month}` : `/accounting/reports/income-expense/${year}`;
-            const response = await apiClient.get(url);
+            const response = await exports.apiClient.get(url);
             return response.data;
         }
         catch (error) {
@@ -1159,7 +1159,7 @@ class ApiService {
     static async getBalanceSheet(year, month) {
         try {
             const url = month ? `/accounting/reports/balance-sheet/${year}/${month}` : `/accounting/reports/balance-sheet/${year}`;
-            const response = await apiClient.get(url);
+            const response = await exports.apiClient.get(url);
             return response.data;
         }
         catch (error) {
@@ -1170,7 +1170,7 @@ class ApiService {
     static async getCashFlowStatement(year, month) {
         try {
             const url = month ? `/accounting/reports/cash-flow/${year}/${month}` : `/accounting/reports/cash-flow/${year}`;
-            const response = await apiClient.get(url);
+            const response = await exports.apiClient.get(url);
             return response.data;
         }
         catch (error) {

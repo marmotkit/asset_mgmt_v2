@@ -39,13 +39,16 @@ const accounting_receivables_routes_1 = __importDefault(require("./routes/accoun
 const accounting_payables_routes_1 = __importDefault(require("./routes/accounting-payables.routes"));
 const accounting_monthly_closings_routes_1 = __importDefault(require("./routes/accounting-monthly-closings.routes"));
 const accounting_reports_routes_1 = __importDefault(require("./routes/accounting-reports.routes"));
+const investment_opportunities_routes_1 = __importDefault(require("./routes/investment-opportunities.routes"));
+const investment_inquiries_routes_1 = __importDefault(require("./routes/investment-inquiries.routes"));
 // 加載環境變量
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
 // 中間件
 app.use((0, cors_1.default)());
-app.use(express_1.default.json());
+app.use(express_1.default.json({ limit: '10mb' }));
+app.use(express_1.default.urlencoded({ limit: '10mb', extended: true }));
 // 路由
 app.use('/api/auth', auth_routes_1.default);
 app.use('/api/users', user_routes_1.default);
@@ -70,6 +73,8 @@ app.use('/api/accounting/receivables', accounting_receivables_routes_1.default);
 app.use('/api/accounting/payables', accounting_payables_routes_1.default);
 app.use('/api/accounting/monthly-closings', accounting_monthly_closings_routes_1.default);
 app.use('/api/accounting/reports', accounting_reports_routes_1.default);
+app.use('/api', investment_opportunities_routes_1.default);
+app.use('/api', investment_inquiries_routes_1.default);
 // 基本路由測試
 app.get('/', (req, res) => {
     res.send('資產管理系統 API 服務運行中');

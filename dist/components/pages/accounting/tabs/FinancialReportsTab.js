@@ -11,7 +11,7 @@ const LocalizationProvider_1 = require("@mui/x-date-pickers/LocalizationProvider
 const AdapterDayjs_1 = require("@mui/x-date-pickers/AdapterDayjs");
 const DatePicker_1 = require("@mui/x-date-pickers/DatePicker");
 const dayjs_1 = __importDefault(require("dayjs"));
-const accounting_service_1 = require("../../../../services/accounting.service");
+const accountingApi_service_1 = require("../../../../services/accountingApi.service");
 // 導入報表組件
 const IncomeExpenseReport_1 = __importDefault(require("./reports/IncomeExpenseReport"));
 const BalanceSheetReport_1 = __importDefault(require("./reports/BalanceSheetReport"));
@@ -47,14 +47,18 @@ const FinancialReportsTab = () => {
         try {
             let data;
             switch (reportType) {
-                case 0: // 收支報表
-                    data = await accounting_service_1.accountingService.getFinancialReport({ year, month: month || undefined });
+                case 0: // 損益表
+                    const startDate = month ? `${year}-${month.toString().padStart(2, '0')}-01` : `${year}-01-01`;
+                    const endDate = month ? (0, dayjs_1.default)(`${year}-${month.toString().padStart(2, '0')}-01`).endOf('month').format('YYYY-MM-DD') : `${year}-12-31`;
+                    data = await accountingApi_service_1.financialReportsApiService.getIncomeStatement({ startDate, endDate });
                     break;
                 case 1: // 資產負債表
-                    data = await accounting_service_1.accountingService.getBalanceSheet({ date: date.format('YYYY-MM-DD') });
+                    data = await accountingApi_service_1.financialReportsApiService.getBalanceSheet({ asOfDate: date.format('YYYY-MM-DD') });
                     break;
                 case 2: // 現金流量表
-                    data = await accounting_service_1.accountingService.getCashFlowStatement({ year, month: month || undefined });
+                    const cashFlowStartDate = month ? `${year}-${month.toString().padStart(2, '0')}-01` : `${year}-01-01`;
+                    const cashFlowEndDate = month ? (0, dayjs_1.default)(`${year}-${month.toString().padStart(2, '0')}-01`).endOf('month').format('YYYY-MM-DD') : `${year}-12-31`;
+                    data = await accountingApi_service_1.financialReportsApiService.getCashFlowStatement({ startDate: cashFlowStartDate, endDate: cashFlowEndDate });
                     break;
                 default:
                     data = null;
@@ -94,6 +98,6 @@ const FinancialReportsTab = () => {
                                     }
                                 } }) }) })) : null, (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, md: 3, children: (0, jsx_runtime_1.jsx)(material_1.Button, { variant: "outlined", startIcon: (0, jsx_runtime_1.jsx)(icons_material_1.Download, {}), disabled: !reportData, onClick: () => { }, fullWidth: true, children: "\u532F\u51FA\u5831\u8868" }) })] }) }));
     };
-    return ((0, jsx_runtime_1.jsxs)(material_1.Box, { children: [(0, jsx_runtime_1.jsx)(material_1.Box, { sx: { display: 'flex', justifyContent: 'space-between', mb: 3 }, children: (0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "h5", children: "\u8CA1\u52D9\u5831\u8868" }) }), (0, jsx_runtime_1.jsx)(material_1.Paper, { sx: { mb: 3 }, children: (0, jsx_runtime_1.jsxs)(material_1.Tabs, { value: reportType, onChange: handleReportTypeChange, variant: "scrollable", scrollButtons: "auto", "aria-label": "financial reports tabs", children: [(0, jsx_runtime_1.jsx)(material_1.Tab, { icon: (0, jsx_runtime_1.jsx)(icons_material_1.BarChart, {}), label: "\u6536\u652F\u5831\u8868" }), (0, jsx_runtime_1.jsx)(material_1.Tab, { icon: (0, jsx_runtime_1.jsx)(icons_material_1.AccountBalance, {}), label: "\u8CC7\u7522\u8CA0\u50B5\u8868" }), (0, jsx_runtime_1.jsx)(material_1.Tab, { icon: (0, jsx_runtime_1.jsx)(icons_material_1.TrendingUp, {}), label: "\u73FE\u91D1\u6D41\u91CF\u8868" })] }) }), renderReportFilters(), loading ? ((0, jsx_runtime_1.jsx)(material_1.Box, { sx: { display: 'flex', justifyContent: 'center', mt: 5, mb: 5 }, children: (0, jsx_runtime_1.jsx)(material_1.CircularProgress, {}) })) : ((0, jsx_runtime_1.jsxs)(material_1.Box, { children: [(0, jsx_runtime_1.jsx)(TabPanel, { value: reportType, index: 0, children: reportData && (0, jsx_runtime_1.jsx)(IncomeExpenseReport_1.default, { data: reportData }) }), (0, jsx_runtime_1.jsx)(TabPanel, { value: reportType, index: 1, children: reportData && (0, jsx_runtime_1.jsx)(BalanceSheetReport_1.default, { data: reportData }) }), (0, jsx_runtime_1.jsx)(TabPanel, { value: reportType, index: 2, children: reportData && (0, jsx_runtime_1.jsx)(CashFlowReport_1.default, { data: reportData }) })] })), (0, jsx_runtime_1.jsx)(material_1.Snackbar, { open: snackbar.open, autoHideDuration: 5000, onClose: () => setSnackbar(prev => ({ ...prev, open: false })), children: (0, jsx_runtime_1.jsx)(material_1.Alert, { severity: snackbar.severity, onClose: () => setSnackbar(prev => ({ ...prev, open: false })), children: snackbar.message }) })] }));
+    return ((0, jsx_runtime_1.jsxs)(material_1.Box, { children: [(0, jsx_runtime_1.jsx)(material_1.Box, { sx: { display: 'flex', justifyContent: 'space-between', mb: 3 }, children: (0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "h5", children: "\u8CA1\u52D9\u5831\u8868" }) }), (0, jsx_runtime_1.jsx)(material_1.Paper, { sx: { mb: 3 }, children: (0, jsx_runtime_1.jsxs)(material_1.Tabs, { value: reportType, onChange: handleReportTypeChange, variant: "scrollable", scrollButtons: "auto", "aria-label": "financial reports tabs", children: [(0, jsx_runtime_1.jsx)(material_1.Tab, { icon: (0, jsx_runtime_1.jsx)(icons_material_1.BarChart, {}), label: "\u640D\u76CA\u8868" }), (0, jsx_runtime_1.jsx)(material_1.Tab, { icon: (0, jsx_runtime_1.jsx)(icons_material_1.AccountBalance, {}), label: "\u8CC7\u7522\u8CA0\u50B5\u8868" }), (0, jsx_runtime_1.jsx)(material_1.Tab, { icon: (0, jsx_runtime_1.jsx)(icons_material_1.TrendingUp, {}), label: "\u73FE\u91D1\u6D41\u91CF\u8868" })] }) }), renderReportFilters(), loading ? ((0, jsx_runtime_1.jsx)(material_1.Box, { sx: { display: 'flex', justifyContent: 'center', mt: 5, mb: 5 }, children: (0, jsx_runtime_1.jsx)(material_1.CircularProgress, {}) })) : ((0, jsx_runtime_1.jsxs)(material_1.Box, { children: [(0, jsx_runtime_1.jsx)(TabPanel, { value: reportType, index: 0, children: reportData && (0, jsx_runtime_1.jsx)(IncomeExpenseReport_1.default, { data: reportData }) }), (0, jsx_runtime_1.jsx)(TabPanel, { value: reportType, index: 1, children: reportData && (0, jsx_runtime_1.jsx)(BalanceSheetReport_1.default, { data: reportData }) }), (0, jsx_runtime_1.jsx)(TabPanel, { value: reportType, index: 2, children: reportData && (0, jsx_runtime_1.jsx)(CashFlowReport_1.default, { data: reportData }) })] })), (0, jsx_runtime_1.jsx)(material_1.Snackbar, { open: snackbar.open, autoHideDuration: 5000, onClose: () => setSnackbar(prev => ({ ...prev, open: false })), children: (0, jsx_runtime_1.jsx)(material_1.Alert, { severity: snackbar.severity, onClose: () => setSnackbar(prev => ({ ...prev, open: false })), children: snackbar.message }) })] }));
 };
 exports.default = FinancialReportsTab;

@@ -9,6 +9,8 @@ import {
 import AnnualActivitiesTab from './AnnualActivitiesTab';
 import MemberCareTab from './MemberCareTab';
 import RiskManagementTab from './RiskManagementTab';
+import RentalPaymentStatusTab from './RentalPaymentStatusTab';
+import AssetProfitStatusTab from './AssetProfitStatusTab';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -63,6 +65,8 @@ const MemberServicesManagement: React.FC<MemberServicesManagementProps> = ({ ini
                         <Tab label="年度活動" />
                         <Tab label="會員關懷" />
                         <Tab label="風險管理" />
+                        <Tab label="租金付款狀況" />
+                        <Tab label="資產分潤狀況" />
                     </Tabs>
                 </Box>
 
@@ -76,6 +80,14 @@ const MemberServicesManagement: React.FC<MemberServicesManagementProps> = ({ ini
 
                 <TabPanel value={currentTab} index={2}>
                     <RiskManagementTab />
+                </TabPanel>
+
+                <TabPanel value={currentTab} index={3}>
+                    <RentalPaymentStatusTab />
+                </TabPanel>
+
+                <TabPanel value={currentTab} index={4}>
+                    <AssetProfitStatusTab />
                 </TabPanel>
             </Paper>
         </Box>

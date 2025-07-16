@@ -12,6 +12,7 @@ const router = express_1.default.Router();
 router.get('/', auth_middleware_1.authMiddleware, async (req, res) => {
     try {
         const { investmentId, year, month } = req.query;
+        const user = req.user; // 從認證中間件獲取用戶資訊
         let query = `
             SELECT 
                 rp.*,
@@ -23,10 +24,14 @@ router.get('/', auth_middleware_1.authMiddleware, async (req, res) => {
             LEFT JOIN investments i ON rp."investmentId" = i.id
             LEFT JOIN companies c ON i."companyId" = c.id
             LEFT JOIN users u ON i."userId" = u.id
-            ORDER BY rp.year DESC, rp.month DESC, rp."createdAt" DESC
         `;
         let replacements = {};
         let whereConditions = [];
+        // 權限控制：一般會員只能看到自己的資料
+        if (user && user.role !== 'admin' && user.role !== 'business' && user.role !== 'lifetime') {
+            whereConditions.push('i."userId" = :userId');
+            replacements.userId = user.id;
+        }
         if (investmentId) {
             whereConditions.push('rp."investmentId" = :investmentId');
             replacements.investmentId = investmentId;
@@ -40,8 +45,9 @@ router.get('/', auth_middleware_1.authMiddleware, async (req, res) => {
             replacements.month = parseInt(month);
         }
         if (whereConditions.length > 0) {
-            query = query.replace('ORDER BY', `WHERE ${whereConditions.join(' AND ')} ORDER BY`);
+            query += ` WHERE ${whereConditions.join(' AND ')}`;
         }
+        query += ` ORDER BY rp.year DESC, rp.month DESC, rp."createdAt" DESC`;
         const rentalPayments = await connection_1.default.query(query, {
             replacements,
             type: sequelize_1.QueryTypes.SELECT

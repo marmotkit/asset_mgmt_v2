@@ -8,7 +8,7 @@ const react_1 = require("react");
 const material_1 = require("@mui/material");
 const icons_material_1 = require("@mui/icons-material");
 const dayjs_1 = __importDefault(require("dayjs"));
-const accounting_service_1 = require("../../../../services/accounting.service");
+const accountingApi_service_1 = require("../../../../services/accountingApi.service");
 const MonthlyClosingTab = () => {
     var _a, _b;
     // 狀態變數
@@ -42,7 +42,7 @@ const MonthlyClosingTab = () => {
     const loadMonthlyClosings = async () => {
         setLoading(true);
         try {
-            const data = await accounting_service_1.accountingService.getMonthlyClosings();
+            const data = await accountingApi_service_1.monthlyClosingApiService.getMonthlyClosings();
             setMonthlyClosings(data);
         }
         catch (error) {
@@ -77,7 +77,7 @@ const MonthlyClosingTab = () => {
         setDetailDialogOpen(true);
         try {
             // 獲取月結詳情
-            const detail = await accounting_service_1.accountingService.getMonthlyClosingDetail(monthlyClosing.id);
+            const detail = await accountingApi_service_1.monthlyClosingApiService.getMonthlyClosing(monthlyClosing.id);
             setDetailData(detail);
         }
         catch (error) {
@@ -108,7 +108,7 @@ const MonthlyClosingTab = () => {
     // 建立月結
     const handleCreateMonthlyClosing = async () => {
         try {
-            const newClosing = await accounting_service_1.accountingService.createMonthlyClosing({
+            const newClosing = await accountingApi_service_1.monthlyClosingApiService.createMonthlyClosing({
                 year: yearFilter,
                 month: selectedMonth
             });
@@ -134,7 +134,9 @@ const MonthlyClosingTab = () => {
         if (!selectedMonthlyClosing)
             return;
         try {
-            const finalizedClosing = await accounting_service_1.accountingService.finalizeMonthlyClosing(selectedMonthlyClosing.id);
+            const finalizedClosing = await accountingApi_service_1.monthlyClosingApiService.updateMonthlyClosing(selectedMonthlyClosing.id, {
+                status: 'finalized'
+            });
             setMonthlyClosings(prev => prev.map(closing => closing.id === finalizedClosing.id ? finalizedClosing : closing));
             setSnackbar({
                 open: true,
