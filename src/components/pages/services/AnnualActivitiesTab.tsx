@@ -355,13 +355,15 @@ const AnnualActivitiesTab: React.FC = () => {
 
     // 新增報名相關處理函數
     const handleOpenRegistrationDialog = (activity: AnnualActivity) => {
+        // 自動帶出登入會員資訊
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
         setRegistrationForm({
             activityId: activity.id,
-            memberName: user?.name || '',
+            memberName: currentUser.name || '',
+            phoneNumber: currentUser.phone || '',
             totalParticipants: 1,
             maleCount: 0,
             femaleCount: 0,
-            phoneNumber: '',
             notes: ''
         });
         setRegistrationErrors({});

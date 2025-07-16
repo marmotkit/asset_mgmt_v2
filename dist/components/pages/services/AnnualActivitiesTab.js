@@ -326,13 +326,15 @@ const AnnualActivitiesTab = () => {
     };
     // 新增報名相關處理函數
     const handleOpenRegistrationDialog = (activity) => {
+        // 自動帶出登入會員資訊
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
         setRegistrationForm({
             activityId: activity.id,
-            memberName: (user === null || user === void 0 ? void 0 : user.name) || '',
+            memberName: currentUser.name || '',
+            phoneNumber: currentUser.phone || '',
             totalParticipants: 1,
             maleCount: 0,
             femaleCount: 0,
-            phoneNumber: '',
             notes: ''
         });
         setRegistrationErrors({});

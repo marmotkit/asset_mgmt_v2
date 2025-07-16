@@ -122,8 +122,17 @@ router.post('/', authMiddleware, async (req, res) => {
         }
 
         // 檢查活動狀態是否允許報名
-        if (activity.status !== 'registration') {
-            return res.status(400).json({ error: '活動目前不接受報名' });
+        console.log('活動狀態檢查:', {
+            activityStatus: activity.status,
+            expectedStatus: 'registration',
+            isRegistrationOpen: activity.status === 'registration'
+        });
+
+        // 允許報名的狀態：registration 或 ongoing
+        if (activity.status !== 'registration' && activity.status !== 'ongoing') {
+            return res.status(400).json({
+                error: `活動目前不接受報名 (狀態: ${activity.status})`
+            });
         }
 
         // 檢查是否已經報名（如果提供了memberId）

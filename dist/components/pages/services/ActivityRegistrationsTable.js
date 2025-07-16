@@ -108,8 +108,9 @@ const ActivityRegistrationsTable = ({ activityId, members, onReload }) => {
         return Object.keys(errors).length === 0;
     };
     const handleSubmit = async () => {
-        if (!validateForm())
+        if (!validateForm()) {
             return;
+        }
         try {
             setLoading(true);
             if (editMode && selectedRegistration) {
@@ -117,10 +118,12 @@ const ActivityRegistrationsTable = ({ activityId, members, onReload }) => {
                 enqueueSnackbar('報名記錄更新成功', { variant: 'success' });
             }
             else {
+                // 使用新的報名API
+                const member = members.find(m => m.id === registrationForm.memberId);
                 await memberServiceAPI_1.MemberServiceAPI.createActivityRegistration({
                     activityId: activityId,
-                    memberName: getMemberName(registrationForm.memberId || ''),
-                    phoneNumber: '', // 從會員資料中獲取
+                    memberName: (member === null || member === void 0 ? void 0 : member.name) || '未知會員',
+                    phoneNumber: (member === null || member === void 0 ? void 0 : member.phone) || '',
                     totalParticipants: (registrationForm.companions || 0) + 1,
                     maleCount: 0,
                     femaleCount: 0,

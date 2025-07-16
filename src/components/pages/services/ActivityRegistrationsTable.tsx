@@ -153,7 +153,9 @@ const ActivityRegistrationsTable: React.FC<ActivityRegistrationsTableProps> = ({
     };
 
     const handleSubmit = async () => {
-        if (!validateForm()) return;
+        if (!validateForm()) {
+            return;
+        }
 
         try {
             setLoading(true);
@@ -162,10 +164,12 @@ const ActivityRegistrationsTable: React.FC<ActivityRegistrationsTableProps> = ({
                 await MemberServiceAPI.updateRegistration(selectedRegistration.id, registrationForm);
                 enqueueSnackbar('報名記錄更新成功', { variant: 'success' });
             } else {
+                // 使用新的報名API
+                const member = members.find(m => m.id === registrationForm.memberId);
                 await MemberServiceAPI.createActivityRegistration({
                     activityId: activityId,
-                    memberName: getMemberName(registrationForm.memberId || ''),
-                    phoneNumber: '', // 從會員資料中獲取
+                    memberName: member?.name || '未知會員',
+                    phoneNumber: member?.phone || '',
                     totalParticipants: (registrationForm.companions || 0) + 1,
                     maleCount: 0,
                     femaleCount: 0,
