@@ -209,6 +209,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
         const { id } = req.params;
         const { status, notes, memberName, phoneNumber, totalParticipants, maleCount, femaleCount, companions } = req.body;
 
+        console.log('更新報名記錄:', { id, status, notes, companions }); // 除錯用
+
         // 構建動態更新查詢
         let updateFields = [];
         let values = [];
@@ -218,6 +220,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
             updateFields.push(`status = $${paramIndex}`);
             values.push(status);
             paramIndex++;
+            console.log('設定狀態為:', status); // 除錯用
         }
 
         if (notes !== undefined) {
@@ -275,12 +278,16 @@ router.put('/:id', authMiddleware, async (req, res) => {
             RETURNING *
         `;
 
+        console.log('執行SQL:', query); // 除錯用
+        console.log('參數:', values); // 除錯用
+
         const result = await client.query(query, values);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: '找不到指定的報名記錄' });
         }
 
+        console.log('更新結果:', result.rows[0]); // 除錯用
         res.json(result.rows[0]);
     } catch (error) {
         console.error('更新活動報名失敗:', error);

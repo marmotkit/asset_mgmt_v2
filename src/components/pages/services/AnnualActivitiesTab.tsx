@@ -599,9 +599,6 @@ const AnnualActivitiesTab: React.FC = () => {
                                                         活動地點：{registration.activityLocation}
                                                     </Typography>
                                                     <Typography variant="body2" color="text.secondary">
-                                                        報名姓名：{registration.memberName}
-                                                    </Typography>
-                                                    <Typography variant="body2" color="text.secondary">
                                                         總人數：{registration.totalParticipants} 人
                                                         (男：{registration.maleCount} 人，女：{registration.femaleCount} 人)
                                                     </Typography>

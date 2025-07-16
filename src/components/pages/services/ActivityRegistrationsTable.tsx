@@ -162,6 +162,7 @@ const ActivityRegistrationsTable: React.FC<ActivityRegistrationsTableProps> = ({
 
             if (editMode && selectedRegistration) {
                 // 更新現有報名記錄
+                console.log('更新報名記錄，狀態:', registrationForm.status); // 除錯用
                 await MemberServiceAPI.updateRegistration(selectedRegistration.id, {
                     status: registrationForm.status,
                     notes: registrationForm.notes,
@@ -257,7 +258,7 @@ const ActivityRegistrationsTable: React.FC<ActivityRegistrationsTableProps> = ({
 
     const getMemberName = (memberId: string, memberName?: string) => {
         // 優先使用 member_name 欄位
-        if (memberName) {
+        if (memberName && memberName.trim()) {
             return memberName;
         }
 

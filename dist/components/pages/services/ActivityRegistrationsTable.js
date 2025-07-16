@@ -115,6 +115,7 @@ const ActivityRegistrationsTable = ({ activityId, members, onReload }) => {
             setLoading(true);
             if (editMode && selectedRegistration) {
                 // 更新現有報名記錄
+                console.log('更新報名記錄，狀態:', registrationForm.status); // 除錯用
                 await memberServiceAPI_1.MemberServiceAPI.updateRegistration(selectedRegistration.id, {
                     status: registrationForm.status,
                     notes: registrationForm.notes,
@@ -208,7 +209,7 @@ const ActivityRegistrationsTable = ({ activityId, members, onReload }) => {
     };
     const getMemberName = (memberId, memberName) => {
         // 優先使用 member_name 欄位
-        if (memberName) {
+        if (memberName && memberName.trim()) {
             return memberName;
         }
         // 如果沒有 member_name，則從 members 陣列中查找
