@@ -314,6 +314,7 @@ const UserManagement: React.FC = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell>會員編號</TableCell>
+                            <TableCell>帳號</TableCell>
                             <TableCell>姓名</TableCell>
                             <TableCell>電子郵件</TableCell>
                             <TableCell>角色</TableCell>
@@ -326,6 +327,7 @@ const UserManagement: React.FC = () => {
                         {filteredUsers.map((user) => (
                             <TableRow key={user.id}>
                                 <TableCell>{user.memberNo}</TableCell>
+                                <TableCell>{user.username}</TableCell>
                                 <TableCell>{user.name}</TableCell>
                                 <TableCell>{user.email}</TableCell>
                                 <TableCell>
@@ -367,7 +369,7 @@ const UserManagement: React.FC = () => {
                         ))}
                         {filteredUsers.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={6} align="center">
+                                <TableCell colSpan={8} align="center">
                                     尚無會員資料
                                 </TableCell>
                             </TableRow>
