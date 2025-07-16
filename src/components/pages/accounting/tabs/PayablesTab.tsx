@@ -40,8 +40,8 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
-import { AccountPayable, PaymentMethod } from '../../../../types/payment';
-import { accountingService } from '../../../../services/accounting.service';
+import { AccountPayable } from '../../../../types/payment';
+import { payablesApiService } from '../../../../services/accountingApi.service';
 
 // 應付帳款狀態選項
 const statusOptions = [
@@ -86,7 +86,7 @@ const PayablesTab: React.FC = () => {
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [paymentData, setPaymentData] = useState({
         amount: 0,
-        method: 'bank_transfer' as PaymentMethod
+        method: 'bank_transfer' as string
     });
     const [snackbar, setSnackbar] = useState({
         open: false,
@@ -104,7 +104,7 @@ const PayablesTab: React.FC = () => {
     const loadPayables = async () => {
         setLoading(true);
         try {
-            const data = await accountingService.getPayables();
+            const data = await payablesApiService.getPayables();
             setPayables(data);
         } catch (error) {
             console.error('獲取應付帳款失敗:', error);
@@ -232,7 +232,7 @@ const PayablesTab: React.FC = () => {
         try {
             if (editingPayable) {
                 // 更新記錄
-                const updatedPayable = await accountingService.updatePayable(editingPayable.id, formData);
+                const updatedPayable = await payablesApiService.updatePayable(editingPayable.id, formData);
                 setPayables(prev => prev.map(item => item.id === updatedPayable.id ? updatedPayable : item));
                 setSnackbar({
                     open: true,
@@ -241,7 +241,7 @@ const PayablesTab: React.FC = () => {
                 });
             } else {
                 // 新增記錄
-                const newPayable = await accountingService.addPayable({
+                const newPayable = await payablesApiService.createPayable({
                     ...formData,
                     paidAmount: 0,
                     status: 'pending' as 'pending' | 'partially_paid' | 'paid' | 'overdue'
@@ -286,7 +286,7 @@ const PayablesTab: React.FC = () => {
 
             // 這裡也可以添加會計記錄功能，記錄支出
 
-            const updatedPayable = await accountingService.updatePayable(editingPayable.id, {
+            const updatedPayable = await payablesApiService.updatePayable(editingPayable.id, {
                 paidAmount: newPaidAmount,
                 status: newStatus
             });
@@ -320,7 +320,7 @@ const PayablesTab: React.FC = () => {
         if (!payableToDelete) return;
 
         try {
-            const success = await accountingService.deletePayable(payableToDelete);
+            const success = await payablesApiService.deletePayable(payableToDelete);
             if (success) {
                 setPayables(prev => prev.filter(item => item.id !== payableToDelete));
                 setSnackbar({
@@ -714,7 +714,7 @@ const PayablesTab: React.FC = () => {
                                         value={paymentData.method}
                                         onChange={e => setPaymentData({
                                             ...paymentData,
-                                            method: e.target.value as PaymentMethod
+                                            method: e.target.value as string
                                         })}
                                         label="付款方式"
                                     >

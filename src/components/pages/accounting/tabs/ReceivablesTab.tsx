@@ -41,7 +41,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { AccountReceivable } from '../../../../types/payment';
-import { accountingService } from '../../../../services/accounting.service';
+import { receivablesApiService } from '../../../../services/accountingApi.service';
 
 // 應收帳款狀態選項
 const statusOptions = [
@@ -91,7 +91,7 @@ const ReceivablesTab: React.FC = () => {
     const loadReceivables = async () => {
         setLoading(true);
         try {
-            const data = await accountingService.getReceivables();
+            const data = await receivablesApiService.getReceivables();
             setReceivables(data);
         } catch (error) {
             console.error('獲取應收帳款失敗:', error);
@@ -216,7 +216,7 @@ const ReceivablesTab: React.FC = () => {
         try {
             if (editingReceivable) {
                 // 更新記錄
-                const updatedReceivable = await accountingService.updateReceivable(editingReceivable.id, formData);
+                const updatedReceivable = await receivablesApiService.updateReceivable(editingReceivable.id, formData);
                 setReceivables(prev => prev.map(item => item.id === updatedReceivable.id ? updatedReceivable : item));
                 setSnackbar({
                     open: true,
@@ -225,7 +225,7 @@ const ReceivablesTab: React.FC = () => {
                 });
             } else {
                 // 新增記錄
-                const newReceivable = await accountingService.addReceivable({
+                const newReceivable = await receivablesApiService.createReceivable({
                     ...formData,
                     paidAmount: 0,
                     status: 'pending' as 'pending' | 'partially_paid' | 'paid' | 'overdue'
@@ -268,7 +268,7 @@ const ReceivablesTab: React.FC = () => {
                     newPaidAmount > 0 ? 'partially_paid' : 'pending'
             ) as 'pending' | 'partially_paid' | 'paid' | 'overdue';
 
-            const updatedReceivable = await accountingService.updateReceivable(editingReceivable.id, {
+            const updatedReceivable = await receivablesApiService.updateReceivable(editingReceivable.id, {
                 paidAmount: newPaidAmount,
                 status: newStatus
             });
@@ -302,7 +302,7 @@ const ReceivablesTab: React.FC = () => {
         if (!receivableToDelete) return;
 
         try {
-            const success = await accountingService.deleteReceivable(receivableToDelete);
+            const success = await receivablesApiService.deleteReceivable(receivableToDelete);
             if (success) {
                 setReceivables(prev => prev.filter(item => item.id !== receivableToDelete));
                 setSnackbar({

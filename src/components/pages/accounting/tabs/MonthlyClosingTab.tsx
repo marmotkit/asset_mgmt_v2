@@ -41,7 +41,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { MonthlyClosing } from '../../../../types/payment';
-import { accountingService } from '../../../../services/accounting.service';
+import { monthlyClosingApiService } from '../../../../services/accountingApi.service';
 
 const MonthlyClosingTab: React.FC = () => {
     // 狀態變數
@@ -80,7 +80,7 @@ const MonthlyClosingTab: React.FC = () => {
     const loadMonthlyClosings = async () => {
         setLoading(true);
         try {
-            const data = await accountingService.getMonthlyClosings();
+            const data = await monthlyClosingApiService.getMonthlyClosings();
             setMonthlyClosings(data);
         } catch (error) {
             console.error('獲取月結記錄失敗:', error);
@@ -118,7 +118,7 @@ const MonthlyClosingTab: React.FC = () => {
 
         try {
             // 獲取月結詳情
-            const detail = await accountingService.getMonthlyClosingDetail(monthlyClosing.id);
+            const detail = await monthlyClosingApiService.getMonthlyClosing(monthlyClosing.id);
             setDetailData(detail);
         } catch (error) {
             console.error('獲取月結詳情失敗:', error);
@@ -151,7 +151,7 @@ const MonthlyClosingTab: React.FC = () => {
     // 建立月結
     const handleCreateMonthlyClosing = async () => {
         try {
-            const newClosing = await accountingService.createMonthlyClosing({
+            const newClosing = await monthlyClosingApiService.createMonthlyClosing({
                 year: yearFilter,
                 month: selectedMonth
             });
@@ -178,7 +178,9 @@ const MonthlyClosingTab: React.FC = () => {
         if (!selectedMonthlyClosing) return;
 
         try {
-            const finalizedClosing = await accountingService.finalizeMonthlyClosing(selectedMonthlyClosing.id);
+            const finalizedClosing = await monthlyClosingApiService.updateMonthlyClosing(selectedMonthlyClosing.id, {
+                status: 'finalized'
+            });
 
             setMonthlyClosings(prev =>
                 prev.map(closing =>
