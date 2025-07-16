@@ -41,7 +41,7 @@ const AssetProfitStatusTab: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [yearFilter, setYearFilter] = useState<number>(new Date().getFullYear());
     const [monthFilter, setMonthFilter] = useState<number>(new Date().getMonth() + 1);
-    const [showAllYear, setShowAllYear] = useState<boolean>(false);
+    const [showAllYear, setShowAllYear] = useState<boolean>(true); // 預設顯示全年
     const [sortField, setSortField] = useState<SortField>('yearMonth');
     const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
     const { enqueueSnackbar } = useSnackbar();

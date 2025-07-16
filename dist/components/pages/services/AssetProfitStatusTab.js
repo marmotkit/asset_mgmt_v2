@@ -22,7 +22,7 @@ const AssetProfitStatusTab = () => {
     const [error, setError] = (0, react_1.useState)(null);
     const [yearFilter, setYearFilter] = (0, react_1.useState)(new Date().getFullYear());
     const [monthFilter, setMonthFilter] = (0, react_1.useState)(new Date().getMonth() + 1);
-    const [showAllYear, setShowAllYear] = (0, react_1.useState)(false);
+    const [showAllYear, setShowAllYear] = (0, react_1.useState)(true); // 預設顯示全年
     const [sortField, setSortField] = (0, react_1.useState)('yearMonth');
     const [sortDirection, setSortDirection] = (0, react_1.useState)('desc');
     const { enqueueSnackbar } = (0, notistack_1.useSnackbar)();
