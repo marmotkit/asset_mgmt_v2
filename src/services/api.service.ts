@@ -17,7 +17,7 @@ import {
 import { AccountPayable, AccountReceivable, AccountRecord, MonthlyClosing } from '../types/payment';
 
 // 設置一個axios實例
-const apiClient = axios.create({
+export const apiClient = axios.create({
     baseURL: 'https://asset-mgmt-api-clean.onrender.com/api',
     headers: {
         'Content-Type': 'application/json',
