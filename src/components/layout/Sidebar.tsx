@@ -25,10 +25,12 @@ import {
   Dashboard as DashboardIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [version, setVersion] = useState(() => {
     // 從 localStorage 讀取版本號，如果沒有則使用預設值 '1.0'
     return localStorage.getItem('app_version') || '1.0';
@@ -61,53 +63,73 @@ const Sidebar: React.FC = () => {
     }
   };
 
-  const menuItems = [
-    {
-      text: '會員管理',
-      icon: <PeopleIcon />,
-      path: '/users'
-    },
-    {
-      text: '會費管理',
-      icon: <FeeIcon />,
-      path: '/fees'
-    },
-    {
-      text: '公司資訊',
-      icon: <BusinessIcon />,
-      path: '/companies'
-    },
-    {
-      text: '投資管理',
-      icon: <InvestmentIcon />,
-      path: '/investment'
-    },
-    {
-      text: '會員服務',
-      icon: <ServiceIcon />,
-      path: '/services'
-    },
-    {
-      text: '帳務管理',
-      icon: <PaymentIcon />,
-      path: '/payment'
-    },
-    {
-      text: '投資看板',
-      icon: <DashboardIcon />,
-      path: '/investment-dashboard'
-    },
-    {
-      text: '通知提醒',
-      icon: <NotificationIcon />,
-      path: '/notifications'
-    },
-    {
-      text: '安全隱私',
-      icon: <SecurityIcon />,
-      path: '/security'
-    }
-  ];
+  // 檢查是否為管理員角色
+  const isAdmin = user?.role === 'admin' || user?.role === 'business' || user?.role === 'lifetime';
+
+  // 根據角色定義菜單項目
+  const getMenuItems = () => {
+    const allMenuItems = [
+      {
+        text: '會員管理',
+        icon: <PeopleIcon />,
+        path: '/users',
+        adminOnly: true
+      },
+      {
+        text: '會費管理',
+        icon: <FeeIcon />,
+        path: '/fees',
+        adminOnly: true
+      },
+      {
+        text: '公司資訊',
+        icon: <BusinessIcon />,
+        path: '/companies',
+        adminOnly: true
+      },
+      {
+        text: '投資管理',
+        icon: <InvestmentIcon />,
+        path: '/investment',
+        adminOnly: true
+      },
+      {
+        text: '會員服務',
+        icon: <ServiceIcon />,
+        path: '/services',
+        adminOnly: false
+      },
+      {
+        text: '帳務管理',
+        icon: <PaymentIcon />,
+        path: '/payment',
+        adminOnly: true
+      },
+      {
+        text: '投資看板',
+        icon: <DashboardIcon />,
+        path: '/investment-dashboard',
+        adminOnly: false
+      },
+      {
+        text: '通知提醒',
+        icon: <NotificationIcon />,
+        path: '/notifications',
+        adminOnly: true
+      },
+      {
+        text: '安全隱私',
+        icon: <SecurityIcon />,
+        path: '/security',
+        adminOnly: true
+      }
+    ];
+
+    // 根據用戶角色過濾菜單項目
+    return allMenuItems.filter(item => !item.adminOnly || isAdmin);
+  };
+
+  const menuItems = getMenuItems();
 
   return (
     <Drawer

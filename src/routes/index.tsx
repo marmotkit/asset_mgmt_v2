@@ -15,6 +15,7 @@ import InvestmentDashboard from '../components/pages/investment-dashboard/Invest
 import InvestmentDetail from '../components/pages/investment-dashboard/InvestmentDetail';
 import InvestmentDashboardManagement from '../components/pages/investment-dashboard/admin/InvestmentManagement';
 import InquiryManagement from '../components/pages/investment-dashboard/admin/InquiryManagement';
+import RoleBasedRoute from '../components/common/RoleBasedRoute';
 
 // 保護路由的高階組件
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -27,109 +28,135 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <Layout>{children}</Layout>;
 };
 
+// 管理員專用路由
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <ProtectedRoute>
+      <RoleBasedRoute allowedRoles={['admin', 'business', 'lifetime']}>
+        {children}
+      </RoleBasedRoute>
+    </ProtectedRoute>
+  );
+};
+
+// 一般用戶路由（所有角色都可訪問）
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <ProtectedRoute>
+      {children}
+    </ProtectedRoute>
+  );
+};
+
 const AppRoutes = () => {
   return (
     <Routes>
       {/* 公開路由 */}
       <Route path="/login" element={<Login />} />
 
-      {/* 受保護路由 */}
-      <Route path="/" element={
-        <ProtectedRoute>
-          <Navigate to="/users" replace />
-        </ProtectedRoute>
-      } />
-
+      {/* 管理員專用路由 */}
       <Route path="/users" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <UserManagement />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
 
       <Route path="/fees" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <FeeManagement />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
 
       <Route path="/companies" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <CompanyManagement />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
 
       <Route path="/investment" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <InvestmentManagement />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
 
       {/* 新增的投資相關子路由 */}
       <Route path="/investment/rental-payment" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <RentalAndProfitManagement initialTab={1} />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
 
       <Route path="/investment/member-profit" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <RentalAndProfitManagement initialTab={2} />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
 
       <Route path="/investment/history" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <RentalAndProfitManagement initialTab={3} />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
 
-      <Route path="/investment/invoice/print/:invoiceId" element={<InvoicePrintPage />} />
-
-      <Route path="/services" element={
-        <ProtectedRoute>
-          <MemberServicesManagement />
-        </ProtectedRoute>
+      <Route path="/investment/invoice/print/:invoiceId" element={
+        <AdminRoute>
+          <InvoicePrintPage />
+        </AdminRoute>
       } />
 
       <Route path="/payment" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <AccountingManagement />
-        </ProtectedRoute>
-      } />
-
-      <Route path="/investment-dashboard" element={
-        <ProtectedRoute>
-          <InvestmentDashboard />
-        </ProtectedRoute>
-      } />
-
-      <Route path="/investment-dashboard/:id" element={
-        <ProtectedRoute>
-          <InvestmentDetail />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
 
       <Route path="/investment-dashboard-management" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <InvestmentDashboardManagement />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
 
       <Route path="/investment-dashboard-management/inquiries" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <InquiryManagement />
-        </ProtectedRoute>
+        </AdminRoute>
       } />
 
       <Route path="/notifications" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <div>通知提醒</div>
-        </ProtectedRoute>
+        </AdminRoute>
       } />
 
       <Route path="/security" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <div>安全隱私</div>
+        </AdminRoute>
+      } />
+
+      {/* 一般用戶可訪問的路由 */}
+      <Route path="/services" element={
+        <PublicRoute>
+          <MemberServicesManagement />
+        </PublicRoute>
+      } />
+
+      <Route path="/investment-dashboard" element={
+        <PublicRoute>
+          <InvestmentDashboard />
+        </PublicRoute>
+      } />
+
+      <Route path="/investment-dashboard/:id" element={
+        <PublicRoute>
+          <InvestmentDetail />
+        </PublicRoute>
+      } />
+
+      {/* 預設路由重定向 */}
+      <Route path="/" element={
+        <ProtectedRoute>
+          <Navigate to="/services" replace />
         </ProtectedRoute>
       } />
 
