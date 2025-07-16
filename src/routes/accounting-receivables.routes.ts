@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
             ${whereClause}
         `, { bind: bindParams });
 
-        const total = parseInt(countResult[0].total);
+        const total = parseInt((countResult[0] as any).total);
 
         // 取得資料
         const [receivables] = await sequelize.query(`
@@ -174,7 +174,7 @@ router.put('/:id', async (req, res) => {
         }
 
         // 如果已付款，不允許修改
-        if (existing[0].status === 'paid') {
+        if ((existing[0] as any).status === 'paid') {
             return res.status(400).json({ error: '已付款的應收帳款無法修改' });
         }
 
@@ -227,7 +227,7 @@ router.post('/:id/payment', async (req, res) => {
             return res.status(404).json({ error: '應收帳款不存在' });
         }
 
-        const receivable = existing[0];
+        const receivable = existing[0] as any;
 
         // 檢查付款金額
         if (payment_amount <= 0) {
@@ -280,7 +280,7 @@ router.delete('/:id', async (req, res) => {
         }
 
         // 如果已付款，不允許刪除
-        if (existing[0].status === 'paid') {
+        if ((existing[0] as any).status === 'paid') {
             return res.status(400).json({ error: '已付款的應收帳款無法刪除' });
         }
 

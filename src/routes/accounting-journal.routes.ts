@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
             ${whereClause}
         `, { bind: bindParams });
 
-        const total = parseInt(countResult[0].total);
+        const total = parseInt((countResult[0] as any).total);
 
         // 取得資料
         const [journals] = await sequelize.query(`
