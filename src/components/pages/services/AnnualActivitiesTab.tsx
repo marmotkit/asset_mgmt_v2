@@ -41,7 +41,12 @@ import {
     Visibility as VisibilityIcon,
     VisibilityOff as VisibilityOffIcon,
     PersonAdd as PersonAddIcon,
-    Assessment as AssessmentIcon
+    Assessment as AssessmentIcon,
+    Download as DownloadIcon,
+    Analytics as AnalyticsIcon,
+    People as PeopleIcon,
+    CheckBox as CheckBoxIcon,
+    CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -49,7 +54,7 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import zhTW from 'date-fns/locale/zh-TW';
 import { format, formatISO } from 'date-fns';
 
-import { AnnualActivity, ActivityStatus, ActivityRegistrationForm, ActivityRegistrationDetail } from '../../../types/services';
+import { AnnualActivity, ActivityStatus, ActivityRegistrationForm, ActivityRegistrationDetail, RegistrationStatus } from '../../../types/services';
 import { MemberServiceAPI } from '../../../services/memberServiceAPI';
 import { User } from '../../../types/user';
 import { ApiService } from '../../../services/api.service';
@@ -100,6 +105,15 @@ const AnnualActivitiesTab: React.FC = () => {
     const [registrationErrors, setRegistrationErrors] = useState<Record<string, string>>({});
     const [myRegistrations, setMyRegistrations] = useState<ActivityRegistrationDetail[]>([]);
     const [showMyRegistrations, setShowMyRegistrations] = useState(false);
+
+    // 管理者專用狀態
+    const [managementDialogOpen, setManagementDialogOpen] = useState(false);
+    const [selectedActivityForManagement, setSelectedActivityForManagement] = useState<AnnualActivity | null>(null);
+    const [activityRegistrations, setActivityRegistrations] = useState<ActivityRegistrationDetail[]>([]);
+    const [selectedRegistrations, setSelectedRegistrations] = useState<string[]>([]);
+    const [bulkStatusUpdate, setBulkStatusUpdate] = useState<RegistrationStatus>(RegistrationStatus.PENDING);
+    const [statistics, setStatistics] = useState<any>(null);
+    const [showStatistics, setShowStatistics] = useState(false);
 
     const { enqueueSnackbar } = useSnackbar();
 
@@ -510,6 +524,195 @@ const AnnualActivitiesTab: React.FC = () => {
         }
     };
 
+    // 管理者專用功能
+    const handleOpenManagementDialog = async (activity: AnnualActivity) => {
+        setSelectedActivityForManagement(activity);
+        setManagementDialogOpen(true);
+        await loadActivityRegistrations(activity.id);
+        await calculateStatistics(activity.id);
+    };
+
+    const handleCloseManagementDialog = () => {
+        setManagementDialogOpen(false);
+        setSelectedActivityForManagement(null);
+        setActivityRegistrations([]);
+        setSelectedRegistrations([]);
+        setStatistics(null);
+    };
+
+    const loadActivityRegistrations = async (activityId: string) => {
+        try {
+            const data = await MemberServiceAPI.getRegistrations(activityId);
+            // 轉換為ActivityRegistrationDetail格式
+            const convertedData = data.map((reg: any) => ({
+                id: reg.id,
+                activityId: reg.activityId,
+                memberId: reg.memberId,
+                registrationDate: reg.registrationDate,
+                status: reg.status,
+                notes: reg.notes,
+                createdAt: reg.createdAt,
+                updatedAt: reg.updatedAt,
+                memberName: reg.memberName,
+                phoneNumber: reg.phoneNumber,
+                maleCount: reg.maleCount,
+                femaleCount: reg.femaleCount,
+                totalParticipants: reg.totalParticipants,
+                companions: reg.companions || 0,
+                activityTitle: selectedActivityForManagement?.title || '',
+                activityDate: selectedActivityForManagement?.startDate || '',
+                activityLocation: selectedActivityForManagement?.location || ''
+            }));
+            setActivityRegistrations(convertedData);
+        } catch (error) {
+            console.error('載入活動報名記錄失敗', error);
+            enqueueSnackbar('載入報名記錄失敗', { variant: 'error' });
+        }
+    };
+
+    const calculateStatistics = async (activityId: string) => {
+        try {
+            const registrations = await MemberServiceAPI.getRegistrations(activityId);
+
+            const stats = {
+                totalRegistrations: registrations.length,
+                totalParticipants: registrations.reduce((sum, reg) => sum + (reg.totalParticipants || 0), 0),
+                maleCount: registrations.reduce((sum, reg) => sum + (reg.maleCount || 0), 0),
+                femaleCount: registrations.reduce((sum, reg) => sum + (reg.femaleCount || 0), 0),
+                statusBreakdown: {
+                    pending: registrations.filter(reg => reg.status === 'pending').length,
+                    confirmed: registrations.filter(reg => reg.status === 'confirmed').length,
+                    attended: registrations.filter(reg => reg.status === 'attended').length,
+                    cancelled: registrations.filter(reg => reg.status === 'cancelled').length,
+                    absent: registrations.filter(reg => reg.status === 'absent').length
+                }
+            };
+
+            setStatistics(stats);
+        } catch (error) {
+            console.error('計算統計資料失敗', error);
+        }
+    };
+
+    const handleSelectAllRegistrations = () => {
+        if (selectedRegistrations.length === activityRegistrations.length) {
+            setSelectedRegistrations([]);
+        } else {
+            setSelectedRegistrations(activityRegistrations.map(reg => reg.id));
+        }
+    };
+
+    const handleSelectRegistration = (registrationId: string) => {
+        setSelectedRegistrations(prev =>
+            prev.includes(registrationId)
+                ? prev.filter(id => id !== registrationId)
+                : [...prev, registrationId]
+        );
+    };
+
+    const handleBulkStatusUpdate = async () => {
+        if (selectedRegistrations.length === 0) {
+            enqueueSnackbar('請選擇要更新的報名記錄', { variant: 'warning' });
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            // 批量更新選中的報名記錄
+            for (const registrationId of selectedRegistrations) {
+                await MemberServiceAPI.updateRegistration(registrationId, {
+                    status: bulkStatusUpdate
+                });
+            }
+
+            enqueueSnackbar(`已更新 ${selectedRegistrations.length} 筆報名記錄`, { variant: 'success' });
+
+            // 重新載入資料
+            if (selectedActivityForManagement) {
+                await loadActivityRegistrations(selectedActivityForManagement.id);
+                await calculateStatistics(selectedActivityForManagement.id);
+            }
+
+            setSelectedRegistrations([]);
+        } catch (error) {
+            console.error('批量更新失敗', error);
+            enqueueSnackbar('批量更新失敗', { variant: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleExportRegistrations = () => {
+        if (!selectedActivityForManagement) return;
+
+        const csvData = [
+            ['報名者姓名', '聯絡電話', '總人數', '男性人數', '女性人數', '報名狀態', '報名日期', '備註'],
+            ...activityRegistrations.map(reg => [
+                reg.memberName || '未知',
+                reg.phoneNumber || '',
+                reg.totalParticipants || 0,
+                reg.maleCount || 0,
+                reg.femaleCount || 0,
+                reg.status === 'pending' ? '待確認' :
+                    reg.status === 'confirmed' ? '已確認' :
+                        reg.status === 'attended' ? '已出席' :
+                            reg.status === 'cancelled' ? '已取消' :
+                                reg.status === 'absent' ? '未出席' : '未知',
+                formatDate(reg.registrationDate),
+                reg.notes || ''
+            ])
+        ];
+
+        const csvContent = csvData.map(row => row.join(',')).join('\n');
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${selectedActivityForManagement.title}_報名名單_${format(new Date(), 'yyyyMMdd')}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        enqueueSnackbar('報名名單匯出成功', { variant: 'success' });
+    };
+
+    const getRegistrationStatusText = (status: RegistrationStatus) => {
+        const statusMap: Record<RegistrationStatus, string> = {
+            [RegistrationStatus.PENDING]: '待確認',
+            [RegistrationStatus.CONFIRMED]: '已確認',
+            [RegistrationStatus.CANCELLED]: '已取消',
+            [RegistrationStatus.ATTENDED]: '已出席',
+            [RegistrationStatus.ABSENT]: '未出席'
+        };
+        return statusMap[status] || '未知';
+    };
+
+    const getRegistrationStatusChip = (status: RegistrationStatus) => {
+        let color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' = 'default';
+
+        switch (status) {
+            case RegistrationStatus.PENDING:
+                color = 'info';
+                break;
+            case RegistrationStatus.CONFIRMED:
+                color = 'success';
+                break;
+            case RegistrationStatus.CANCELLED:
+                color = 'error';
+                break;
+            case RegistrationStatus.ATTENDED:
+                color = 'primary';
+                break;
+            case RegistrationStatus.ABSENT:
+                color = 'warning';
+                break;
+        }
+
+        return <Chip label={getRegistrationStatusText(status)} color={color} size="small" />;
+    };
+
     // 載入我的報名記錄
     useEffect(() => {
         if (!isAdmin) {
@@ -694,6 +897,14 @@ const AnnualActivitiesTab: React.FC = () => {
                                                                 onClick={() => handleOpenDialog(activity)}
                                                             >
                                                                 <EditIcon fontSize="small" />
+                                                            </IconButton>
+                                                            <IconButton
+                                                                size="small"
+                                                                color="info"
+                                                                onClick={() => handleOpenManagementDialog(activity)}
+                                                                title="管理報名"
+                                                            >
+                                                                <PeopleIcon fontSize="small" />
                                                             </IconButton>
                                                             <IconButton
                                                                 size="small"
@@ -1030,6 +1241,191 @@ const AnnualActivitiesTab: React.FC = () => {
                     <Button onClick={handleRegistrationSubmit} variant="contained" disabled={loading}>
                         {loading ? '處理中...' : '確認報名'}
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* 管理者專用：報名管理對話框 */}
+            <Dialog open={managementDialogOpen} onClose={handleCloseManagementDialog} maxWidth="lg" fullWidth>
+                <DialogTitle>
+                    {selectedActivityForManagement?.title} - 報名管理
+                </DialogTitle>
+                <DialogContent>
+                    {selectedActivityForManagement && (
+                        <Box>
+                            {/* 統計資訊 */}
+                            <Card sx={{ mb: 3 }}>
+                                <CardContent>
+                                    <Typography variant="h6" gutterBottom>
+                                        統計資訊
+                                    </Typography>
+                                    {statistics && (
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12} sm={3}>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    總報名數
+                                                </Typography>
+                                                <Typography variant="h4" color="primary">
+                                                    {statistics.totalRegistrations}
+                                                </Typography>
+                                            </Grid>
+                                            <Grid item xs={12} sm={3}>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    總人數
+                                                </Typography>
+                                                <Typography variant="h4" color="secondary">
+                                                    {statistics.totalParticipants}
+                                                </Typography>
+                                            </Grid>
+                                            <Grid item xs={12} sm={3}>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    男性
+                                                </Typography>
+                                                <Typography variant="h4" color="info.main">
+                                                    {statistics.maleCount}
+                                                </Typography>
+                                            </Grid>
+                                            <Grid item xs={12} sm={3}>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    女性
+                                                </Typography>
+                                                <Typography variant="h4" color="error.main">
+                                                    {statistics.femaleCount}
+                                                </Typography>
+                                            </Grid>
+                                        </Grid>
+                                    )}
+
+                                    {/* 狀態分布 */}
+                                    {statistics && (
+                                        <Box sx={{ mt: 2 }}>
+                                            <Typography variant="subtitle1" gutterBottom>
+                                                狀態分布
+                                            </Typography>
+                                            <Grid container spacing={1}>
+                                                <Grid item>
+                                                    <Chip label={`待確認: ${statistics.statusBreakdown.pending}`} color="info" size="small" />
+                                                </Grid>
+                                                <Grid item>
+                                                    <Chip label={`已確認: ${statistics.statusBreakdown.confirmed}`} color="success" size="small" />
+                                                </Grid>
+                                                <Grid item>
+                                                    <Chip label={`已出席: ${statistics.statusBreakdown.attended}`} color="primary" size="small" />
+                                                </Grid>
+                                                <Grid item>
+                                                    <Chip label={`已取消: ${statistics.statusBreakdown.cancelled}`} color="error" size="small" />
+                                                </Grid>
+                                                <Grid item>
+                                                    <Chip label={`未出席: ${statistics.statusBreakdown.absent}`} color="warning" size="small" />
+                                                </Grid>
+                                            </Grid>
+                                        </Box>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* 操作按鈕 */}
+                            <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<DownloadIcon />}
+                                    onClick={handleExportRegistrations}
+                                >
+                                    匯出報名名單
+                                </Button>
+
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                                        <InputLabel>批量更新狀態</InputLabel>
+                                        <Select
+                                            value={bulkStatusUpdate}
+                                            onChange={(e) => setBulkStatusUpdate(e.target.value as RegistrationStatus)}
+                                            label="批量更新狀態"
+                                        >
+                                            <MenuItem value={RegistrationStatus.PENDING}>待確認</MenuItem>
+                                            <MenuItem value={RegistrationStatus.CONFIRMED}>已確認</MenuItem>
+                                            <MenuItem value={RegistrationStatus.ATTENDED}>已出席</MenuItem>
+                                            <MenuItem value={RegistrationStatus.CANCELLED}>已取消</MenuItem>
+                                            <MenuItem value={RegistrationStatus.ABSENT}>未出席</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                    <Button
+                                        variant="contained"
+                                        onClick={handleBulkStatusUpdate}
+                                        disabled={selectedRegistrations.length === 0}
+                                    >
+                                        更新選中項目 ({selectedRegistrations.length})
+                                    </Button>
+                                </Box>
+                            </Box>
+
+                            {/* 報名名單表格 */}
+                            <TableContainer component={Paper}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell padding="checkbox">
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={handleSelectAllRegistrations}
+                                                >
+                                                    {selectedRegistrations.length === activityRegistrations.length ? (
+                                                        <CheckBoxIcon />
+                                                    ) : (
+                                                        <CheckBoxOutlineBlankIcon />
+                                                    )}
+                                                </IconButton>
+                                            </TableCell>
+                                            <TableCell>報名者</TableCell>
+                                            <TableCell>聯絡電話</TableCell>
+                                            <TableCell>總人數</TableCell>
+                                            <TableCell>男性</TableCell>
+                                            <TableCell>女性</TableCell>
+                                            <TableCell>報名日期</TableCell>
+                                            <TableCell>狀態</TableCell>
+                                            <TableCell>備註</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {activityRegistrations.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={9} align="center">
+                                                    暫無報名記錄
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            activityRegistrations.map((registration) => (
+                                                <TableRow key={registration.id}>
+                                                    <TableCell padding="checkbox">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => handleSelectRegistration(registration.id)}
+                                                        >
+                                                            {selectedRegistrations.includes(registration.id) ? (
+                                                                <CheckBoxIcon />
+                                                            ) : (
+                                                                <CheckBoxOutlineBlankIcon />
+                                                            )}
+                                                        </IconButton>
+                                                    </TableCell>
+                                                    <TableCell>{registration.memberName}</TableCell>
+                                                    <TableCell>{registration.phoneNumber}</TableCell>
+                                                    <TableCell>{registration.totalParticipants}</TableCell>
+                                                    <TableCell>{registration.maleCount}</TableCell>
+                                                    <TableCell>{registration.femaleCount}</TableCell>
+                                                    <TableCell>{formatDate(registration.registrationDate)}</TableCell>
+                                                    <TableCell>{getRegistrationStatusChip(registration.status)}</TableCell>
+                                                    <TableCell>{registration.notes}</TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseManagementDialog}>關閉</Button>
                 </DialogActions>
             </Dialog>
         </LocalizationProvider>
