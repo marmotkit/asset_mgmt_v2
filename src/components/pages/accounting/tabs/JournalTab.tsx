@@ -40,7 +40,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { AccountRecord, PaymentMethod, TransactionType } from '../../../../types/payment';
-import { accountingService } from '../../../../services/accounting.service';
+import { accountingJournalService, JournalEntry, CreateJournalEntry } from '../../../../services/accountingJournal.service';
 
 const paymentMethodOptions = [
     { value: 'cash', label: '現金' },
@@ -83,24 +83,27 @@ const categoryOptions = {
 };
 
 // 初始表單數據
-const initialFormData = {
-    date: dayjs().format('YYYY-MM-DD'),
-    amount: 0,
-    type: 'income' as TransactionType,
-    category: '',
-    paymentMethod: 'bank_transfer' as PaymentMethod,
+const initialFormData: CreateJournalEntry = {
+    journal_date: dayjs().format('YYYY-MM-DD'),
+    journal_number: '',
+    reference_number: '',
     description: '',
-    relatedParty: '',
-    invoiceNumber: ''
+    debit_account_id: '',
+    credit_account_id: '',
+    amount: 0,
+    category_id: '',
+    created_by: ''
 };
 
 const JournalTab: React.FC = () => {
     // 狀態變數
-    const [records, setRecords] = useState<AccountRecord[]>([]);
+    const [records, setRecords] = useState<JournalEntry[]>([]);
+    const [accounts, setAccounts] = useState<any[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [editingRecord, setEditingRecord] = useState<AccountRecord | null>(null);
-    const [formData, setFormData] = useState(initialFormData);
+    const [editingRecord, setEditingRecord] = useState<JournalEntry | null>(null);
+    const [formData, setFormData] = useState<CreateJournalEntry>(initialFormData);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<string>('all');
@@ -115,13 +118,15 @@ const JournalTab: React.FC = () => {
     // 載入資料
     useEffect(() => {
         loadRecords();
+        loadAccounts();
+        loadCategories();
     }, []);
 
     const loadRecords = async () => {
         setLoading(true);
         try {
-            const data = await accountingService.getAccountRecords();
-            setRecords(data);
+            const data = await accountingJournalService.getJournalEntries();
+            setRecords(data.journals || data); // 若有分頁包裝則取 journals
         } catch (error) {
             console.error('獲取帳務記錄失敗:', error);
             setSnackbar({
@@ -134,40 +139,72 @@ const JournalTab: React.FC = () => {
         }
     };
 
+    const loadAccounts = async () => {
+        try {
+            const data = await accountingJournalService.getAccounts();
+            setAccounts(data);
+        } catch (error) {
+            setSnackbar({
+                open: true,
+                message: '取得會計科目失敗',
+                severity: 'error'
+            });
+        }
+    };
+
+    const loadCategories = async () => {
+        try {
+            const data = await accountingJournalService.getCategories();
+            setCategories(data);
+        } catch (error) {
+            setSnackbar({
+                open: true,
+                message: '取得交易類別失敗',
+                severity: 'error'
+            });
+        }
+    };
+
     // 過濾和搜尋記錄
     const filteredRecords = records.filter(record => {
-        // 依照類型過濾
-        if (filterType !== 'all' && record.type !== filterType) {
-            return false;
-        }
-
-        // 依照搜尋條件過濾
+        // 只用 description、journal_number、reference_number、amount 搜尋
         const searchLower = searchTerm.toLowerCase();
         return (
-            record.description.toLowerCase().includes(searchLower) ||
-            record.category.toLowerCase().includes(searchLower) ||
-            (record.relatedParty && record.relatedParty.toLowerCase().includes(searchLower)) ||
-            (record.invoiceNumber && record.invoiceNumber.toLowerCase().includes(searchLower))
+            (record.description && record.description.toLowerCase().includes(searchLower)) ||
+            (record.journal_number && record.journal_number.toLowerCase().includes(searchLower)) ||
+            (record.reference_number && record.reference_number.toLowerCase().includes(searchLower)) ||
+            (record.amount && record.amount.toString().includes(searchLower))
         );
     });
 
     // 處理對話框
-    const handleOpenDialog = (record?: AccountRecord) => {
+    const handleOpenDialog = (record?: JournalEntry) => {
         if (record) {
             setEditingRecord(record);
             setFormData({
-                date: record.date,
-                amount: record.amount,
-                type: record.type,
-                category: record.category,
-                paymentMethod: record.paymentMethod,
+                journal_date: record.journal_date,
+                journal_number: record.journal_number,
+                reference_number: record.reference_number || '',
                 description: record.description,
-                relatedParty: record.relatedParty || '',
-                invoiceNumber: record.invoiceNumber || ''
+                debit_account_id: record.debit_account_id,
+                credit_account_id: record.credit_account_id,
+                amount: Number(record.amount),
+                category_id: record.category_id || '',
+                created_by: record.created_by
             });
         } else {
             setEditingRecord(null);
-            setFormData(initialFormData);
+            setFormData({
+                journal_date: dayjs().format('YYYY-MM-DD'),
+                journal_number: '',
+                reference_number: '',
+                description: '',
+                debit_account_id: '',
+                credit_account_id: '',
+                amount: 0,
+                category_id: '',
+                created_by: ''
+            });
         }
         setFormErrors({});
         setDialogOpen(true);
@@ -197,23 +234,24 @@ const JournalTab: React.FC = () => {
     // 表單驗證
     const validateForm = () => {
         const errors: { [key: string]: string } = {};
-
-        if (!formData.date) {
-            errors.date = '請選擇日期';
+        if (!formData.journal_date) {
+            errors.journal_date = '請選擇日期';
         }
-
         if (!formData.amount || formData.amount <= 0) {
             errors.amount = '請輸入有效金額';
         }
-
-        if (!formData.category) {
-            errors.category = '請選擇類別';
+        if (!formData.journal_number) {
+            errors.journal_number = '請輸入分錄號碼';
         }
-
+        if (!formData.debit_account_id) {
+            errors.debit_account_id = '請選擇借方科目';
+        }
+        if (!formData.credit_account_id) {
+            errors.credit_account_id = '請選擇貸方科目';
+        }
         if (!formData.description.trim()) {
             errors.description = '請輸入描述';
         }
-
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -227,7 +265,7 @@ const JournalTab: React.FC = () => {
         try {
             if (editingRecord) {
                 // 更新記錄
-                const updatedRecord = await accountingService.updateAccountRecord(editingRecord.id, formData);
+                const updatedRecord = await accountingJournalService.updateJournalEntry(editingRecord.id, formData);
                 setRecords(prev => prev.map(record => record.id === updatedRecord.id ? updatedRecord : record));
                 setSnackbar({
                     open: true,
@@ -236,7 +274,7 @@ const JournalTab: React.FC = () => {
                 });
             } else {
                 // 新增記錄
-                const newRecord = await accountingService.addAccountRecord(formData);
+                const newRecord = await accountingJournalService.createJournalEntry(formData);
                 setRecords(prev => [...prev, newRecord]);
                 setSnackbar({
                     open: true,
@@ -265,15 +303,13 @@ const JournalTab: React.FC = () => {
         if (!recordToDelete) return;
 
         try {
-            const success = await accountingService.deleteAccountRecord(recordToDelete);
-            if (success) {
-                setRecords(prev => prev.filter(record => record.id !== recordToDelete));
-                setSnackbar({
-                    open: true,
-                    message: '帳務記錄已刪除',
-                    severity: 'success'
-                });
-            }
+            await accountingJournalService.deleteJournalEntry(recordToDelete);
+            setRecords(prev => prev.filter(record => record.id !== recordToDelete));
+            setSnackbar({
+                open: true,
+                message: '帳務記錄已刪除',
+                severity: 'success'
+            });
         } catch (error) {
             console.error('刪除帳務記錄失敗:', error);
             setSnackbar({
@@ -307,7 +343,7 @@ const JournalTab: React.FC = () => {
                     <Grid item xs={12} md={5}>
                         <TextField
                             fullWidth
-                            placeholder="搜尋描述、類別、關聯方或發票號碼"
+                            placeholder="搜尋描述、分錄號碼、參考號碼或金額"
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             InputProps={{
@@ -369,10 +405,10 @@ const JournalTab: React.FC = () => {
                             ) : (
                                 filteredRecords.map(record => (
                                     <TableRow key={record.id}>
-                                        <TableCell>{record.date}</TableCell>
+                                        <TableCell>{record.journal_date}</TableCell>
                                         <TableCell>
                                             <Chip
-                                                label={record.category}
+                                                label={record.category_name}
                                                 color={record.type === 'income' ? 'success' : 'error'}
                                                 size="small"
                                             />
@@ -386,7 +422,9 @@ const JournalTab: React.FC = () => {
                                             {record.type === 'income' ? '+' : '-'}{record.amount.toLocaleString()}
                                         </TableCell>
                                         <TableCell>
-                                            {paymentMethodOptions.find(opt => opt.value === record.paymentMethod)?.label || record.paymentMethod}
+                                            {/* Assuming paymentMethod is not directly available in the API response for this tab */}
+                                            {/* If it were, you would map it here */}
+                                            {record.payment_method_name || 'N/A'}
                                         </TableCell>
                                         <TableCell align="right">
                                             <IconButton
@@ -423,121 +461,108 @@ const JournalTab: React.FC = () => {
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     label="日期"
-                                    value={dayjs(formData.date)}
+                                    value={dayjs(formData.journal_date)}
                                     onChange={(value: Dayjs | null) =>
-                                        handleFormChange('date', value ? value.format('YYYY-MM-DD') : '')
+                                        handleFormChange('journal_date', value ? value.format('YYYY-MM-DD') : '')
                                     }
                                     format="YYYY/MM/DD"
                                     slotProps={{
                                         textField: {
                                             fullWidth: true,
                                             margin: 'normal',
-                                            error: !!formErrors.date,
-                                            helperText: formErrors.date
+                                            error: !!formErrors.journal_date,
+                                            helperText: formErrors.journal_date
                                         }
                                     }}
                                 />
                             </LocalizationProvider>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <FormControl fullWidth margin="normal" error={!!formErrors.type}>
-                                <InputLabel>交易類型</InputLabel>
+                            <FormControl fullWidth margin="normal" error={!!formErrors.journal_number}>
+                                <InputLabel>分錄號碼</InputLabel>
+                                <TextField
+                                    value={formData.journal_number}
+                                    onChange={e => handleFormChange('journal_number', e.target.value)}
+                                    fullWidth
+                                    margin="normal"
+                                    error={!!formErrors.journal_number}
+                                    helperText={formErrors.journal_number}
+                                />
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth margin="normal" error={!!formErrors.amount}>
+                                <InputLabel>金額</InputLabel>
+                                <TextField
+                                    type="number"
+                                    value={formData.amount}
+                                    onChange={e => handleFormChange('amount', parseFloat(e.target.value) || 0)}
+                                    fullWidth
+                                    margin="normal"
+                                    error={!!formErrors.amount}
+                                    helperText={formErrors.amount}
+                                />
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth margin="normal" error={!!formErrors.debit_account_id}>
+                                <InputLabel>借方科目</InputLabel>
                                 <Select
-                                    value={formData.type}
-                                    onChange={e => handleFormChange('type', e.target.value)}
-                                    label="交易類型"
+                                    value={formData.debit_account_id}
+                                    onChange={e => handleFormChange('debit_account_id', e.target.value)}
+                                    fullWidth
+                                    margin="normal"
+                                    error={!!formErrors.debit_account_id}
                                 >
-                                    {transactionTypeOptions.map(option => (
-                                        <MenuItem key={option.value} value={option.value}>
-                                            {option.label}
+                                    <MenuItem value="" disabled>請選擇借方科目</MenuItem>
+                                    {accounts.map(account => (
+                                        <MenuItem key={account.id} value={account.id}>
+                                            {account.name}
                                         </MenuItem>
                                     ))}
                                 </Select>
+                                {formErrors.debit_account_id && <FormHelperText>{formErrors.debit_account_id}</FormHelperText>}
                             </FormControl>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                label="金額"
-                                type="number"
-                                value={formData.amount}
-                                onChange={e => handleFormChange('amount', parseFloat(e.target.value) || 0)}
-                                margin="normal"
-                                error={!!formErrors.amount}
-                                helperText={formErrors.amount}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <FormControl fullWidth margin="normal" error={!!formErrors.category}>
-                                <InputLabel>類別</InputLabel>
+                            <FormControl fullWidth margin="normal" error={!!formErrors.credit_account_id}>
+                                <InputLabel>貸方科目</InputLabel>
                                 <Select
-                                    value={formData.category}
-                                    onChange={e => handleFormChange('category', e.target.value)}
-                                    label="類別"
+                                    value={formData.credit_account_id}
+                                    onChange={e => handleFormChange('credit_account_id', e.target.value)}
+                                    fullWidth
+                                    margin="normal"
+                                    error={!!formErrors.credit_account_id}
                                 >
-                                    <MenuItem value="" disabled>請選擇類別</MenuItem>
-                                    {formData.type === 'income' ? (
-                                        categoryOptions.income.map(category => (
-                                            <MenuItem key={category} value={category}>
-                                                {category}
-                                            </MenuItem>
-                                        ))
-                                    ) : (
-                                        categoryOptions.expense.map(category => (
-                                            <MenuItem key={category} value={category}>
-                                                {category}
-                                            </MenuItem>
-                                        ))
-                                    )}
-                                </Select>
-                                {formErrors.category && <FormHelperText>{formErrors.category}</FormHelperText>}
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <FormControl fullWidth margin="normal">
-                                <InputLabel>支付方式</InputLabel>
-                                <Select
-                                    value={formData.paymentMethod}
-                                    onChange={e => handleFormChange('paymentMethod', e.target.value)}
-                                    label="支付方式"
-                                >
-                                    {paymentMethodOptions.map(option => (
-                                        <MenuItem key={option.value} value={option.value}>
-                                            {option.label}
+                                    <MenuItem value="" disabled>請選擇貸方科目</MenuItem>
+                                    {accounts.map(account => (
+                                        <MenuItem key={account.id} value={account.id}>
+                                            {account.name}
                                         </MenuItem>
                                     ))}
                                 </Select>
+                                {formErrors.credit_account_id && <FormHelperText>{formErrors.credit_account_id}</FormHelperText>}
                             </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                label="關聯方"
-                                value={formData.relatedParty}
-                                onChange={e => handleFormChange('relatedParty', e.target.value)}
-                                margin="normal"
-                                placeholder="公司名稱或個人姓名"
-                            />
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                label="描述"
-                                value={formData.description}
-                                onChange={e => handleFormChange('description', e.target.value)}
-                                margin="normal"
-                                multiline
-                                rows={2}
-                                error={!!formErrors.description}
-                                helperText={formErrors.description}
-                            />
+                            <FormControl fullWidth margin="normal" error={!!formErrors.description}>
+                                <InputLabel>描述</InputLabel>
+                                <TextField
+                                    value={formData.description}
+                                    onChange={e => handleFormChange('description', e.target.value)}
+                                    fullWidth
+                                    margin="normal"
+                                    error={!!formErrors.description}
+                                    helperText={formErrors.description}
+                                />
+                            </FormControl>
                         </Grid>
                         <Grid item xs={12} md={6}>
                             <TextField
                                 fullWidth
-                                label="發票號碼"
-                                value={formData.invoiceNumber}
-                                onChange={e => handleFormChange('invoiceNumber', e.target.value)}
+                                label="參考號碼"
+                                value={formData.reference_number}
+                                onChange={e => handleFormChange('reference_number', e.target.value)}
                                 margin="normal"
                                 placeholder="選填"
                             />
