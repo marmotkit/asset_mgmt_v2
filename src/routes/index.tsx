@@ -11,6 +11,8 @@ import InvoicePrintPage from '../components/pages/investment/InvoicePrintPage';
 import RentalAndProfitManagement from '../components/pages/investment/RentalAndProfitManagement';
 import MemberServicesManagement from '../components/pages/services/MemberServicesManagement';
 import AccountingManagement from '../components/pages/accounting/AccountingManagement';
+import InvestmentDashboard from '../components/pages/investment-dashboard/InvestmentDashboard';
+import InvestmentDetail from '../components/pages/investment-dashboard/InvestmentDetail';
 
 // 保護路由的高階組件
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -90,6 +92,18 @@ const AppRoutes = () => {
       <Route path="/payment" element={
         <ProtectedRoute>
           <AccountingManagement />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/investment-dashboard" element={
+        <ProtectedRoute>
+          <InvestmentDashboard />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/investment-dashboard/:id" element={
+        <ProtectedRoute>
+          <InvestmentDetail />
         </ProtectedRoute>
       } />
 

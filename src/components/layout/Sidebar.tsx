@@ -22,6 +22,7 @@ import {
   Notifications as NotificationIcon,
   Security as SecurityIcon,
   Receipt as FeeIcon,
+  Dashboard as DashboardIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -90,6 +91,11 @@ const Sidebar: React.FC = () => {
       text: '帳務管理',
       icon: <PaymentIcon />,
       path: '/payment'
+    },
+    {
+      text: '投資看板',
+      icon: <DashboardIcon />,
+      path: '/investment-dashboard'
     },
     {
       text: '通知提醒',
