@@ -36,43 +36,20 @@ import {
     Visibility as ViewIcon
 } from '@mui/icons-material';
 import { investmentOpportunityService } from '../../../services/investmentOpportunity.service';
-
-interface InvestmentOpportunity {
-    id: number;
-    title: string;
-    description: string;
-    investment_type: string;
-    min_investment: number;
-    max_investment: number;
-    total_amount: number;
-    current_amount: number;
-    expected_return: number;
-    duration_months: number;
-    risk_level: string;
-    location: string;
-    contact_person: string;
-    contact_phone: string;
-    contact_email: string;
-    status: string;
-    created_at: string;
-    updated_at: string;
-}
+import { InvestmentOpportunity, CreateInvestmentOpportunity, UpdateInvestmentOpportunity } from '../../../types/investment-opportunity';
 
 interface InvestmentOpportunityForm {
     title: string;
     description: string;
-    investment_type: string;
-    min_investment: number;
-    max_investment: number;
-    total_amount: number;
-    expected_return: number;
-    duration_months: number;
-    risk_level: string;
-    location: string;
-    contact_person: string;
-    contact_phone: string;
-    contact_email: string;
-    status: string;
+    investment_type: 'lease' | 'equity' | 'debt' | 'real_estate' | 'other';
+    investment_amount: number;
+    min_investment?: number;
+    max_investment?: number;
+    expected_return?: number;
+    investment_period?: number;
+    risk_level: 'low' | 'medium' | 'high';
+    location?: string;
+    status: 'preview' | 'active' | 'hidden' | 'closed';
 }
 
 const InvestmentDashboardManagement: React.FC = () => {
@@ -84,17 +61,14 @@ const InvestmentDashboardManagement: React.FC = () => {
     const [formData, setFormData] = useState<InvestmentOpportunityForm>({
         title: '',
         description: '',
-        investment_type: '',
+        investment_type: 'other',
+        investment_amount: 0,
         min_investment: 0,
         max_investment: 0,
-        total_amount: 0,
         expected_return: 0,
-        duration_months: 0,
-        risk_level: '',
+        investment_period: 0,
+        risk_level: 'medium',
         location: '',
-        contact_person: '',
-        contact_phone: '',
-        contact_email: '',
         status: 'active'
     });
 
@@ -120,17 +94,14 @@ const InvestmentDashboardManagement: React.FC = () => {
         setFormData({
             title: '',
             description: '',
-            investment_type: '',
+            investment_type: 'other',
+            investment_amount: 0,
             min_investment: 0,
             max_investment: 0,
-            total_amount: 0,
             expected_return: 0,
-            duration_months: 0,
-            risk_level: '',
+            investment_period: 0,
+            risk_level: 'medium',
             location: '',
-            contact_person: '',
-            contact_phone: '',
-            contact_email: '',
             status: 'active'
         });
         setDialogOpen(true);
@@ -142,25 +113,22 @@ const InvestmentDashboardManagement: React.FC = () => {
             title: opportunity.title,
             description: opportunity.description,
             investment_type: opportunity.investment_type,
+            investment_amount: opportunity.investment_amount,
             min_investment: opportunity.min_investment,
             max_investment: opportunity.max_investment,
-            total_amount: opportunity.total_amount,
             expected_return: opportunity.expected_return,
-            duration_months: opportunity.duration_months,
+            investment_period: opportunity.investment_period,
             risk_level: opportunity.risk_level,
             location: opportunity.location,
-            contact_person: opportunity.contact_person,
-            contact_phone: opportunity.contact_phone,
-            contact_email: opportunity.contact_email,
             status: opportunity.status
         });
         setDialogOpen(true);
     };
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (id: string) => {
         if (window.confirm('確定要刪除此投資標的嗎？')) {
             try {
-                await investmentOpportunityService.deleteInvestmentOpportunity(id.toString());
+                await investmentOpportunityService.deleteInvestmentOpportunity(id);
                 await loadOpportunities();
             } catch (err) {
                 setError('刪除投資標的失敗');
@@ -172,9 +140,35 @@ const InvestmentDashboardManagement: React.FC = () => {
     const handleSave = async () => {
         try {
             if (editingOpportunity) {
-                await investmentOpportunityService.updateInvestmentOpportunity(editingOpportunity.id.toString(), formData);
+                const updateData: UpdateInvestmentOpportunity = {
+                    title: formData.title,
+                    description: formData.description,
+                    investment_type: formData.investment_type,
+                    investment_amount: formData.investment_amount,
+                    min_investment: formData.min_investment,
+                    max_investment: formData.max_investment,
+                    expected_return: formData.expected_return,
+                    investment_period: formData.investment_period,
+                    risk_level: formData.risk_level,
+                    location: formData.location,
+                    status: formData.status
+                };
+                await investmentOpportunityService.updateInvestmentOpportunity(editingOpportunity.id, updateData);
             } else {
-                await investmentOpportunityService.createInvestmentOpportunity(formData);
+                const createData: CreateInvestmentOpportunity = {
+                    title: formData.title,
+                    description: formData.description,
+                    investment_type: formData.investment_type,
+                    investment_amount: formData.investment_amount,
+                    min_investment: formData.min_investment,
+                    max_investment: formData.max_investment,
+                    expected_return: formData.expected_return,
+                    investment_period: formData.investment_period,
+                    risk_level: formData.risk_level,
+                    location: formData.location,
+                    status: formData.status
+                };
+                await investmentOpportunityService.createInvestmentOpportunity(createData);
             }
             setDialogOpen(false);
             await loadOpportunities();
@@ -194,7 +188,8 @@ const InvestmentDashboardManagement: React.FC = () => {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'active': return 'success';
-            case 'inactive': return 'default';
+            case 'preview': return 'warning';
+            case 'hidden': return 'default';
             case 'closed': return 'error';
             default: return 'default';
         }
@@ -203,9 +198,30 @@ const InvestmentDashboardManagement: React.FC = () => {
     const getStatusText = (status: string) => {
         switch (status) {
             case 'active': return '啟用';
-            case 'inactive': return '停用';
+            case 'preview': return '預覽';
+            case 'hidden': return '隱藏';
             case 'closed': return '已結束';
             default: return status;
+        }
+    };
+
+    const getInvestmentTypeText = (type: string) => {
+        switch (type) {
+            case 'lease': return '租賃投資';
+            case 'equity': return '股權投資';
+            case 'debt': return '債權投資';
+            case 'real_estate': return '房地產';
+            case 'other': return '其他';
+            default: return type;
+        }
+    };
+
+    const getRiskLevelText = (level: string) => {
+        switch (level) {
+            case 'low': return '低風險';
+            case 'medium': return '中等';
+            case 'high': return '高風險';
+            default: return level;
         }
     };
 
@@ -263,22 +279,31 @@ const InvestmentDashboardManagement: React.FC = () => {
 
                                 <Box sx={{ mb: 2 }}>
                                     <Typography variant="body2" color="text.secondary">
-                                        投資類型: {opportunity.investment_type}
+                                        投資類型: {getInvestmentTypeText(opportunity.investment_type)}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        最低投資: ${opportunity.min_investment.toLocaleString()}
+                                        投資金額: ${opportunity.investment_amount.toLocaleString()}
                                     </Typography>
+                                    {opportunity.min_investment && (
+                                        <Typography variant="body2" color="text.secondary">
+                                            最低投資: ${opportunity.min_investment.toLocaleString()}
+                                        </Typography>
+                                    )}
+                                    {opportunity.expected_return && (
+                                        <Typography variant="body2" color="text.secondary">
+                                            預期報酬: {opportunity.expected_return}%
+                                        </Typography>
+                                    )}
                                     <Typography variant="body2" color="text.secondary">
-                                        預期報酬: {opportunity.expected_return}%
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        風險等級: {opportunity.risk_level}
+                                        風險等級: {getRiskLevelText(opportunity.risk_level)}
                                     </Typography>
                                 </Box>
 
-                                <Typography variant="body2" color="text.secondary">
-                                    地點: {opportunity.location}
-                                </Typography>
+                                {opportunity.location && (
+                                    <Typography variant="body2" color="text.secondary">
+                                        地點: {opportunity.location}
+                                    </Typography>
+                                )}
                             </CardContent>
 
                             <CardActions>
@@ -354,12 +379,11 @@ const InvestmentDashboardManagement: React.FC = () => {
                                     onChange={(e) => handleInputChange('investment_type', e.target.value)}
                                     label="投資類型"
                                 >
-                                    <MenuItem value="不動產投資">不動產投資</MenuItem>
-                                    <MenuItem value="廠房投資">廠房投資</MenuItem>
-                                    <MenuItem value="住宅開發">住宅開發</MenuItem>
-                                    <MenuItem value="股權投資">股權投資</MenuItem>
-                                    <MenuItem value="設備租賃">設備租賃</MenuItem>
-                                    <MenuItem value="其他">其他</MenuItem>
+                                    <MenuItem value="lease">租賃投資</MenuItem>
+                                    <MenuItem value="equity">股權投資</MenuItem>
+                                    <MenuItem value="debt">債權投資</MenuItem>
+                                    <MenuItem value="real_estate">房地產</MenuItem>
+                                    <MenuItem value="other">其他</MenuItem>
                                 </Select>
                             </FormControl>
                         </Grid>
@@ -372,12 +396,22 @@ const InvestmentDashboardManagement: React.FC = () => {
                                     onChange={(e) => handleInputChange('risk_level', e.target.value)}
                                     label="風險等級"
                                 >
-                                    <MenuItem value="低風險">低風險</MenuItem>
-                                    <MenuItem value="中等">中等</MenuItem>
-                                    <MenuItem value="中高風險">中高風險</MenuItem>
-                                    <MenuItem value="高風險">高風險</MenuItem>
+                                    <MenuItem value="low">低風險</MenuItem>
+                                    <MenuItem value="medium">中等</MenuItem>
+                                    <MenuItem value="high">高風險</MenuItem>
                                 </Select>
                             </FormControl>
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            <TextField
+                                fullWidth
+                                label="投資金額"
+                                type="number"
+                                value={formData.investment_amount}
+                                onChange={(e) => handleInputChange('investment_amount', Number(e.target.value))}
+                                required
+                            />
                         </Grid>
 
                         <Grid item xs={12} md={6}>
@@ -387,7 +421,6 @@ const InvestmentDashboardManagement: React.FC = () => {
                                 type="number"
                                 value={formData.min_investment}
                                 onChange={(e) => handleInputChange('min_investment', Number(e.target.value))}
-                                required
                             />
                         </Grid>
 
@@ -404,22 +437,10 @@ const InvestmentDashboardManagement: React.FC = () => {
                         <Grid item xs={12} md={6}>
                             <TextField
                                 fullWidth
-                                label="總投資金額"
-                                type="number"
-                                value={formData.total_amount}
-                                onChange={(e) => handleInputChange('total_amount', Number(e.target.value))}
-                                required
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
                                 label="預期報酬率 (%)"
                                 type="number"
                                 value={formData.expected_return}
                                 onChange={(e) => handleInputChange('expected_return', Number(e.target.value))}
-                                required
                             />
                         </Grid>
 
@@ -428,9 +449,8 @@ const InvestmentDashboardManagement: React.FC = () => {
                                 fullWidth
                                 label="投資期間 (月)"
                                 type="number"
-                                value={formData.duration_months}
-                                onChange={(e) => handleInputChange('duration_months', Number(e.target.value))}
-                                required
+                                value={formData.investment_period}
+                                onChange={(e) => handleInputChange('investment_period', Number(e.target.value))}
                             />
                         </Grid>
 
@@ -440,38 +460,6 @@ const InvestmentDashboardManagement: React.FC = () => {
                                 label="地點"
                                 value={formData.location}
                                 onChange={(e) => handleInputChange('location', e.target.value)}
-                                required
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} md={4}>
-                            <TextField
-                                fullWidth
-                                label="聯絡人"
-                                value={formData.contact_person}
-                                onChange={(e) => handleInputChange('contact_person', e.target.value)}
-                                required
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} md={4}>
-                            <TextField
-                                fullWidth
-                                label="聯絡電話"
-                                value={formData.contact_phone}
-                                onChange={(e) => handleInputChange('contact_phone', e.target.value)}
-                                required
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} md={4}>
-                            <TextField
-                                fullWidth
-                                label="聯絡信箱"
-                                type="email"
-                                value={formData.contact_email}
-                                onChange={(e) => handleInputChange('contact_email', e.target.value)}
-                                required
                             />
                         </Grid>
 
@@ -483,8 +471,9 @@ const InvestmentDashboardManagement: React.FC = () => {
                                     onChange={(e) => handleInputChange('status', e.target.value)}
                                     label="狀態"
                                 >
+                                    <MenuItem value="preview">預覽</MenuItem>
                                     <MenuItem value="active">啟用</MenuItem>
-                                    <MenuItem value="inactive">停用</MenuItem>
+                                    <MenuItem value="hidden">隱藏</MenuItem>
                                     <MenuItem value="closed">已結束</MenuItem>
                                 </Select>
                             </FormControl>
