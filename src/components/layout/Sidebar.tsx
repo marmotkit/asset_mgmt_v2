@@ -12,6 +12,9 @@ import {
   Typography,
   Menu,
   MenuItem,
+  IconButton,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   People as PeopleIcon,
@@ -23,14 +26,24 @@ import {
   Security as SecurityIcon,
   Receipt as FeeIcon,
   Dashboard as DashboardIcon,
+  ChevronLeft as ChevronLeftIcon,
+  Menu as MenuIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  open?: boolean;
+  onToggle?: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ open = true, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   const [version, setVersion] = useState(() => {
     // 從 localStorage 讀取版本號，如果沒有則使用預設值 '1.0'
     return localStorage.getItem('app_version') || '1.0';
@@ -130,17 +143,20 @@ const Sidebar: React.FC = () => {
   };
 
   const menuItems = getMenuItems();
+  const drawerWidth = open ? 240 : 64;
 
   return (
     <Drawer
-      variant="permanent"
+      variant={isMobile ? 'temporary' : 'permanent'}
+      open={open}
+      onClose={onToggle}
       sx={{
-        width: '240px',
+        width: drawerWidth,
         flexShrink: 0,
         position: 'fixed',
         height: '100vh',
         '& .MuiDrawer-paper': {
-          width: '240px',
+          width: drawerWidth,
           boxSizing: 'border-box',
           borderRight: '1px solid rgba(0, 0, 0, 0.12)',
           backgroundColor: '#fff',
@@ -148,6 +164,11 @@ const Sidebar: React.FC = () => {
           height: '100vh',
           display: 'flex',
           flexDirection: 'column',
+          transition: theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
+          overflowX: 'hidden',
         },
       }}
     >
@@ -161,7 +182,12 @@ const Sidebar: React.FC = () => {
             <ListItem key={item.path} disablePadding>
               <ListItemButton
                 selected={location.pathname === item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => {
+                  navigate(item.path);
+                  if (isMobile && onToggle) {
+                    onToggle();
+                  }
+                }}
                 sx={{
                   '&.Mui-selected': {
                     backgroundColor: 'rgba(25, 118, 210, 0.08)',
@@ -170,10 +196,30 @@ const Sidebar: React.FC = () => {
                     backgroundColor: 'rgba(25, 118, 210, 0.12)',
                   },
                   py: 1.5,  // 增加按鈕高度
+                  minHeight: 48,
+                  justifyContent: open ? 'initial' : 'center',
+                  px: 2.5,
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: open ? 3 : 'auto',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.text}
+                  sx={{
+                    opacity: open ? 1 : 0,
+                    transition: theme.transitions.create('opacity', {
+                      easing: theme.transitions.easing.sharp,
+                      duration: theme.transitions.duration.enteringScreen,
+                    }),
+                  }}
+                />
               </ListItemButton>
             </ListItem>
           ))}
@@ -184,6 +230,7 @@ const Sidebar: React.FC = () => {
           p: 2,
           borderTop: '1px solid rgba(0, 0, 0, 0.12)',
           backgroundColor: '#f5f5f5',
+          display: open ? 'block' : 'none',
         }}
       >
         <Typography
