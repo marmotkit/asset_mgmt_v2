@@ -178,7 +178,7 @@ const JournalTab: React.FC = () => {
     };
 
     // 過濾和搜尋記錄
-    const filteredRecords = records.filter(record => {
+    const filteredRecords = (records || []).filter(record => {
         // 只用 description、journal_number、reference_number、amount 搜尋
         const searchLower = searchTerm.toLowerCase();
         return (
@@ -521,7 +521,7 @@ const JournalTab: React.FC = () => {
                                     error={!!formErrors.debit_account_id}
                                 >
                                     <MenuItem value="" disabled>請選擇借方科目</MenuItem>
-                                    {accounts.map(account => (
+                                    {(accounts || []).map(account => (
                                         <MenuItem key={account.id} value={account.id}>
                                             {account.name}
                                         </MenuItem>
@@ -540,7 +540,7 @@ const JournalTab: React.FC = () => {
                                     error={!!formErrors.credit_account_id}
                                 >
                                     <MenuItem value="" disabled>請選擇貸方科目</MenuItem>
-                                    {accounts.map(account => (
+                                    {(accounts || []).map(account => (
                                         <MenuItem key={account.id} value={account.id}>
                                             {account.name}
                                         </MenuItem>
