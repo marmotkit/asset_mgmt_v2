@@ -71,7 +71,7 @@ const MemberProfitTab: React.FC<MemberProfitTabProps> = ({ investments }) => {
     const [selectedProfit, setSelectedProfit] = useState<MemberProfit | null>(null);
     const [yearFilter, setYearFilter] = useState<number>(new Date().getFullYear());
     const [monthFilter, setMonthFilter] = useState<number>(new Date().getMonth() + 1);
-    const [showAllYear, setShowAllYear] = useState<boolean>(false);
+    const [showAllYear, setShowAllYear] = useState<boolean>(true); // 預設顯示全年
     const { enqueueSnackbar } = useSnackbar();
 
     // 排序相關狀態
