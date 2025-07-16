@@ -101,7 +101,10 @@ const InvestmentInquiryManagement: React.FC = () => {
 
     const handleUpdateStatus = async (id: string, status: string, adminNotes?: string) => {
         try {
-            await investmentInquiryService.updateInquiry(id, { status, admin_notes: adminNotes });
+            await investmentInquiryService.updateInquiry(id, {
+                status: status as 'new' | 'contacted' | 'interested' | 'not_interested' | 'closed',
+                admin_notes: adminNotes
+            });
             await loadInquiries();
             setDialogOpen(false);
         } catch (err) {
