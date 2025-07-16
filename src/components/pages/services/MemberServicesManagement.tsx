@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
     Box,
     Tabs,
@@ -6,6 +6,7 @@ import {
     Typography,
     Paper
 } from '@mui/material';
+import { useAuth } from '../../../contexts/AuthContext';
 import AnnualActivitiesTab from './AnnualActivitiesTab';
 import MemberCareTab from './MemberCareTab';
 import RiskManagementTab from './RiskManagementTab';
@@ -44,10 +45,29 @@ interface MemberServicesManagementProps {
 
 const MemberServicesManagement: React.FC<MemberServicesManagementProps> = ({ initialTab = 0 }) => {
     const [currentTab, setCurrentTab] = useState(initialTab);
+    const { user } = useAuth();
+
+    // 檢查是否為管理者角色
+    const isManager = user?.role === 'admin';
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setCurrentTab(newValue);
     };
+
+    // 定義標籤頁配置
+    const tabs = [
+        { label: '年度活動', component: <AnnualActivitiesTab />, index: 0 },
+        { label: '會員關懷', component: <MemberCareTab />, index: 1, managerOnly: true },
+        { label: '風險管理', component: <RiskManagementTab />, index: 2, managerOnly: true },
+        { label: '租金付款狀況', component: <RentalPaymentStatusTab />, index: 3 },
+        { label: '資產分潤狀況', component: <AssetProfitStatusTab />, index: 4 }
+    ];
+
+    // 過濾標籤頁，非管理者不顯示管理員專用頁面
+    const visibleTabs = tabs.filter(tab => !tab.managerOnly || isManager);
+
+    // 調整當前選中的標籤頁索引
+    const adjustedCurrentTab = Math.min(currentTab, visibleTabs.length - 1);
 
     return (
         <Box sx={{ width: '100%' }}>
@@ -58,37 +78,21 @@ const MemberServicesManagement: React.FC<MemberServicesManagementProps> = ({ ini
             <Paper sx={{ width: '100%', mb: 2 }}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <Tabs
-                        value={currentTab}
+                        value={adjustedCurrentTab}
                         onChange={handleTabChange}
                         aria-label="會員服務管理標籤"
                     >
-                        <Tab label="年度活動" />
-                        <Tab label="會員關懷" />
-                        <Tab label="風險管理" />
-                        <Tab label="租金付款狀況" />
-                        <Tab label="資產分潤狀況" />
+                        {visibleTabs.map((tab, index) => (
+                            <Tab key={tab.index} label={tab.label} />
+                        ))}
                     </Tabs>
                 </Box>
 
-                <TabPanel value={currentTab} index={0}>
-                    <AnnualActivitiesTab />
-                </TabPanel>
-
-                <TabPanel value={currentTab} index={1}>
-                    <MemberCareTab />
-                </TabPanel>
-
-                <TabPanel value={currentTab} index={2}>
-                    <RiskManagementTab />
-                </TabPanel>
-
-                <TabPanel value={currentTab} index={3}>
-                    <RentalPaymentStatusTab />
-                </TabPanel>
-
-                <TabPanel value={currentTab} index={4}>
-                    <AssetProfitStatusTab />
-                </TabPanel>
+                {visibleTabs.map((tab, index) => (
+                    <TabPanel key={tab.index} value={adjustedCurrentTab} index={index}>
+                        {tab.component}
+                    </TabPanel>
+                ))}
             </Paper>
         </Box>
     );
