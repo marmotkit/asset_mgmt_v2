@@ -222,6 +222,20 @@ router.post('/investment-opportunities', authMiddleware, async (req, res) => {
         if (images && Array.isArray(images) && images.length > 0) {
             for (const image of images) {
                 const imageId = require('crypto').randomUUID();
+
+                // 處理圖片 URL 長度限制
+                let imageUrl = image.image_url;
+                if (imageUrl && imageUrl.length > 500) {
+                    // 如果是 base64 資料，截斷或使用預設圖片
+                    if (imageUrl.startsWith('data:image')) {
+                        console.log('圖片資料過長，使用預設圖片');
+                        imageUrl = 'https://via.placeholder.com/400x300?text=圖片';
+                    } else {
+                        // 如果是 URL，截斷到 500 字元
+                        imageUrl = imageUrl.substring(0, 500);
+                    }
+                }
+
                 const imageQuery = `
                     INSERT INTO investment_images (
                         id, investment_id, image_url, image_type, sort_order, created_at
@@ -232,7 +246,7 @@ router.post('/investment-opportunities', authMiddleware, async (req, res) => {
                     replacements: [
                         imageId,
                         id,
-                        image.image_url,
+                        imageUrl,
                         image.image_type || 'gallery',
                         image.sort_order || 0
                     ]
@@ -316,6 +330,20 @@ router.put('/investment-opportunities/:id', authMiddleware, async (req, res) => 
             if (Array.isArray(images) && images.length > 0) {
                 for (const image of images) {
                     const imageId = require('crypto').randomUUID();
+
+                    // 處理圖片 URL 長度限制
+                    let imageUrl = image.image_url;
+                    if (imageUrl && imageUrl.length > 500) {
+                        // 如果是 base64 資料，截斷或使用預設圖片
+                        if (imageUrl.startsWith('data:image')) {
+                            console.log('圖片資料過長，使用預設圖片');
+                            imageUrl = 'https://via.placeholder.com/400x300?text=圖片';
+                        } else {
+                            // 如果是 URL，截斷到 500 字元
+                            imageUrl = imageUrl.substring(0, 500);
+                        }
+                    }
+
                     const imageQuery = `
                         INSERT INTO investment_images (
                             id, investment_id, image_url, image_type, sort_order, created_at
@@ -326,7 +354,7 @@ router.put('/investment-opportunities/:id', authMiddleware, async (req, res) => 
                         replacements: [
                             imageId,
                             id,
-                            image.image_url,
+                            imageUrl,
                             image.image_type || 'gallery',
                             image.sort_order || 0
                         ]
