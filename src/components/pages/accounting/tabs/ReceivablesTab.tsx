@@ -417,8 +417,6 @@ const ReceivablesTab: React.FC = () => {
                         <TableHead>
                             <TableRow>
                                 <TableCell>客戶</TableCell>
-                                <TableCell>日期</TableCell>
-                                <TableCell>到期日</TableCell>
                                 <TableCell>描述</TableCell>
                                 <TableCell align="right">金額</TableCell>
                                 <TableCell align="right">已付金額</TableCell>
@@ -430,30 +428,20 @@ const ReceivablesTab: React.FC = () => {
                         <TableBody>
                             {filteredReceivables.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} align="center">
+                                    <TableCell colSpan={7} align="center">
                                         無符合條件的應收帳款
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 filteredReceivables.map(receivable => {
-                                    const age = calculateAge(receivable.dueDate);
                                     const balance = (receivable.amount || 0) - (receivable.paidAmount || 0);
 
                                     return (
                                         <TableRow
                                             key={receivable.id}
-                                            sx={age > 0 && receivable.status !== 'paid' ? { bgcolor: 'rgba(255, 0, 0, 0.05)' } : {}}
+                                            sx={balance > 0 ? { bgcolor: 'rgba(255, 152, 0, 0.05)' } : {}}
                                         >
-                                            <TableCell>{receivable.clientName}</TableCell>
-                                            <TableCell>{receivable.date}</TableCell>
-                                            <TableCell>
-                                                {receivable.dueDate}
-                                                {age > 0 && receivable.status !== 'paid' && (
-                                                    <Typography variant="caption" color="error" component="div">
-                                                        逾期 {age} 天
-                                                    </Typography>
-                                                )}
-                                            </TableCell>
+                                            <TableCell>{receivable.clientName || receivable.customer_name || '-'}</TableCell>
                                             <TableCell>{receivable.description || '-'}</TableCell>
                                             <TableCell align="right">{(receivable.amount || 0).toLocaleString()}</TableCell>
                                             <TableCell align="right">{(receivable.paidAmount || 0).toLocaleString()}</TableCell>

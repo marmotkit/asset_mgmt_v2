@@ -7,8 +7,11 @@ export const accountingIntegrationService = {
         try {
             console.log('開始同步會費應收帳款...');
 
-            // 取得會費管理的待收款項目
-            const feeResponse = await apiClient.get('/fees?status=pending');
+            // 先清理舊的會費應收帳款
+            await accountingIntegrationService.clearFeeReceivables();
+
+            // 取得會費管理的待收款項目（全年度）
+            const feeResponse = await apiClient.get('/fees?status=待收款');
             const pendingFees = feeResponse.data || [];
 
             console.log(`找到 ${pendingFees.length} 筆待收款會費`);
@@ -17,33 +20,21 @@ export const accountingIntegrationService = {
             const createdReceivables = [];
             for (const fee of pendingFees) {
                 try {
-                    // 檢查是否已存在對應的應收帳款
-                    const existingResponse = await apiClient.get(`/accounting/receivables?search=${fee.member_name}&status=pending`);
-                    const existing = existingResponse.data.receivables || [];
+                    const receivableData = {
+                        customer_id: fee.userId || fee.memberId || `fee-${fee.id}`,
+                        customer_name: fee.userName || fee.memberName || '未知會員',
+                        invoice_number: `FEE-${fee.userId || fee.memberId || fee.id}-${new Date().getFullYear()}`,
+                        amount: fee.amount || 0,
+                        due_date: fee.dueDate || fee.due_date || new Date().toISOString().split('T')[0],
+                        description: `會費 - ${fee.userName || fee.memberName || '未知會員'} (${fee.memberType || '一般會員'})`,
+                        status: 'pending'
+                    };
 
-                    const alreadyExists = existing.some((receivable: any) =>
-                        receivable.customer_name === fee.member_name &&
-                        receivable.amount === fee.amount &&
-                        receivable.description?.includes('會費')
-                    );
-
-                    if (!alreadyExists) {
-                        const receivableData = {
-                            customer_id: fee.member_id,
-                            customer_name: fee.member_name,
-                            invoice_number: `FEE-${fee.member_no}-${new Date().getFullYear()}`,
-                            amount: fee.amount,
-                            due_date: fee.due_date,
-                            description: `會費 - ${fee.member_name} (${fee.member_type})`,
-                            status: 'pending'
-                        };
-
-                        const response = await apiClient.post('/accounting/receivables', receivableData);
-                        createdReceivables.push(response.data);
-                        console.log(`已建立會費應收帳款: ${fee.member_name} - ${fee.amount}`);
-                    }
+                    const response = await apiClient.post('/accounting/receivables', receivableData);
+                    createdReceivables.push(response.data);
+                    console.log(`已建立會費應收帳款: ${receivableData.customer_name} - ${receivableData.amount}`);
                 } catch (error) {
-                    console.error(`建立會費應收帳款失敗 (${fee.member_name}):`, error);
+                    console.error(`建立會費應收帳款失敗 (${fee.userName || fee.memberName}):`, error);
                 }
             }
 
@@ -55,13 +46,37 @@ export const accountingIntegrationService = {
         }
     },
 
+    // 清理會費應收帳款
+    clearFeeReceivables: async () => {
+        try {
+            console.log('清理舊的會費應收帳款...');
+            const response = await apiClient.get('/accounting/receivables?search=會費');
+            const feeReceivables = response.data.receivables || [];
+
+            for (const receivable of feeReceivables) {
+                try {
+                    await apiClient.delete(`/accounting/receivables/${receivable.id}`);
+                    console.log(`已刪除會費應收帳款: ${receivable.customer_name}`);
+                } catch (error) {
+                    console.error(`刪除會費應收帳款失敗: ${receivable.id}`, error);
+                }
+            }
+            console.log(`清理完成，共刪除 ${feeReceivables.length} 筆會費應收帳款`);
+        } catch (error) {
+            console.error('清理會費應收帳款失敗:', error);
+        }
+    },
+
     // 2. 從投資管理「租金收款管理」帶入應收帳款
     syncRentalReceivables: async () => {
         try {
             console.log('開始同步租金應收帳款...');
 
-            // 取得租金收款管理的待收款項目
-            const rentalResponse = await apiClient.get('/rental-payments?status=pending');
+            // 先清理舊的租金應收帳款
+            await accountingIntegrationService.clearRentalReceivables();
+
+            // 取得租金收款管理的待收款項目（全年度）
+            const rentalResponse = await apiClient.get('/rental-payments?status=待收款');
             const pendingRentals = rentalResponse.data || [];
 
             console.log(`找到 ${pendingRentals.length} 筆待收款租金`);
@@ -70,33 +85,21 @@ export const accountingIntegrationService = {
             const createdReceivables = [];
             for (const rental of pendingRentals) {
                 try {
-                    // 檢查是否已存在對應的應收帳款
-                    const existingResponse = await apiClient.get(`/accounting/receivables?search=${rental.renterName}&status=pending`);
-                    const existing = existingResponse.data.receivables || [];
+                    const receivableData = {
+                        customer_id: rental.renterName || rental.tenant || `rental-${rental.id}`,
+                        customer_name: rental.renterName || rental.tenant || '未知承租人',
+                        invoice_number: `RENTAL-${rental.investmentId || rental.id}-${rental.year || new Date().getFullYear()}-${rental.month || new Date().getMonth() + 1}`,
+                        amount: rental.rentalAmount || rental.amount || 0,
+                        due_date: rental.dueDate || `${rental.year || new Date().getFullYear()}-${String(rental.month || new Date().getMonth() + 1).padStart(2, '0')}-01`,
+                        description: `租金 - ${rental.renterName || rental.tenant || '未知承租人'} (${rental.year || new Date().getFullYear()}年${rental.month || new Date().getMonth() + 1}月)`,
+                        status: 'pending'
+                    };
 
-                    const alreadyExists = existing.some((receivable: any) =>
-                        receivable.customer_name === rental.renterName &&
-                        receivable.amount === rental.amount &&
-                        receivable.description?.includes('租金')
-                    );
-
-                    if (!alreadyExists) {
-                        const receivableData = {
-                            customer_id: rental.renterId || 'unknown',
-                            customer_name: rental.renterName,
-                            invoice_number: `RENTAL-${rental.investmentId}-${rental.year}-${rental.month}`,
-                            amount: rental.amount,
-                            due_date: `${rental.year}-${rental.month.toString().padStart(2, '0')}-01`,
-                            description: `租金 - ${rental.investmentName} (${rental.year}年${rental.month}月)`,
-                            status: 'pending'
-                        };
-
-                        const response = await apiClient.post('/accounting/receivables', receivableData);
-                        createdReceivables.push(response.data);
-                        console.log(`已建立租金應收帳款: ${rental.renterName} - ${rental.amount}`);
-                    }
+                    const response = await apiClient.post('/accounting/receivables', receivableData);
+                    createdReceivables.push(response.data);
+                    console.log(`已建立租金應收帳款: ${receivableData.customer_name} - ${receivableData.amount}`);
                 } catch (error) {
-                    console.error(`建立租金應收帳款失敗 (${rental.renterName}):`, error);
+                    console.error(`建立租金應收帳款失敗 (${rental.renterName || rental.tenant}):`, error);
                 }
             }
 
@@ -108,13 +111,37 @@ export const accountingIntegrationService = {
         }
     },
 
+    // 清理租金應收帳款
+    clearRentalReceivables: async () => {
+        try {
+            console.log('清理舊的租金應收帳款...');
+            const response = await apiClient.get('/accounting/receivables?search=租金');
+            const rentalReceivables = response.data.receivables || [];
+
+            for (const receivable of rentalReceivables) {
+                try {
+                    await apiClient.delete(`/accounting/receivables/${receivable.id}`);
+                    console.log(`已刪除租金應收帳款: ${receivable.customer_name}`);
+                } catch (error) {
+                    console.error(`刪除租金應收帳款失敗: ${receivable.id}`, error);
+                }
+            }
+            console.log(`清理完成，共刪除 ${rentalReceivables.length} 筆租金應收帳款`);
+        } catch (error) {
+            console.error('清理租金應收帳款失敗:', error);
+        }
+    },
+
     // 3. 從投資管理「會員分潤管理」帶入應付帳款
     syncMemberProfitPayables: async () => {
         try {
             console.log('開始同步會員分潤應付帳款...');
 
-            // 取得會員分潤管理的待付款項目
-            const profitResponse = await apiClient.get('/member-profits?status=pending');
+            // 先清理舊的分潤應付帳款
+            await accountingIntegrationService.clearProfitPayables();
+
+            // 取得會員分潤管理的待付款項目（全年度）
+            const profitResponse = await apiClient.get('/member-profits?status=待付款');
             const pendingProfits = profitResponse.data || [];
 
             console.log(`找到 ${pendingProfits.length} 筆待付款分潤`);
@@ -123,31 +150,19 @@ export const accountingIntegrationService = {
             const createdPayables = [];
             for (const profit of pendingProfits) {
                 try {
-                    // 檢查是否已存在對應的應付帳款
-                    const existingResponse = await apiClient.get(`/accounting/payables?search=${profit.memberName}&status=pending`);
-                    const existing = existingResponse.data.payables || [];
+                    const payableData = {
+                        supplier_id: profit.memberName || profit.memberId || `profit-${profit.id}`,
+                        supplier_name: profit.memberName || '未知會員',
+                        invoice_number: `PROFIT-${profit.memberId || profit.id}-${profit.year || new Date().getFullYear()}-${profit.month || new Date().getMonth() + 1}`,
+                        amount: profit.profitAmount || profit.amount || 0,
+                        due_date: profit.dueDate || `${profit.year || new Date().getFullYear()}-${String(profit.month || new Date().getMonth() + 1).padStart(2, '0')}-01`,
+                        description: `會員分潤 - ${profit.memberName || '未知會員'} (${profit.year || new Date().getFullYear()}年${profit.month || new Date().getMonth() + 1}月)`,
+                        status: 'pending'
+                    };
 
-                    const alreadyExists = existing.some((payable: any) =>
-                        payable.supplier_name === profit.memberName &&
-                        payable.amount === profit.amount &&
-                        payable.description?.includes('分潤')
-                    );
-
-                    if (!alreadyExists) {
-                        const payableData = {
-                            supplier_id: profit.memberId,
-                            supplier_name: profit.memberName,
-                            invoice_number: `PROFIT-${profit.investmentId}-${profit.year}-${profit.month}`,
-                            amount: profit.amount,
-                            due_date: `${profit.year}-${profit.month.toString().padStart(2, '0')}-01`,
-                            description: `會員分潤 - ${profit.investmentName} (${profit.year}年${profit.month}月)`,
-                            status: 'pending'
-                        };
-
-                        const response = await apiClient.post('/accounting/payables', payableData);
-                        createdPayables.push(response.data);
-                        console.log(`已建立分潤應付帳款: ${profit.memberName} - ${profit.amount}`);
-                    }
+                    const response = await apiClient.post('/accounting/payables', payableData);
+                    createdPayables.push(response.data);
+                    console.log(`已建立分潤應付帳款: ${payableData.supplier_name} - ${payableData.amount}`);
                 } catch (error) {
                     console.error(`建立分潤應付帳款失敗 (${profit.memberName}):`, error);
                 }
@@ -161,42 +176,51 @@ export const accountingIntegrationService = {
         }
     },
 
-    // 4. 執行完整同步（會費、租金、分潤）
+    // 清理分潤應付帳款
+    clearProfitPayables: async () => {
+        try {
+            console.log('清理舊的分潤應付帳款...');
+            const response = await apiClient.get('/accounting/payables?search=會員分潤');
+            const profitPayables = response.data.payables || [];
+
+            for (const payable of profitPayables) {
+                try {
+                    await apiClient.delete(`/accounting/payables/${payable.id}`);
+                    console.log(`已刪除分潤應付帳款: ${payable.supplier_name}`);
+                } catch (error) {
+                    console.error(`刪除分潤應付帳款失敗: ${payable.id}`, error);
+                }
+            }
+            console.log(`清理完成，共刪除 ${profitPayables.length} 筆分潤應付帳款`);
+        } catch (error) {
+            console.error('清理分潤應付帳款失敗:', error);
+        }
+    },
+
+    // 完整同步所有會計資料
     syncAllAccountingData: async () => {
         try {
-            console.log('開始執行完整會計資料同步...');
+            console.log('開始完整同步會計資料...');
 
-            const results = {
-                feeReceivables: [],
-                rentalReceivables: [],
-                profitPayables: []
+            const [feeReceivables, rentalReceivables, profitPayables] = await Promise.all([
+                accountingIntegrationService.syncFeeReceivables(),
+                accountingIntegrationService.syncRentalReceivables(),
+                accountingIntegrationService.syncMemberProfitPayables()
+            ]);
+
+            console.log('完整同步完成:', {
+                feeReceivables: feeReceivables.length,
+                rentalReceivables: rentalReceivables.length,
+                profitPayables: profitPayables.length
+            });
+
+            return {
+                feeReceivables,
+                rentalReceivables,
+                profitPayables
             };
-
-            // 同步會費應收帳款
-            try {
-                results.feeReceivables = await accountingIntegrationService.syncFeeReceivables();
-            } catch (error) {
-                console.error('同步會費應收帳款失敗:', error);
-            }
-
-            // 同步租金應收帳款
-            try {
-                results.rentalReceivables = await accountingIntegrationService.syncRentalReceivables();
-            } catch (error) {
-                console.error('同步租金應收帳款失敗:', error);
-            }
-
-            // 同步分潤應付帳款
-            try {
-                results.profitPayables = await accountingIntegrationService.syncMemberProfitPayables();
-            } catch (error) {
-                console.error('同步分潤應付帳款失敗:', error);
-            }
-
-            console.log('完整會計資料同步完成:', results);
-            return results;
         } catch (error) {
-            console.error('完整會計資料同步失敗:', error);
+            console.error('完整同步失敗:', error);
             throw error;
         }
     },

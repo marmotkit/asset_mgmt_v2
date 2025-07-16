@@ -435,8 +435,6 @@ const PayablesTab: React.FC = () => {
                         <TableHead>
                             <TableRow>
                                 <TableCell>供應商</TableCell>
-                                <TableCell>日期</TableCell>
-                                <TableCell>到期日</TableCell>
                                 <TableCell>描述</TableCell>
                                 <TableCell align="right">金額</TableCell>
                                 <TableCell align="right">已付金額</TableCell>
@@ -448,30 +446,20 @@ const PayablesTab: React.FC = () => {
                         <TableBody>
                             {filteredPayables.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} align="center">
+                                    <TableCell colSpan={7} align="center">
                                         無符合條件的應付帳款
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 filteredPayables.map(payable => {
-                                    const age = calculateAge(payable.dueDate);
                                     const balance = (payable.amount || 0) - (payable.paidAmount || 0);
 
                                     return (
                                         <TableRow
                                             key={payable.id}
-                                            sx={age > 0 && payable.status !== 'paid' ? { bgcolor: 'rgba(255, 0, 0, 0.05)' } : {}}
+                                            sx={balance > 0 ? { bgcolor: 'rgba(255, 152, 0, 0.05)' } : {}}
                                         >
-                                            <TableCell>{payable.vendorName}</TableCell>
-                                            <TableCell>{payable.date}</TableCell>
-                                            <TableCell>
-                                                {payable.dueDate}
-                                                {age > 0 && payable.status !== 'paid' && (
-                                                    <Typography variant="caption" color="error" component="div">
-                                                        逾期 {age} 天
-                                                    </Typography>
-                                                )}
-                                            </TableCell>
+                                            <TableCell>{payable.vendorName || payable.supplier_name || '-'}</TableCell>
                                             <TableCell>{payable.description || '-'}</TableCell>
                                             <TableCell align="right">{(payable.amount || 0).toLocaleString()}</TableCell>
                                             <TableCell align="right">{(payable.paidAmount || 0).toLocaleString()}</TableCell>
