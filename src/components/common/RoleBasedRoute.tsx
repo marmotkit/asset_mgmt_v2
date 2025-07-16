@@ -10,7 +10,7 @@ interface RoleBasedRouteProps {
 
 const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
     children,
-    allowedRoles = ['admin', 'business', 'lifetime'],
+    allowedRoles = ['admin'],
     fallbackPath = '/services'
 }) => {
     const { user, isAuthenticated } = useAuth();

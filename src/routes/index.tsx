@@ -32,7 +32,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <ProtectedRoute>
-      <RoleBasedRoute allowedRoles={['admin', 'business', 'lifetime']}>
+      <RoleBasedRoute allowedRoles={['admin']}>
         {children}
       </RoleBasedRoute>
     </ProtectedRoute>

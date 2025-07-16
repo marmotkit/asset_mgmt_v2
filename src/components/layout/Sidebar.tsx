@@ -64,7 +64,7 @@ const Sidebar: React.FC = () => {
   };
 
   // 檢查是否為管理員角色
-  const isAdmin = user?.role === 'admin' || user?.role === 'business' || user?.role === 'lifetime';
+  const isAdmin = user?.role === 'admin';
 
   // 根據角色定義菜單項目
   const getMenuItems = () => {

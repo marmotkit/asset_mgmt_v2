@@ -41,7 +41,7 @@ const Sidebar = () => {
         }
     };
     // 檢查是否為管理員角色
-    const isAdmin = (user === null || user === void 0 ? void 0 : user.role) === 'admin' || (user === null || user === void 0 ? void 0 : user.role) === 'business' || (user === null || user === void 0 ? void 0 : user.role) === 'lifetime';
+    const isAdmin = (user === null || user === void 0 ? void 0 : user.role) === 'admin';
     // 根據角色定義菜單項目
     const getMenuItems = () => {
         const allMenuItems = [

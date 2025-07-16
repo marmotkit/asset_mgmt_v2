@@ -31,7 +31,7 @@ const ProtectedRoute = ({ children }) => {
 };
 // 管理員專用路由
 const AdminRoute = ({ children }) => {
-    return ((0, jsx_runtime_1.jsx)(ProtectedRoute, { children: (0, jsx_runtime_1.jsx)(RoleBasedRoute_1.default, { allowedRoles: ['admin', 'business', 'lifetime'], children: children }) }));
+    return ((0, jsx_runtime_1.jsx)(ProtectedRoute, { children: (0, jsx_runtime_1.jsx)(RoleBasedRoute_1.default, { allowedRoles: ['admin'], children: children }) }));
 };
 // 一般用戶路由（所有角色都可訪問）
 const PublicRoute = ({ children }) => {
