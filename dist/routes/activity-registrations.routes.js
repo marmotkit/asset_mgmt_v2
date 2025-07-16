@@ -20,7 +20,7 @@ router.get('/', auth_middleware_1.authMiddleware, async (req, res) => {
                 ar.id, ar.activity_id, ar.member_id, ar.registration_date,
                 ar.status, ar.notes, ar.member_name, ar.phone_number,
                 ar.total_participants, ar.male_count, ar.female_count,
-                ar.created_at, ar.updated_at,
+                ar.companions, ar.created_at, ar.updated_at,
                 u.name as user_name, u.email as user_email,
                 aa.title as activity_title, aa.start_date as activity_date,
                 aa.location as activity_location
@@ -63,7 +63,7 @@ router.get('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
                 ar.id, ar.activity_id, ar.member_id, ar.registration_date,
                 ar.status, ar.notes, ar.member_name, ar.phone_number,
                 ar.total_participants, ar.male_count, ar.female_count,
-                ar.created_at, ar.updated_at,
+                ar.companions, ar.created_at, ar.updated_at,
                 u.name as user_name, u.email as user_email,
                 aa.title as activity_title, aa.start_date as activity_date,
                 aa.location as activity_location
