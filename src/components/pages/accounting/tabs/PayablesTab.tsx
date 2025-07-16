@@ -159,6 +159,53 @@ const PayablesTab: React.FC = () => {
         );
     });
 
+    // 排序邏輯
+    const stableSort = <T extends { id: string }>(array: T[], comparator: (a: T, b: T) => number) => {
+        const stabilizedThis = array.map((el, index) => [el, index] as [T, number]);
+        stabilizedThis.sort((a, b) => {
+            const order = comparator(a[0], b[0]);
+            if (order !== 0) {
+                return order;
+            }
+            return a[1] - b[1];
+        });
+        return stabilizedThis.map((el) => el[0]);
+    };
+
+    const getComparator = (
+        order: Order,
+        orderBy: OrderBy,
+    ): ((a: AccountPayable, b: AccountPayable) => number) => {
+        return order === 'desc'
+            ? (a, b) => descendingComparator(a, b, orderBy)
+            : (a, b) => -descendingComparator(a, b, orderBy);
+    };
+
+    const descendingComparator = (a: AccountPayable, b: AccountPayable, orderBy: OrderBy) => {
+        let aValue: any = a[orderBy];
+        let bValue: any = b[orderBy];
+
+        // 特殊處理日期和數值
+        if (orderBy === 'due_date') {
+            aValue = aValue ? new Date(aValue).getTime() : 0;
+            bValue = bValue ? new Date(bValue).getTime() : 0;
+        } else if (orderBy === 'amount' || orderBy === 'payment_amount') {
+            aValue = aValue || 0;
+            bValue = bValue || 0;
+        } else {
+            aValue = aValue || '';
+            bValue = bValue || '';
+        }
+
+        if (bValue < aValue) {
+            return -1;
+        }
+        if (bValue > aValue) {
+            return 1;
+        }
+        return 0;
+    };
+
     // 應用排序
     const sortedPayables = stableSort(filteredPayables, getComparator(sort.order, sort.orderBy));
 
@@ -392,53 +439,6 @@ const PayablesTab: React.FC = () => {
                 size="small"
             />
         );
-    };
-
-    // 排序邏輯
-    const stableSort = <T extends { id: string }>(array: T[], comparator: (a: T, b: T) => number) => {
-        const stabilizedThis = array.map((el, index) => [el, index] as [T, number]);
-        stabilizedThis.sort((a, b) => {
-            const order = comparator(a[0], b[0]);
-            if (order !== 0) {
-                return order;
-            }
-            return a[1] - b[1];
-        });
-        return stabilizedThis.map((el) => el[0]);
-    };
-
-    const getComparator = (
-        order: Order,
-        orderBy: OrderBy,
-    ): ((a: AccountPayable, b: AccountPayable) => number) => {
-        return order === 'desc'
-            ? (a, b) => descendingComparator(a, b, orderBy)
-            : (a, b) => -descendingComparator(a, b, orderBy);
-    };
-
-    const descendingComparator = (a: AccountPayable, b: AccountPayable, orderBy: OrderBy) => {
-        let aValue: any = a[orderBy];
-        let bValue: any = b[orderBy];
-
-        // 特殊處理日期和數值
-        if (orderBy === 'due_date') {
-            aValue = aValue ? new Date(aValue).getTime() : 0;
-            bValue = bValue ? new Date(bValue).getTime() : 0;
-        } else if (orderBy === 'amount' || orderBy === 'payment_amount') {
-            aValue = aValue || 0;
-            bValue = bValue || 0;
-        } else {
-            aValue = aValue || '';
-            bValue = bValue || '';
-        }
-
-        if (bValue < aValue) {
-            return -1;
-        }
-        if (bValue > aValue) {
-            return 1;
-        }
-        return 0;
     };
 
     // 處理排序請求
