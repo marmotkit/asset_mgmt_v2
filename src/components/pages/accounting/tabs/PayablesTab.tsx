@@ -120,16 +120,15 @@ const PayablesTab: React.FC = () => {
 
     // 過濾和搜尋記錄
     const filteredPayables = payables.filter(payable => {
-        // 依照狀態過濾
+        // 狀態過濾
         if (filterStatus !== 'all' && payable.status !== filterStatus) {
             return false;
         }
-
-        // 依照搜尋條件過濾
-        const searchLower = searchTerm.toLowerCase();
+        // 搜尋條件過濾，所有欄位都要先檢查是否存在
+        const searchLower = (searchTerm || '').toLowerCase();
         return (
-            payable.vendorName.toLowerCase().includes(searchLower) ||
-            payable.description.toLowerCase().includes(searchLower) ||
+            (payable.vendorName && payable.vendorName.toLowerCase().includes(searchLower)) ||
+            (payable.description && payable.description.toLowerCase().includes(searchLower)) ||
             (payable.invoiceNumber && payable.invoiceNumber.toLowerCase().includes(searchLower))
         );
     });

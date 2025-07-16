@@ -107,16 +107,15 @@ const ReceivablesTab: React.FC = () => {
 
     // 過濾和搜尋記錄
     const filteredReceivables = receivables.filter(receivable => {
-        // 依照狀態過濾
+        // 狀態過濾
         if (filterStatus !== 'all' && receivable.status !== filterStatus) {
             return false;
         }
-
-        // 依照搜尋條件過濾
-        const searchLower = searchTerm.toLowerCase();
+        // 搜尋條件過濾，所有欄位都要先檢查是否存在
+        const searchLower = (searchTerm || '').toLowerCase();
         return (
-            receivable.clientName.toLowerCase().includes(searchLower) ||
-            receivable.description.toLowerCase().includes(searchLower) ||
+            (receivable.clientName && receivable.clientName.toLowerCase().includes(searchLower)) ||
+            (receivable.description && receivable.description.toLowerCase().includes(searchLower)) ||
             (receivable.invoiceNumber && receivable.invoiceNumber.toLowerCase().includes(searchLower))
         );
     });
