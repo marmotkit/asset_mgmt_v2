@@ -13,7 +13,8 @@ import MemberServicesManagement from '../components/pages/services/MemberService
 import AccountingManagement from '../components/pages/accounting/AccountingManagement';
 import InvestmentDashboard from '../components/pages/investment-dashboard/InvestmentDashboard';
 import InvestmentDetail from '../components/pages/investment-dashboard/InvestmentDetail';
-import InvestmentDashboardManagement from '../components/pages/investment/InvestmentDashboardManagement';
+import InvestmentDashboardManagement from '../components/pages/investment-dashboard/admin/InvestmentManagement';
+import InquiryManagement from '../components/pages/investment-dashboard/admin/InquiryManagement';
 
 // 保護路由的高階組件
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -111,6 +112,12 @@ const AppRoutes = () => {
       <Route path="/investment-dashboard-management" element={
         <ProtectedRoute>
           <InvestmentDashboardManagement />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/investment-dashboard-management/inquiries" element={
+        <ProtectedRoute>
+          <InquiryManagement />
         </ProtectedRoute>
       } />
 

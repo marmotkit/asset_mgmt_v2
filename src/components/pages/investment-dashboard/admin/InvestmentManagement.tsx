@@ -40,13 +40,16 @@ import {
     Delete as DeleteIcon,
     Visibility as VisibilityIcon,
     Search as SearchIcon,
-    FilterList as FilterIcon
+    FilterList as FilterIcon,
+    Message as MessageIcon
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { InvestmentOpportunity, CreateInvestmentOpportunity, UpdateInvestmentOpportunity } from '../../../../types/investment-opportunity';
 import { investmentOpportunityService, investmentInquiryService } from '../../../../services/investmentOpportunity.service';
 import InvestmentForm from './InvestmentForm';
 
 const InvestmentManagement: React.FC = () => {
+    const navigate = useNavigate();
     const [opportunities, setOpportunities] = useState<InvestmentOpportunity[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -197,6 +200,11 @@ const InvestmentManagement: React.FC = () => {
         }
     };
 
+    // 處理洽詢管理
+    const handleInquiryManagement = () => {
+        navigate('/investment-dashboard-management/inquiries');
+    };
+
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
             {/* 標題和操作按鈕 */}
@@ -204,13 +212,22 @@ const InvestmentManagement: React.FC = () => {
                 <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
                     投資標的管理
                 </Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleAdd}
-                >
-                    新增投資標的
-                </Button>
+                <Stack direction="row" spacing={2}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<MessageIcon />}
+                        onClick={handleInquiryManagement}
+                    >
+                        洽詢管理
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={handleAdd}
+                    >
+                        新增投資標的
+                    </Button>
+                </Stack>
             </Box>
 
             {/* 篩選器 */}

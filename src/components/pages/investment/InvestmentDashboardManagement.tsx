@@ -35,6 +35,7 @@ import {
     Delete as DeleteIcon,
     Visibility as ViewIcon
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { investmentOpportunityService } from '../../../services/investmentOpportunity.service';
 import { InvestmentOpportunity, CreateInvestmentOpportunity, UpdateInvestmentOpportunity } from '../../../types/investment-opportunity';
 
@@ -53,6 +54,7 @@ interface InvestmentOpportunityForm {
 }
 
 const InvestmentDashboardManagement: React.FC = () => {
+    const navigate = useNavigate();
     const [opportunities, setOpportunities] = useState<InvestmentOpportunity[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -239,14 +241,23 @@ const InvestmentDashboardManagement: React.FC = () => {
                 <Typography variant="h4" component="h1">
                     投資看板管理
                 </Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleAddNew}
-                    size="large"
-                >
-                    新增投資標的
-                </Button>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                        variant="outlined"
+                        onClick={() => navigate('/investment-inquiry-management')}
+                        size="large"
+                    >
+                        洽詢管理
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={handleAddNew}
+                        size="large"
+                    >
+                        新增投資標的
+                    </Button>
+                </Box>
             </Box>
 
             {error && (
