@@ -186,7 +186,7 @@ router.post('/investment-opportunities', authMiddleware, async (req, res) => {
                 expected_return || null,
                 investment_period || null,
                 status || 'active',
-                featured ? 1 : 0,
+                featured || false,
                 sort_order || 0,
                 created_by
             ]
@@ -226,10 +226,7 @@ router.put('/investment-opportunities/:id', authMiddleware, async (req, res) => 
         const updateValues = [];
 
         Object.keys(updateData).forEach(key => {
-            if (key === 'featured') {
-                updateFields.push(`${key} = ?`);
-                updateValues.push(updateData[key] ? 1 : 0);
-            } else if (updateData[key] !== undefined) {
+            if (updateData[key] !== undefined) {
                 updateFields.push(`${key} = ?`);
                 updateValues.push(updateData[key]);
             }
