@@ -91,14 +91,18 @@ const FinancialReportsTab: React.FC = () => {
         try {
             let data;
             switch (reportType) {
-                case 0: // 收支報表
-                    data = await financialReportsApiService.getIncomeExpenseReport({ year, month: month || undefined });
+                case 0: // 損益表
+                    const startDate = month ? `${year}-${month.toString().padStart(2, '0')}-01` : `${year}-01-01`;
+                    const endDate = month ? dayjs(`${year}-${month.toString().padStart(2, '0')}-01`).endOf('month').format('YYYY-MM-DD') : `${year}-12-31`;
+                    data = await financialReportsApiService.getIncomeStatement({ startDate, endDate });
                     break;
                 case 1: // 資產負債表
-                    data = await financialReportsApiService.getBalanceSheet({ date: date.format('YYYY-MM-DD') });
+                    data = await financialReportsApiService.getBalanceSheet({ asOfDate: date.format('YYYY-MM-DD') });
                     break;
                 case 2: // 現金流量表
-                    data = await financialReportsApiService.getCashFlowStatement({ year, month: month || undefined });
+                    const cashFlowStartDate = month ? `${year}-${month.toString().padStart(2, '0')}-01` : `${year}-01-01`;
+                    const cashFlowEndDate = month ? dayjs(`${year}-${month.toString().padStart(2, '0')}-01`).endOf('month').format('YYYY-MM-DD') : `${year}-12-31`;
+                    data = await financialReportsApiService.getCashFlowStatement({ startDate: cashFlowStartDate, endDate: cashFlowEndDate });
                     break;
                 default:
                     data = null;
@@ -216,7 +220,7 @@ const FinancialReportsTab: React.FC = () => {
                     scrollButtons="auto"
                     aria-label="financial reports tabs"
                 >
-                    <Tab icon={<BarChartIcon />} label="收支報表" />
+                    <Tab icon={<BarChartIcon />} label="損益表" />
                     <Tab icon={<AccountBalanceIcon />} label="資產負債表" />
                     <Tab icon={<TrendingUpIcon />} label="現金流量表" />
                 </Tabs>

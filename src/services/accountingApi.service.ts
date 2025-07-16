@@ -200,19 +200,19 @@ export const monthlyClosingApiService = {
 
 // 財務報表 API 服務
 export const financialReportsApiService = {
-    // 取得收支報表
-    getIncomeExpenseReport: async (params: { year: number; month?: number }) => {
+    // 取得損益表
+    getIncomeStatement: async (params: { startDate: string; endDate: string }) => {
         try {
-            const response = await apiClient.get('/accounting/reports/income-expense', { params });
+            const response = await apiClient.get('/accounting/reports/income-statement', { params });
             return response.data;
         } catch (error) {
-            console.error('取得收支報表失敗:', error);
+            console.error('取得損益表失敗:', error);
             throw error;
         }
     },
 
     // 取得資產負債表
-    getBalanceSheet: async (params: { date: string }) => {
+    getBalanceSheet: async (params: { asOfDate: string }) => {
         try {
             const response = await apiClient.get('/accounting/reports/balance-sheet', { params });
             return response.data;
@@ -223,12 +223,23 @@ export const financialReportsApiService = {
     },
 
     // 取得現金流量表
-    getCashFlowStatement: async (params: { year: number; month?: number }) => {
+    getCashFlowStatement: async (params: { startDate: string; endDate: string }) => {
         try {
             const response = await apiClient.get('/accounting/reports/cash-flow', { params });
             return response.data;
         } catch (error) {
             console.error('取得現金流量表失敗:', error);
+            throw error;
+        }
+    },
+
+    // 取得科目餘額表
+    getTrialBalance: async (params: { asOfDate: string }) => {
+        try {
+            const response = await apiClient.get('/accounting/reports/trial-balance', { params });
+            return response.data;
+        } catch (error) {
+            console.error('取得科目餘額表失敗:', error);
             throw error;
         }
     }
