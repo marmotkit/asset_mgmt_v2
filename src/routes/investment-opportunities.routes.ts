@@ -171,11 +171,24 @@ router.post('/investment-opportunities', authMiddleware, async (req, res) => {
 
         await sequelize.query(query, {
             replacements: [
-                id, title, subtitle, description, short_description,
-                investment_amount, min_investment, max_investment,
-                investment_type, location, industry, risk_level,
-                expected_return, investment_period, status, featured ? 1 : 0,
-                sort_order || 0, created_by
+                id,
+                title || '',
+                subtitle || null,
+                description || '',
+                short_description || null,
+                investment_amount || 0,
+                min_investment || null,
+                max_investment || null,
+                investment_type || 'other',
+                location || null,
+                industry || null,
+                risk_level || 'medium',
+                expected_return || null,
+                investment_period || null,
+                status || 'active',
+                featured ? 1 : 0,
+                sort_order || 0,
+                created_by
             ]
         });
 
