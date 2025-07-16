@@ -126,7 +126,7 @@ const JournalTab: React.FC = () => {
         setLoading(true);
         try {
             const data = await accountingJournalService.getJournalEntries();
-            setRecords(data.journals || data); // 若有分頁包裝則取 journals
+            setRecords(data);
         } catch (error) {
             console.error('獲取帳務記錄失敗:', error);
             setSnackbar({
@@ -408,23 +408,21 @@ const JournalTab: React.FC = () => {
                                         <TableCell>{record.journal_date}</TableCell>
                                         <TableCell>
                                             <Chip
-                                                label={record.category_name}
-                                                color={record.type === 'income' ? 'success' : 'error'}
+                                                label={record.category_name || '未分類'}
+                                                color="primary"
                                                 size="small"
                                             />
                                         </TableCell>
                                         <TableCell>{record.description}</TableCell>
-                                        <TableCell>{record.relatedParty || '-'}</TableCell>
+                                        <TableCell>{record.reference_number || '-'}</TableCell>
                                         <TableCell align="right" sx={{
-                                            color: record.type === 'income' ? 'success.main' : 'error.main',
+                                            color: 'text.primary',
                                             fontWeight: 'bold'
                                         }}>
-                                            {record.type === 'income' ? '+' : '-'}{record.amount.toLocaleString()}
+                                            {record.amount.toLocaleString()}
                                         </TableCell>
                                         <TableCell>
-                                            {/* Assuming paymentMethod is not directly available in the API response for this tab */}
-                                            {/* If it were, you would map it here */}
-                                            {record.payment_method_name || 'N/A'}
+                                            {record.debit_account_name || 'N/A'}
                                         </TableCell>
                                         <TableCell align="right">
                                             <IconButton
@@ -469,7 +467,6 @@ const JournalTab: React.FC = () => {
                                     slotProps={{
                                         textField: {
                                             fullWidth: true,
-                                            margin: 'normal',
                                             error: !!formErrors.journal_date,
                                             helperText: formErrors.journal_date
                                         }
@@ -478,40 +475,37 @@ const JournalTab: React.FC = () => {
                             </LocalizationProvider>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <FormControl fullWidth margin="normal" error={!!formErrors.journal_number}>
+                            <FormControl fullWidth error={!!formErrors.journal_number}>
                                 <InputLabel>分錄號碼</InputLabel>
                                 <TextField
                                     value={formData.journal_number}
                                     onChange={e => handleFormChange('journal_number', e.target.value)}
                                     fullWidth
-                                    margin="normal"
                                     error={!!formErrors.journal_number}
                                     helperText={formErrors.journal_number}
                                 />
                             </FormControl>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <FormControl fullWidth margin="normal" error={!!formErrors.amount}>
+                            <FormControl fullWidth error={!!formErrors.amount}>
                                 <InputLabel>金額</InputLabel>
                                 <TextField
                                     type="number"
                                     value={formData.amount}
                                     onChange={e => handleFormChange('amount', parseFloat(e.target.value) || 0)}
                                     fullWidth
-                                    margin="normal"
                                     error={!!formErrors.amount}
                                     helperText={formErrors.amount}
                                 />
                             </FormControl>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <FormControl fullWidth margin="normal" error={!!formErrors.debit_account_id}>
+                            <FormControl fullWidth error={!!formErrors.debit_account_id}>
                                 <InputLabel>借方科目</InputLabel>
                                 <Select
                                     value={formData.debit_account_id}
                                     onChange={e => handleFormChange('debit_account_id', e.target.value)}
                                     fullWidth
-                                    margin="normal"
                                     error={!!formErrors.debit_account_id}
                                 >
                                     <MenuItem value="" disabled>請選擇借方科目</MenuItem>
@@ -525,13 +519,12 @@ const JournalTab: React.FC = () => {
                             </FormControl>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <FormControl fullWidth margin="normal" error={!!formErrors.credit_account_id}>
+                            <FormControl fullWidth error={!!formErrors.credit_account_id}>
                                 <InputLabel>貸方科目</InputLabel>
                                 <Select
                                     value={formData.credit_account_id}
                                     onChange={e => handleFormChange('credit_account_id', e.target.value)}
                                     fullWidth
-                                    margin="normal"
                                     error={!!formErrors.credit_account_id}
                                 >
                                     <MenuItem value="" disabled>請選擇貸方科目</MenuItem>
@@ -545,13 +538,12 @@ const JournalTab: React.FC = () => {
                             </FormControl>
                         </Grid>
                         <Grid item xs={12}>
-                            <FormControl fullWidth margin="normal" error={!!formErrors.description}>
+                            <FormControl fullWidth error={!!formErrors.description}>
                                 <InputLabel>描述</InputLabel>
                                 <TextField
                                     value={formData.description}
                                     onChange={e => handleFormChange('description', e.target.value)}
                                     fullWidth
-                                    margin="normal"
                                     error={!!formErrors.description}
                                     helperText={formErrors.description}
                                 />
@@ -563,7 +555,6 @@ const JournalTab: React.FC = () => {
                                 label="參考號碼"
                                 value={formData.reference_number}
                                 onChange={e => handleFormChange('reference_number', e.target.value)}
-                                margin="normal"
                                 placeholder="選填"
                             />
                         </Grid>
