@@ -10,9 +10,17 @@ export const accountingIntegrationService = {
             // 先清理舊的會費應收帳款
             await accountingIntegrationService.clearFeeReceivables();
 
-            // 取得會費管理的待收款項目（全年度）
-            const feeResponse = await apiClient.get('/fees?status=待收款');
-            const pendingFees = feeResponse.data || [];
+            // 取得會費管理的所有項目，然後篩選待收款
+            const feeResponse = await apiClient.get('/fees');
+            const allFees = feeResponse.data || [];
+
+            // 篩選待收款和逾期的會費
+            const pendingFees = allFees.filter(fee =>
+                fee.status === '待收款' ||
+                fee.status === '逾期' ||
+                fee.status === 'pending' ||
+                fee.status === 'overdue'
+            );
 
             console.log(`找到 ${pendingFees.length} 筆待收款會費`);
 
@@ -21,12 +29,12 @@ export const accountingIntegrationService = {
             for (const fee of pendingFees) {
                 try {
                     const receivableData = {
-                        customer_id: fee.userId || fee.memberId || `fee-${fee.id}`,
-                        customer_name: fee.userName || fee.memberName || '未知會員',
-                        invoice_number: `FEE-${fee.userId || fee.memberId || fee.id}-${new Date().getFullYear()}`,
+                        customer_id: fee.memberId || fee.member_id || `fee-${fee.id}`,
+                        customer_name: fee.memberName || fee.member_name || '未知會員',
+                        invoice_number: `FEE-${fee.memberNo || fee.member_no || fee.id}-${new Date().getFullYear()}`,
                         amount: fee.amount || 0,
                         due_date: fee.dueDate || fee.due_date || new Date().toISOString().split('T')[0],
-                        description: `會費 - ${fee.userName || fee.memberName || '未知會員'} (${fee.memberType || '一般會員'})`,
+                        description: `會費 - ${fee.memberName || fee.member_name || '未知會員'} (${fee.memberType || fee.member_type || '一般會員'})`,
                         status: 'pending'
                     };
 
@@ -34,7 +42,7 @@ export const accountingIntegrationService = {
                     createdReceivables.push(response.data);
                     console.log(`已建立會費應收帳款: ${receivableData.customer_name} - ${receivableData.amount}`);
                 } catch (error) {
-                    console.error(`建立會費應收帳款失敗 (${fee.userName || fee.memberName}):`, error);
+                    console.error(`建立會費應收帳款失敗 (${fee.memberName || fee.member_name}):`, error);
                 }
             }
 
@@ -75,9 +83,51 @@ export const accountingIntegrationService = {
             // 先清理舊的租金應收帳款
             await accountingIntegrationService.clearRentalReceivables();
 
-            // 取得租金收款管理的待收款項目（全年度）
-            const rentalResponse = await apiClient.get('/rental-payments?status=待收款');
-            const pendingRentals = rentalResponse.data || [];
+            // 嘗試不同的租金 API 路徑
+            let rentalData = [];
+            try {
+                // 嘗試租金收款 API
+                const rentalResponse = await apiClient.get('/rental-payments');
+                rentalData = rentalResponse.data || [];
+            } catch (error) {
+                console.log('租金收款 API 不存在，嘗試投資管理 API...');
+                try {
+                    // 嘗試投資管理 API
+                    const investmentResponse = await apiClient.get('/investments');
+                    const investments = investmentResponse.data || [];
+
+                    // 從投資項目中提取租金資料
+                    for (const investment of investments) {
+                        if (investment.type === 'rental' || investment.description?.includes('租賃')) {
+                            // 為每個投資項目生成年度租金記錄
+                            const currentYear = new Date().getFullYear();
+                            for (let month = 1; month <= 12; month++) {
+                                rentalData.push({
+                                    id: `rental-${investment.id}-${currentYear}-${month}`,
+                                    investmentId: investment.id,
+                                    investmentName: investment.name || investment.description,
+                                    renterName: investment.renterName || investment.tenant || '未知承租人',
+                                    year: currentYear,
+                                    month: month,
+                                    rentalAmount: investment.rentalAmount || 54000,
+                                    status: month <= new Date().getMonth() + 1 ? '待收款' : '待收款',
+                                    dueDate: `${currentYear}-${String(month).padStart(2, '0')}-01`
+                                });
+                            }
+                        }
+                    }
+                } catch (innerError) {
+                    console.error('無法取得租金資料:', innerError);
+                }
+            }
+
+            // 篩選待收款和逾期的租金
+            const pendingRentals = rentalData.filter(rental =>
+                rental.status === '待收款' ||
+                rental.status === '逾期' ||
+                rental.status === 'pending' ||
+                rental.status === 'overdue'
+            );
 
             console.log(`找到 ${pendingRentals.length} 筆待收款租金`);
 

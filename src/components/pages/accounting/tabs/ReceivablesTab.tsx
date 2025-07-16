@@ -369,8 +369,23 @@ const ReceivablesTab: React.FC = () => {
 
     // 取得業務類型
     const getBusinessType = (description: string): string => {
-        if (description.includes('會費')) return '會費';
-        if (description.includes('租金')) return '租金';
+        const desc = description.toLowerCase();
+
+        // 會費識別
+        if (desc.includes('會費') || desc.includes('membership') || desc.includes('fee')) {
+            return '會費';
+        }
+
+        // 租金識別 - 支援多種模式
+        if (desc.includes('租金') ||
+            desc.includes('rental') ||
+            desc.includes('租賃') ||
+            desc.includes('lease') ||
+            desc.startsWith('租金 -') ||
+            desc.includes('年') && desc.includes('月')) {
+            return '租金';
+        }
+
         return '其他';
     };
 
