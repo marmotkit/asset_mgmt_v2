@@ -24,14 +24,24 @@ import {
     Chip,
     Grid,
     Collapse,
-    SelectChangeEvent
+    SelectChangeEvent,
+    Switch,
+    FormControlLabel,
+    Alert,
+    Card,
+    CardContent,
+    Divider
 } from '@mui/material';
 import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
     KeyboardArrowDown as KeyboardArrowDownIcon,
-    KeyboardArrowUp as KeyboardArrowUpIcon
+    KeyboardArrowUp as KeyboardArrowUpIcon,
+    Visibility as VisibilityIcon,
+    VisibilityOff as VisibilityOffIcon,
+    PersonAdd as PersonAddIcon,
+    Assessment as AssessmentIcon
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -39,14 +49,18 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import zhTW from 'date-fns/locale/zh-TW';
 import { format, formatISO } from 'date-fns';
 
-import { AnnualActivity, ActivityStatus } from '../../../types/services';
+import { AnnualActivity, ActivityStatus, ActivityRegistrationForm, ActivityRegistrationDetail } from '../../../types/services';
 import { MemberServiceAPI } from '../../../services/memberServiceAPI';
 import { User } from '../../../types/user';
 import { ApiService } from '../../../services/api.service';
+import { useAuth } from '../../../contexts/AuthContext';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ActivityRegistrationsTable from './ActivityRegistrationsTable';
 
 const AnnualActivitiesTab: React.FC = () => {
+    const { user } = useAuth(); // 新增權限控制
+    const isAdmin = user?.role === 'admin'; // 檢查是否為管理者
+
     const [activities, setActivities] = useState<AnnualActivity[]>([]);
     const [loading, setLoading] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -59,7 +73,8 @@ const AnnualActivitiesTab: React.FC = () => {
         capacity: 20,
         registrationDeadline: formatISO(new Date()),
         status: ActivityStatus.PLANNING,
-        year: new Date().getFullYear()
+        year: new Date().getFullYear(),
+        isVisible: true // 新增顯示狀態
     });
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -70,6 +85,21 @@ const AnnualActivitiesTab: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<ActivityStatus | ''>('');
     const [members, setMembers] = useState<User[]>([]);
     const [expandedIds, setExpandedIds] = useState<string[]>([]);
+
+    // 新增報名相關狀態
+    const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
+    const [registrationForm, setRegistrationForm] = useState<ActivityRegistrationForm>({
+        activityId: '',
+        memberName: '',
+        totalParticipants: 1,
+        maleCount: 0,
+        femaleCount: 0,
+        phoneNumber: '',
+        notes: ''
+    });
+    const [registrationErrors, setRegistrationErrors] = useState<Record<string, string>>({});
+    const [myRegistrations, setMyRegistrations] = useState<ActivityRegistrationDetail[]>([]);
+    const [showMyRegistrations, setShowMyRegistrations] = useState(false);
 
     const { enqueueSnackbar } = useSnackbar();
 
@@ -299,10 +329,10 @@ const AnnualActivitiesTab: React.FC = () => {
             [ActivityStatus.REGISTRATION]: '報名中',
             [ActivityStatus.ONGOING]: '進行中',
             [ActivityStatus.COMPLETED]: '已完成',
-            [ActivityStatus.CANCELLED]: '已取消'
+            [ActivityStatus.CANCELLED]: '已取消',
+            [ActivityStatus.HIDDEN]: '已隱藏'
         };
-
-        return statusMap[status] || '未知';
+        return statusMap[status] || status;
     };
 
     const formatDate = (dateString: string) => {
@@ -323,11 +353,158 @@ const AnnualActivitiesTab: React.FC = () => {
         return years;
     };
 
+    // 新增報名相關處理函數
+    const handleOpenRegistrationDialog = (activity: AnnualActivity) => {
+        setRegistrationForm({
+            activityId: activity.id,
+            memberName: user?.name || '',
+            totalParticipants: 1,
+            maleCount: 0,
+            femaleCount: 0,
+            phoneNumber: '',
+            notes: ''
+        });
+        setRegistrationErrors({});
+        setRegistrationDialogOpen(true);
+    };
+
+    const handleCloseRegistrationDialog = () => {
+        setRegistrationDialogOpen(false);
+    };
+
+    const handleRegistrationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setRegistrationForm({
+            ...registrationForm,
+            [name]: value
+        });
+        // 清除錯誤訊息
+        if (registrationErrors[name]) {
+            setRegistrationErrors({
+                ...registrationErrors,
+                [name]: ''
+            });
+        }
+    };
+
+    const handleRegistrationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        const numValue = parseInt(value, 10) || 0;
+        setRegistrationForm({
+            ...registrationForm,
+            [name]: numValue
+        });
+        // 清除錯誤訊息
+        if (registrationErrors[name]) {
+            setRegistrationErrors({
+                ...registrationErrors,
+                [name]: ''
+            });
+        }
+    };
+
+    const validateRegistrationForm = () => {
+        const errors: Record<string, string> = {};
+
+        if (!registrationForm.memberName?.trim()) {
+            errors.memberName = '請輸入報名姓名';
+        }
+
+        if (!registrationForm.phoneNumber?.trim()) {
+            errors.phoneNumber = '請輸入聯絡電話';
+        }
+
+        if (!registrationForm.totalParticipants || registrationForm.totalParticipants < 1) {
+            errors.totalParticipants = '總人數至少為1人';
+        }
+
+        if (registrationForm.maleCount < 0) {
+            errors.maleCount = '男性人數不能為負數';
+        }
+
+        if (registrationForm.femaleCount < 0) {
+            errors.femaleCount = '女性人數不能為負數';
+        }
+
+        const total = (registrationForm.maleCount || 0) + (registrationForm.femaleCount || 0);
+        if (total !== registrationForm.totalParticipants) {
+            errors.totalParticipants = '男性人數 + 女性人數必須等於總人數';
+        }
+
+        setRegistrationErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const handleRegistrationSubmit = async () => {
+        if (!validateRegistrationForm()) {
+            return;
+        }
+
+        try {
+            setLoading(true);
+            await MemberServiceAPI.createActivityRegistration({
+                activityId: registrationForm.activityId,
+                memberName: registrationForm.memberName,
+                phoneNumber: registrationForm.phoneNumber,
+                totalParticipants: registrationForm.totalParticipants,
+                maleCount: registrationForm.maleCount,
+                femaleCount: registrationForm.femaleCount,
+                notes: registrationForm.notes
+            });
+
+            enqueueSnackbar('報名成功！', { variant: 'success' });
+            handleCloseRegistrationDialog();
+            await loadActivities();
+            if (!isAdmin) {
+                await loadMyRegistrations();
+            }
+        } catch (error: any) {
+            console.error('報名失敗', error);
+            enqueueSnackbar(error.message || '報名失敗', { variant: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadMyRegistrations = async () => {
+        try {
+            const data = await MemberServiceAPI.getMyRegistrations();
+            setMyRegistrations(data);
+        } catch (error) {
+            console.error('載入我的報名記錄失敗', error);
+            enqueueSnackbar('載入我的報名記錄失敗', { variant: 'error' });
+        }
+    };
+
+    const handleToggleActivityVisibility = async (activity: AnnualActivity) => {
+        try {
+            setLoading(true);
+            await MemberServiceAPI.updateActivity(activity.id, {
+                ...activity,
+                isVisible: !activity.isVisible
+            });
+            enqueueSnackbar(`活動已${activity.isVisible ? '隱藏' : '顯示'}`, { variant: 'success' });
+            await loadActivities();
+        } catch (error) {
+            console.error('更新活動顯示狀態失敗', error);
+            enqueueSnackbar('更新失敗', { variant: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 載入我的報名記錄
+    useEffect(() => {
+        if (!isAdmin) {
+            loadMyRegistrations();
+        }
+    }, [user]);
+
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={zhTW}>
             <Box sx={{ mb: 2 }}>
                 <Typography variant="h5" component="h2" gutterBottom>
-                    年度活動管理
+                    {isAdmin ? '年度活動管理' : '年度活動'}
                 </Typography>
 
                 <Box sx={{ mb: 2 }}>
@@ -367,17 +544,86 @@ const AnnualActivitiesTab: React.FC = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={6} container justifyContent="flex-end">
-                            <Button
-                                variant="contained"
-                                startIcon={<AddIcon />}
-                                onClick={() => handleOpenDialog()}
-                            >
-                                新增活動
-                            </Button>
+                        <Grid item xs={12} sm={6} container justifyContent="flex-end" spacing={1}>
+                            {isAdmin ? (
+                                <Button
+                                    variant="contained"
+                                    startIcon={<AddIcon />}
+                                    onClick={() => handleOpenDialog()}
+                                >
+                                    新增活動
+                                </Button>
+                            ) : (
+                                <>
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={<AssessmentIcon />}
+                                        onClick={() => setShowMyRegistrations(!showMyRegistrations)}
+                                    >
+                                        {showMyRegistrations ? '隱藏我的報名' : '我的報名'}
+                                    </Button>
+                                </>
+                            )}
                         </Grid>
                     </Grid>
                 </Box>
+
+                {/* 非管理者顯示我的報名記錄 */}
+                {!isAdmin && showMyRegistrations && (
+                    <Card sx={{ mb: 3 }}>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                我的報名記錄
+                            </Typography>
+                            {myRegistrations.length === 0 ? (
+                                <Typography color="text.secondary">
+                                    您還沒有報名任何活動
+                                </Typography>
+                            ) : (
+                                <Grid container spacing={2}>
+                                    {myRegistrations.map((registration) => (
+                                        <Grid item xs={12} key={registration.id}>
+                                            <Card variant="outlined">
+                                                <CardContent>
+                                                    <Typography variant="subtitle1" fontWeight="bold">
+                                                        {registration.activityTitle}
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        活動日期：{formatDate(registration.activityDate)}
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        活動地點：{registration.activityLocation}
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        報名姓名：{registration.memberName}
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        總人數：{registration.totalParticipants} 人
+                                                        (男：{registration.maleCount} 人，女：{registration.femaleCount} 人)
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        聯絡電話：{registration.phoneNumber}
+                                                    </Typography>
+                                                    {registration.notes && (
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            備註：{registration.notes}
+                                                        </Typography>
+                                                    )}
+                                                    <Chip
+                                                        label={registration.status === 'confirmed' ? '已確認' : '待確認'}
+                                                        color={registration.status === 'confirmed' ? 'success' : 'warning'}
+                                                        size="small"
+                                                        sx={{ mt: 1 }}
+                                                    />
+                                                </CardContent>
+                                            </Card>
+                                        </Grid>
+                                    ))}
+                                </Grid>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
 
                 {loading ? (
                     <LoadingSpinner />
@@ -426,20 +672,47 @@ const AnnualActivitiesTab: React.FC = () => {
                                                 <TableCell>{activity.capacity} 人</TableCell>
                                                 <TableCell>{getStatusChip(activity.status)}</TableCell>
                                                 <TableCell align="right">
-                                                    <IconButton
-                                                        size="small"
-                                                        color="primary"
-                                                        onClick={() => handleOpenDialog(activity)}
-                                                    >
-                                                        <EditIcon fontSize="small" />
-                                                    </IconButton>
-                                                    <IconButton
-                                                        size="small"
-                                                        color="error"
-                                                        onClick={() => handleDeleteConfirm(activity.id)}
-                                                    >
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
+                                                    {isAdmin ? (
+                                                        <>
+                                                            <IconButton
+                                                                size="small"
+                                                                color="primary"
+                                                                onClick={() => handleOpenDialog(activity)}
+                                                            >
+                                                                <EditIcon fontSize="small" />
+                                                            </IconButton>
+                                                            <IconButton
+                                                                size="small"
+                                                                color="secondary"
+                                                                onClick={() => handleToggleActivityVisibility(activity)}
+                                                                title={activity.isVisible ? '隱藏活動' : '顯示活動'}
+                                                            >
+                                                                {activity.isVisible ? (
+                                                                    <VisibilityIcon fontSize="small" />
+                                                                ) : (
+                                                                    <VisibilityOffIcon fontSize="small" />
+                                                                )}
+                                                            </IconButton>
+                                                            <IconButton
+                                                                size="small"
+                                                                color="error"
+                                                                onClick={() => handleDeleteConfirm(activity.id)}
+                                                            >
+                                                                <DeleteIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </>
+                                                    ) : (
+                                                        activity.status === ActivityStatus.REGISTRATION && activity.isVisible && (
+                                                            <Button
+                                                                variant="contained"
+                                                                size="small"
+                                                                startIcon={<PersonAddIcon />}
+                                                                onClick={() => handleOpenRegistrationDialog(activity)}
+                                                            >
+                                                                報名活動
+                                                            </Button>
+                                                        )
+                                                    )}
                                                 </TableCell>
                                             </TableRow>
                                             <TableRow>
@@ -635,6 +908,104 @@ const AnnualActivitiesTab: React.FC = () => {
                     <Button onClick={() => setConfirmOpen(false)}>取消</Button>
                     <Button onClick={handleDelete} color="error" variant="contained">
                         確定刪除
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* 活動報名對話框 */}
+            <Dialog open={registrationDialogOpen} onClose={handleCloseRegistrationDialog} maxWidth="md" fullWidth>
+                <DialogTitle>活動報名</DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="報名姓名"
+                                name="memberName"
+                                value={registrationForm.memberName}
+                                onChange={handleRegistrationInputChange}
+                                error={!!registrationErrors.memberName}
+                                helperText={registrationErrors.memberName}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="聯絡電話"
+                                name="phoneNumber"
+                                value={registrationForm.phoneNumber}
+                                onChange={handleRegistrationInputChange}
+                                error={!!registrationErrors.phoneNumber}
+                                helperText={registrationErrors.phoneNumber}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="總人數"
+                                name="totalParticipants"
+                                type="number"
+                                value={registrationForm.totalParticipants}
+                                onChange={handleRegistrationNumberChange}
+                                error={!!registrationErrors.totalParticipants}
+                                helperText={registrationErrors.totalParticipants}
+                                InputProps={{ inputProps: { min: 1 } }}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="男性人數"
+                                name="maleCount"
+                                type="number"
+                                value={registrationForm.maleCount}
+                                onChange={handleRegistrationNumberChange}
+                                error={!!registrationErrors.maleCount}
+                                helperText={registrationErrors.maleCount}
+                                InputProps={{ inputProps: { min: 0 } }}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="女性人數"
+                                name="femaleCount"
+                                type="number"
+                                value={registrationForm.femaleCount}
+                                onChange={handleRegistrationNumberChange}
+                                error={!!registrationErrors.femaleCount}
+                                helperText={registrationErrors.femaleCount}
+                                InputProps={{ inputProps: { min: 0 } }}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="備註"
+                                name="notes"
+                                value={registrationForm.notes || ''}
+                                onChange={handleRegistrationInputChange}
+                                multiline
+                                rows={3}
+                                placeholder="特殊需求、飲食限制等"
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseRegistrationDialog}>取消</Button>
+                    <Button onClick={handleRegistrationSubmit} variant="contained" disabled={loading}>
+                        {loading ? '處理中...' : '確認報名'}
                     </Button>
                 </DialogActions>
             </Dialog>

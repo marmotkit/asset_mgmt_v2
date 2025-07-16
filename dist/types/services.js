@@ -8,6 +8,7 @@ var ActivityStatus;
     ActivityStatus["ONGOING"] = "ongoing";
     ActivityStatus["COMPLETED"] = "completed";
     ActivityStatus["CANCELLED"] = "cancelled";
+    ActivityStatus["HIDDEN"] = "hidden"; // 新增隱藏狀態
 })(ActivityStatus || (exports.ActivityStatus = ActivityStatus = {}));
 var RegistrationStatus;
 (function (RegistrationStatus) {

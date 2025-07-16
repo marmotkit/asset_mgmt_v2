@@ -48,10 +48,13 @@ const date_fns_1 = require("date-fns");
 const services_1 = require("../../../types/services");
 const memberServiceAPI_1 = require("../../../services/memberServiceAPI");
 const api_service_1 = require("../../../services/api.service");
+const AuthContext_1 = require("../../../contexts/AuthContext");
 const LoadingSpinner_1 = __importDefault(require("../../common/LoadingSpinner"));
 const ActivityRegistrationsTable_1 = __importDefault(require("./ActivityRegistrationsTable"));
 const AnnualActivitiesTab = () => {
     var _a;
+    const { user } = (0, AuthContext_1.useAuth)(); // 新增權限控制
+    const isAdmin = (user === null || user === void 0 ? void 0 : user.role) === 'admin'; // 檢查是否為管理者
     const [activities, setActivities] = (0, react_1.useState)([]);
     const [loading, setLoading] = (0, react_1.useState)(false);
     const [dialogOpen, setDialogOpen] = (0, react_1.useState)(false);
@@ -64,7 +67,8 @@ const AnnualActivitiesTab = () => {
         capacity: 20,
         registrationDeadline: (0, date_fns_1.formatISO)(new Date()),
         status: services_1.ActivityStatus.PLANNING,
-        year: new Date().getFullYear()
+        year: new Date().getFullYear(),
+        isVisible: true // 新增顯示狀態
     });
     const [formErrors, setFormErrors] = (0, react_1.useState)({});
     const [confirmOpen, setConfirmOpen] = (0, react_1.useState)(false);
@@ -75,6 +79,20 @@ const AnnualActivitiesTab = () => {
     const [statusFilter, setStatusFilter] = (0, react_1.useState)('');
     const [members, setMembers] = (0, react_1.useState)([]);
     const [expandedIds, setExpandedIds] = (0, react_1.useState)([]);
+    // 新增報名相關狀態
+    const [registrationDialogOpen, setRegistrationDialogOpen] = (0, react_1.useState)(false);
+    const [registrationForm, setRegistrationForm] = (0, react_1.useState)({
+        activityId: '',
+        memberName: '',
+        totalParticipants: 1,
+        maleCount: 0,
+        femaleCount: 0,
+        phoneNumber: '',
+        notes: ''
+    });
+    const [registrationErrors, setRegistrationErrors] = (0, react_1.useState)({});
+    const [myRegistrations, setMyRegistrations] = (0, react_1.useState)([]);
+    const [showMyRegistrations, setShowMyRegistrations] = (0, react_1.useState)(false);
     const { enqueueSnackbar } = (0, notistack_1.useSnackbar)();
     (0, react_1.useEffect)(() => {
         loadActivities();
@@ -284,9 +302,10 @@ const AnnualActivitiesTab = () => {
             [services_1.ActivityStatus.REGISTRATION]: '報名中',
             [services_1.ActivityStatus.ONGOING]: '進行中',
             [services_1.ActivityStatus.COMPLETED]: '已完成',
-            [services_1.ActivityStatus.CANCELLED]: '已取消'
+            [services_1.ActivityStatus.CANCELLED]: '已取消',
+            [services_1.ActivityStatus.HIDDEN]: '已隱藏'
         };
-        return statusMap[status] || '未知';
+        return statusMap[status] || status;
     };
     const formatDate = (dateString) => {
         try {
@@ -305,7 +324,142 @@ const AnnualActivitiesTab = () => {
         }
         return years;
     };
-    return ((0, jsx_runtime_1.jsxs)(x_date_pickers_1.LocalizationProvider, { dateAdapter: AdapterDateFns_1.AdapterDateFns, adapterLocale: zh_TW_1.default, children: [(0, jsx_runtime_1.jsxs)(material_1.Box, { sx: { mb: 2 }, children: [(0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "h5", component: "h2", gutterBottom: true, children: "\u5E74\u5EA6\u6D3B\u52D5\u7BA1\u7406" }), (0, jsx_runtime_1.jsx)(material_1.Box, { sx: { mb: 2 }, children: (0, jsx_runtime_1.jsxs)(material_1.Grid, { container: true, spacing: 2, alignItems: "center", children: [(0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 3, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, size: "small", children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { id: "year-filter-label", children: "\u6D3B\u52D5\u5E74\u4EFD" }), (0, jsx_runtime_1.jsx)(material_1.Select, { labelId: "year-filter-label", value: yearFilter.toString(), onChange: handleYearFilterChange, label: "\u6D3B\u52D5\u5E74\u4EFD", children: getYearOptions().map((year) => ((0, jsx_runtime_1.jsxs)(material_1.MenuItem, { value: year.toString(), children: [year, " \u5E74"] }, year))) })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 3, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, size: "small", children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { id: "status-filter-label", children: "\u6D3B\u52D5\u72C0\u614B" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { labelId: "status-filter-label", value: statusFilter, onChange: handleStatusFilterChange, label: "\u6D3B\u52D5\u72C0\u614B", children: [(0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "", children: "\u5168\u90E8" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.PLANNING, children: "\u8A08\u5283\u4E2D" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.REGISTRATION, children: "\u5831\u540D\u4E2D" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.ONGOING, children: "\u9032\u884C\u4E2D" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.COMPLETED, children: "\u5DF2\u5B8C\u6210" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.CANCELLED, children: "\u5DF2\u53D6\u6D88" })] })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, container: true, justifyContent: "flex-end", children: (0, jsx_runtime_1.jsx)(material_1.Button, { variant: "contained", startIcon: (0, jsx_runtime_1.jsx)(icons_material_1.Add, {}), onClick: () => handleOpenDialog(), children: "\u65B0\u589E\u6D3B\u52D5" }) })] }) }), loading ? ((0, jsx_runtime_1.jsx)(LoadingSpinner_1.default, {})) : ((0, jsx_runtime_1.jsx)(material_1.TableContainer, { component: material_1.Paper, children: (0, jsx_runtime_1.jsxs)(material_1.Table, { children: [(0, jsx_runtime_1.jsx)(material_1.TableHead, { children: (0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { width: "5%" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6D3B\u52D5\u6A19\u984C" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6D3B\u52D5\u65E5\u671F" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u5730\u9EDE" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u4EBA\u6578\u4E0A\u9650" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u72C0\u614B" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { align: "right", children: "\u64CD\u4F5C" })] }) }), (0, jsx_runtime_1.jsx)(material_1.TableBody, { children: activities.length === 0 ? ((0, jsx_runtime_1.jsx)(material_1.TableRow, { children: (0, jsx_runtime_1.jsx)(material_1.TableCell, { colSpan: 7, align: "center", children: "\u66AB\u7121\u6D3B\u52D5\u8A18\u9304" }) })) : (activities.map((activity) => ((0, jsx_runtime_1.jsxs)(react_1.default.Fragment, { children: [(0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: (0, jsx_runtime_1.jsx)(material_1.IconButton, { size: "small", onClick: () => toggleExpand(activity.id), children: expandedIds.includes(activity.id) ? ((0, jsx_runtime_1.jsx)(icons_material_1.KeyboardArrowUp, {})) : ((0, jsx_runtime_1.jsx)(icons_material_1.KeyboardArrowDown, {})) }) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: activity.title }), (0, jsx_runtime_1.jsxs)(material_1.TableCell, { children: [formatDate(activity.startDate), " ~ ", formatDate(activity.endDate)] }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: activity.location }), (0, jsx_runtime_1.jsxs)(material_1.TableCell, { children: [activity.capacity, " \u4EBA"] }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getStatusChip(activity.status) }), (0, jsx_runtime_1.jsxs)(material_1.TableCell, { align: "right", children: [(0, jsx_runtime_1.jsx)(material_1.IconButton, { size: "small", color: "primary", onClick: () => handleOpenDialog(activity), children: (0, jsx_runtime_1.jsx)(icons_material_1.Edit, { fontSize: "small" }) }), (0, jsx_runtime_1.jsx)(material_1.IconButton, { size: "small", color: "error", onClick: () => handleDeleteConfirm(activity.id), children: (0, jsx_runtime_1.jsx)(icons_material_1.Delete, { fontSize: "small" }) })] })] }), (0, jsx_runtime_1.jsx)(material_1.TableRow, { children: (0, jsx_runtime_1.jsx)(material_1.TableCell, { style: { paddingBottom: 0, paddingTop: 0 }, colSpan: 7, children: (0, jsx_runtime_1.jsx)(material_1.Collapse, { in: expandedIds.includes(activity.id), timeout: "auto", unmountOnExit: true, children: (0, jsx_runtime_1.jsxs)(material_1.Box, { sx: { margin: 2 }, children: [(0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "h6", gutterBottom: true, component: "div", children: "\u5831\u540D\u72C0\u6CC1" }), (0, jsx_runtime_1.jsx)(ActivityRegistrationsTable_1.default, { activityId: activity.id, members: members, onReload: loadActivities })] }) }) }) })] }, activity.id)))) })] }) }))] }), (0, jsx_runtime_1.jsxs)(material_1.Dialog, { open: dialogOpen, onClose: handleCloseDialog, maxWidth: "md", fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.DialogTitle, { children: editMode ? '編輯活動' : '新增活動' }), (0, jsx_runtime_1.jsx)(material_1.DialogContent, { children: (0, jsx_runtime_1.jsxs)(material_1.Grid, { container: true, spacing: 2, sx: { mt: 1 }, children: [(0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { id: "year-label", children: "\u6D3B\u52D5\u5E74\u4EFD" }), (0, jsx_runtime_1.jsx)(material_1.Select, { labelId: "year-label", value: ((_a = activityForm.year) === null || _a === void 0 ? void 0 : _a.toString()) || new Date().getFullYear().toString(), onChange: handleYearChange, label: "\u6D3B\u52D5\u5E74\u4EFD", children: getYearOptions().map((year) => ((0, jsx_runtime_1.jsxs)(material_1.MenuItem, { value: year.toString(), children: [year, " \u5E74"] }, year))) })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { id: "status-label", children: "\u6D3B\u52D5\u72C0\u614B" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { labelId: "status-label", value: activityForm.status || services_1.ActivityStatus.PLANNING, onChange: handleStatusChange, label: "\u6D3B\u52D5\u72C0\u614B", children: [(0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.PLANNING, children: "\u8A08\u5283\u4E2D" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.REGISTRATION, children: "\u5831\u540D\u4E2D" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.ONGOING, children: "\u9032\u884C\u4E2D" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.COMPLETED, children: "\u5DF2\u5B8C\u6210" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.CANCELLED, children: "\u5DF2\u53D6\u6D88" })] })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u6D3B\u52D5\u6A19\u984C", name: "title", value: activityForm.title || '', onChange: handleInputChange, error: !!formErrors.title, helperText: formErrors.title }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u6D3B\u52D5\u63CF\u8FF0", name: "description", value: activityForm.description || '', onChange: handleInputChange, multiline: true, rows: 3, error: !!formErrors.description, helperText: formErrors.description }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsx)(x_date_pickers_1.DatePicker, { label: "\u958B\u59CB\u65E5\u671F", value: activityForm.startDate ? new Date(activityForm.startDate) : null, onChange: handleStartDateChange, slotProps: {
+    // 新增報名相關處理函數
+    const handleOpenRegistrationDialog = (activity) => {
+        setRegistrationForm({
+            activityId: activity.id,
+            memberName: (user === null || user === void 0 ? void 0 : user.name) || '',
+            totalParticipants: 1,
+            maleCount: 0,
+            femaleCount: 0,
+            phoneNumber: '',
+            notes: ''
+        });
+        setRegistrationErrors({});
+        setRegistrationDialogOpen(true);
+    };
+    const handleCloseRegistrationDialog = () => {
+        setRegistrationDialogOpen(false);
+    };
+    const handleRegistrationInputChange = (e) => {
+        const { name, value } = e.target;
+        setRegistrationForm({
+            ...registrationForm,
+            [name]: value
+        });
+        // 清除錯誤訊息
+        if (registrationErrors[name]) {
+            setRegistrationErrors({
+                ...registrationErrors,
+                [name]: ''
+            });
+        }
+    };
+    const handleRegistrationNumberChange = (e) => {
+        const { name, value } = e.target;
+        const numValue = parseInt(value, 10) || 0;
+        setRegistrationForm({
+            ...registrationForm,
+            [name]: numValue
+        });
+        // 清除錯誤訊息
+        if (registrationErrors[name]) {
+            setRegistrationErrors({
+                ...registrationErrors,
+                [name]: ''
+            });
+        }
+    };
+    const validateRegistrationForm = () => {
+        var _a, _b;
+        const errors = {};
+        if (!((_a = registrationForm.memberName) === null || _a === void 0 ? void 0 : _a.trim())) {
+            errors.memberName = '請輸入報名姓名';
+        }
+        if (!((_b = registrationForm.phoneNumber) === null || _b === void 0 ? void 0 : _b.trim())) {
+            errors.phoneNumber = '請輸入聯絡電話';
+        }
+        if (!registrationForm.totalParticipants || registrationForm.totalParticipants < 1) {
+            errors.totalParticipants = '總人數至少為1人';
+        }
+        if (registrationForm.maleCount < 0) {
+            errors.maleCount = '男性人數不能為負數';
+        }
+        if (registrationForm.femaleCount < 0) {
+            errors.femaleCount = '女性人數不能為負數';
+        }
+        const total = (registrationForm.maleCount || 0) + (registrationForm.femaleCount || 0);
+        if (total !== registrationForm.totalParticipants) {
+            errors.totalParticipants = '男性人數 + 女性人數必須等於總人數';
+        }
+        setRegistrationErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+    const handleRegistrationSubmit = async () => {
+        if (!validateRegistrationForm()) {
+            return;
+        }
+        try {
+            setLoading(true);
+            await memberServiceAPI_1.MemberServiceAPI.createActivityRegistration({
+                activityId: registrationForm.activityId,
+                memberName: registrationForm.memberName,
+                phoneNumber: registrationForm.phoneNumber,
+                totalParticipants: registrationForm.totalParticipants,
+                maleCount: registrationForm.maleCount,
+                femaleCount: registrationForm.femaleCount,
+                notes: registrationForm.notes
+            });
+            enqueueSnackbar('報名成功！', { variant: 'success' });
+            handleCloseRegistrationDialog();
+            await loadActivities();
+            if (!isAdmin) {
+                await loadMyRegistrations();
+            }
+        }
+        catch (error) {
+            console.error('報名失敗', error);
+            enqueueSnackbar(error.message || '報名失敗', { variant: 'error' });
+        }
+        finally {
+            setLoading(false);
+        }
+    };
+    const loadMyRegistrations = async () => {
+        try {
+            const data = await memberServiceAPI_1.MemberServiceAPI.getMyRegistrations();
+            setMyRegistrations(data);
+        }
+        catch (error) {
+            console.error('載入我的報名記錄失敗', error);
+            enqueueSnackbar('載入我的報名記錄失敗', { variant: 'error' });
+        }
+    };
+    const handleToggleActivityVisibility = async (activity) => {
+        try {
+            setLoading(true);
+            await memberServiceAPI_1.MemberServiceAPI.updateActivity(activity.id, {
+                ...activity,
+                isVisible: !activity.isVisible
+            });
+            enqueueSnackbar(`活動已${activity.isVisible ? '隱藏' : '顯示'}`, { variant: 'success' });
+            await loadActivities();
+        }
+        catch (error) {
+            console.error('更新活動顯示狀態失敗', error);
+            enqueueSnackbar('更新失敗', { variant: 'error' });
+        }
+        finally {
+            setLoading(false);
+        }
+    };
+    // 載入我的報名記錄
+    (0, react_1.useEffect)(() => {
+        if (!isAdmin) {
+            loadMyRegistrations();
+        }
+    }, [user]);
+    return ((0, jsx_runtime_1.jsxs)(x_date_pickers_1.LocalizationProvider, { dateAdapter: AdapterDateFns_1.AdapterDateFns, adapterLocale: zh_TW_1.default, children: [(0, jsx_runtime_1.jsxs)(material_1.Box, { sx: { mb: 2 }, children: [(0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "h5", component: "h2", gutterBottom: true, children: isAdmin ? '年度活動管理' : '年度活動' }), (0, jsx_runtime_1.jsx)(material_1.Box, { sx: { mb: 2 }, children: (0, jsx_runtime_1.jsxs)(material_1.Grid, { container: true, spacing: 2, alignItems: "center", children: [(0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 3, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, size: "small", children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { id: "year-filter-label", children: "\u6D3B\u52D5\u5E74\u4EFD" }), (0, jsx_runtime_1.jsx)(material_1.Select, { labelId: "year-filter-label", value: yearFilter.toString(), onChange: handleYearFilterChange, label: "\u6D3B\u52D5\u5E74\u4EFD", children: getYearOptions().map((year) => ((0, jsx_runtime_1.jsxs)(material_1.MenuItem, { value: year.toString(), children: [year, " \u5E74"] }, year))) })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 3, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, size: "small", children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { id: "status-filter-label", children: "\u6D3B\u52D5\u72C0\u614B" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { labelId: "status-filter-label", value: statusFilter, onChange: handleStatusFilterChange, label: "\u6D3B\u52D5\u72C0\u614B", children: [(0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: "", children: "\u5168\u90E8" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.PLANNING, children: "\u8A08\u5283\u4E2D" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.REGISTRATION, children: "\u5831\u540D\u4E2D" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.ONGOING, children: "\u9032\u884C\u4E2D" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.COMPLETED, children: "\u5DF2\u5B8C\u6210" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.CANCELLED, children: "\u5DF2\u53D6\u6D88" })] })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, container: true, justifyContent: "flex-end", spacing: 1, children: isAdmin ? ((0, jsx_runtime_1.jsx)(material_1.Button, { variant: "contained", startIcon: (0, jsx_runtime_1.jsx)(icons_material_1.Add, {}), onClick: () => handleOpenDialog(), children: "\u65B0\u589E\u6D3B\u52D5" })) : ((0, jsx_runtime_1.jsx)(jsx_runtime_1.Fragment, { children: (0, jsx_runtime_1.jsx)(material_1.Button, { variant: "outlined", startIcon: (0, jsx_runtime_1.jsx)(icons_material_1.Assessment, {}), onClick: () => setShowMyRegistrations(!showMyRegistrations), children: showMyRegistrations ? '隱藏我的報名' : '我的報名' }) })) })] }) }), !isAdmin && showMyRegistrations && ((0, jsx_runtime_1.jsx)(material_1.Card, { sx: { mb: 3 }, children: (0, jsx_runtime_1.jsxs)(material_1.CardContent, { children: [(0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "h6", gutterBottom: true, children: "\u6211\u7684\u5831\u540D\u8A18\u9304" }), myRegistrations.length === 0 ? ((0, jsx_runtime_1.jsx)(material_1.Typography, { color: "text.secondary", children: "\u60A8\u9084\u6C92\u6709\u5831\u540D\u4EFB\u4F55\u6D3B\u52D5" })) : ((0, jsx_runtime_1.jsx)(material_1.Grid, { container: true, spacing: 2, children: myRegistrations.map((registration) => ((0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.Card, { variant: "outlined", children: (0, jsx_runtime_1.jsxs)(material_1.CardContent, { children: [(0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "subtitle1", fontWeight: "bold", children: registration.activityTitle }), (0, jsx_runtime_1.jsxs)(material_1.Typography, { variant: "body2", color: "text.secondary", children: ["\u6D3B\u52D5\u65E5\u671F\uFF1A", formatDate(registration.activityDate)] }), (0, jsx_runtime_1.jsxs)(material_1.Typography, { variant: "body2", color: "text.secondary", children: ["\u6D3B\u52D5\u5730\u9EDE\uFF1A", registration.activityLocation] }), (0, jsx_runtime_1.jsxs)(material_1.Typography, { variant: "body2", color: "text.secondary", children: ["\u5831\u540D\u59D3\u540D\uFF1A", registration.memberName] }), (0, jsx_runtime_1.jsxs)(material_1.Typography, { variant: "body2", color: "text.secondary", children: ["\u7E3D\u4EBA\u6578\uFF1A", registration.totalParticipants, " \u4EBA (\u7537\uFF1A", registration.maleCount, " \u4EBA\uFF0C\u5973\uFF1A", registration.femaleCount, " \u4EBA)"] }), (0, jsx_runtime_1.jsxs)(material_1.Typography, { variant: "body2", color: "text.secondary", children: ["\u806F\u7D61\u96FB\u8A71\uFF1A", registration.phoneNumber] }), registration.notes && ((0, jsx_runtime_1.jsxs)(material_1.Typography, { variant: "body2", color: "text.secondary", children: ["\u5099\u8A3B\uFF1A", registration.notes] })), (0, jsx_runtime_1.jsx)(material_1.Chip, { label: registration.status === 'confirmed' ? '已確認' : '待確認', color: registration.status === 'confirmed' ? 'success' : 'warning', size: "small", sx: { mt: 1 } })] }) }) }, registration.id))) }))] }) })), loading ? ((0, jsx_runtime_1.jsx)(LoadingSpinner_1.default, {})) : ((0, jsx_runtime_1.jsx)(material_1.TableContainer, { component: material_1.Paper, children: (0, jsx_runtime_1.jsxs)(material_1.Table, { children: [(0, jsx_runtime_1.jsx)(material_1.TableHead, { children: (0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { width: "5%" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6D3B\u52D5\u6A19\u984C" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u6D3B\u52D5\u65E5\u671F" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u5730\u9EDE" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u4EBA\u6578\u4E0A\u9650" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: "\u72C0\u614B" }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { align: "right", children: "\u64CD\u4F5C" })] }) }), (0, jsx_runtime_1.jsx)(material_1.TableBody, { children: activities.length === 0 ? ((0, jsx_runtime_1.jsx)(material_1.TableRow, { children: (0, jsx_runtime_1.jsx)(material_1.TableCell, { colSpan: 7, align: "center", children: "\u66AB\u7121\u6D3B\u52D5\u8A18\u9304" }) })) : (activities.map((activity) => ((0, jsx_runtime_1.jsxs)(react_1.default.Fragment, { children: [(0, jsx_runtime_1.jsxs)(material_1.TableRow, { children: [(0, jsx_runtime_1.jsx)(material_1.TableCell, { children: (0, jsx_runtime_1.jsx)(material_1.IconButton, { size: "small", onClick: () => toggleExpand(activity.id), children: expandedIds.includes(activity.id) ? ((0, jsx_runtime_1.jsx)(icons_material_1.KeyboardArrowUp, {})) : ((0, jsx_runtime_1.jsx)(icons_material_1.KeyboardArrowDown, {})) }) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: activity.title }), (0, jsx_runtime_1.jsxs)(material_1.TableCell, { children: [formatDate(activity.startDate), " ~ ", formatDate(activity.endDate)] }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: activity.location }), (0, jsx_runtime_1.jsxs)(material_1.TableCell, { children: [activity.capacity, " \u4EBA"] }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { children: getStatusChip(activity.status) }), (0, jsx_runtime_1.jsx)(material_1.TableCell, { align: "right", children: isAdmin ? ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)(material_1.IconButton, { size: "small", color: "primary", onClick: () => handleOpenDialog(activity), children: (0, jsx_runtime_1.jsx)(icons_material_1.Edit, { fontSize: "small" }) }), (0, jsx_runtime_1.jsx)(material_1.IconButton, { size: "small", color: "secondary", onClick: () => handleToggleActivityVisibility(activity), title: activity.isVisible ? '隱藏活動' : '顯示活動', children: activity.isVisible ? ((0, jsx_runtime_1.jsx)(icons_material_1.Visibility, { fontSize: "small" })) : ((0, jsx_runtime_1.jsx)(icons_material_1.VisibilityOff, { fontSize: "small" })) }), (0, jsx_runtime_1.jsx)(material_1.IconButton, { size: "small", color: "error", onClick: () => handleDeleteConfirm(activity.id), children: (0, jsx_runtime_1.jsx)(icons_material_1.Delete, { fontSize: "small" }) })] })) : (activity.status === services_1.ActivityStatus.REGISTRATION && activity.isVisible && ((0, jsx_runtime_1.jsx)(material_1.Button, { variant: "contained", size: "small", startIcon: (0, jsx_runtime_1.jsx)(icons_material_1.PersonAdd, {}), onClick: () => handleOpenRegistrationDialog(activity), children: "\u5831\u540D\u6D3B\u52D5" }))) })] }), (0, jsx_runtime_1.jsx)(material_1.TableRow, { children: (0, jsx_runtime_1.jsx)(material_1.TableCell, { style: { paddingBottom: 0, paddingTop: 0 }, colSpan: 7, children: (0, jsx_runtime_1.jsx)(material_1.Collapse, { in: expandedIds.includes(activity.id), timeout: "auto", unmountOnExit: true, children: (0, jsx_runtime_1.jsxs)(material_1.Box, { sx: { margin: 2 }, children: [(0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "h6", gutterBottom: true, component: "div", children: "\u5831\u540D\u72C0\u6CC1" }), (0, jsx_runtime_1.jsx)(ActivityRegistrationsTable_1.default, { activityId: activity.id, members: members, onReload: loadActivities })] }) }) }) })] }, activity.id)))) })] }) }))] }), (0, jsx_runtime_1.jsxs)(material_1.Dialog, { open: dialogOpen, onClose: handleCloseDialog, maxWidth: "md", fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.DialogTitle, { children: editMode ? '編輯活動' : '新增活動' }), (0, jsx_runtime_1.jsx)(material_1.DialogContent, { children: (0, jsx_runtime_1.jsxs)(material_1.Grid, { container: true, spacing: 2, sx: { mt: 1 }, children: [(0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { id: "year-label", children: "\u6D3B\u52D5\u5E74\u4EFD" }), (0, jsx_runtime_1.jsx)(material_1.Select, { labelId: "year-label", value: ((_a = activityForm.year) === null || _a === void 0 ? void 0 : _a.toString()) || new Date().getFullYear().toString(), onChange: handleYearChange, label: "\u6D3B\u52D5\u5E74\u4EFD", children: getYearOptions().map((year) => ((0, jsx_runtime_1.jsxs)(material_1.MenuItem, { value: year.toString(), children: [year, " \u5E74"] }, year))) })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { id: "status-label", children: "\u6D3B\u52D5\u72C0\u614B" }), (0, jsx_runtime_1.jsxs)(material_1.Select, { labelId: "status-label", value: activityForm.status || services_1.ActivityStatus.PLANNING, onChange: handleStatusChange, label: "\u6D3B\u52D5\u72C0\u614B", children: [(0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.PLANNING, children: "\u8A08\u5283\u4E2D" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.REGISTRATION, children: "\u5831\u540D\u4E2D" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.ONGOING, children: "\u9032\u884C\u4E2D" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.COMPLETED, children: "\u5DF2\u5B8C\u6210" }), (0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: services_1.ActivityStatus.CANCELLED, children: "\u5DF2\u53D6\u6D88" })] })] }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u6D3B\u52D5\u6A19\u984C", name: "title", value: activityForm.title || '', onChange: handleInputChange, error: !!formErrors.title, helperText: formErrors.title }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u6D3B\u52D5\u63CF\u8FF0", name: "description", value: activityForm.description || '', onChange: handleInputChange, multiline: true, rows: 3, error: !!formErrors.description, helperText: formErrors.description }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsx)(x_date_pickers_1.DatePicker, { label: "\u958B\u59CB\u65E5\u671F", value: activityForm.startDate ? new Date(activityForm.startDate) : null, onChange: handleStartDateChange, slotProps: {
                                             textField: {
                                                 fullWidth: true,
                                                 error: !!formErrors.startDate,
@@ -323,6 +477,6 @@ const AnnualActivitiesTab = () => {
                                                 error: !!formErrors.registrationDeadline,
                                                 helperText: formErrors.registrationDeadline
                                             }
-                                        } }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u5C01\u9762\u5716\u7247\u9023\u7D50\uFF08\u9078\u586B\uFF09", name: "coverImage", value: activityForm.coverImage || '', onChange: handleInputChange, placeholder: "https://example.com/image.jpg" }) })] }) }), (0, jsx_runtime_1.jsxs)(material_1.DialogActions, { children: [(0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleCloseDialog, children: "\u53D6\u6D88" }), (0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleSubmit, variant: "contained", disabled: loading, children: loading ? '處理中...' : '儲存' })] })] }), (0, jsx_runtime_1.jsxs)(material_1.Dialog, { open: confirmOpen, onClose: () => setConfirmOpen(false), children: [(0, jsx_runtime_1.jsx)(material_1.DialogTitle, { children: "\u78BA\u8A8D\u522A\u9664" }), (0, jsx_runtime_1.jsx)(material_1.DialogContent, { children: (0, jsx_runtime_1.jsx)(material_1.Typography, { children: "\u78BA\u5B9A\u8981\u522A\u9664\u9019\u500B\u6D3B\u52D5\u55CE\uFF1F\u76F8\u95DC\u7684\u5831\u540D\u8A18\u9304\u4E5F\u6703\u4E00\u4F75\u522A\u9664\u3002" }) }), (0, jsx_runtime_1.jsxs)(material_1.DialogActions, { children: [(0, jsx_runtime_1.jsx)(material_1.Button, { onClick: () => setConfirmOpen(false), children: "\u53D6\u6D88" }), (0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleDelete, color: "error", variant: "contained", children: "\u78BA\u5B9A\u522A\u9664" })] })] })] }));
+                                        } }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u5C01\u9762\u5716\u7247\u9023\u7D50\uFF08\u9078\u586B\uFF09", name: "coverImage", value: activityForm.coverImage || '', onChange: handleInputChange, placeholder: "https://example.com/image.jpg" }) })] }) }), (0, jsx_runtime_1.jsxs)(material_1.DialogActions, { children: [(0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleCloseDialog, children: "\u53D6\u6D88" }), (0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleSubmit, variant: "contained", disabled: loading, children: loading ? '處理中...' : '儲存' })] })] }), (0, jsx_runtime_1.jsxs)(material_1.Dialog, { open: confirmOpen, onClose: () => setConfirmOpen(false), children: [(0, jsx_runtime_1.jsx)(material_1.DialogTitle, { children: "\u78BA\u8A8D\u522A\u9664" }), (0, jsx_runtime_1.jsx)(material_1.DialogContent, { children: (0, jsx_runtime_1.jsx)(material_1.Typography, { children: "\u78BA\u5B9A\u8981\u522A\u9664\u9019\u500B\u6D3B\u52D5\u55CE\uFF1F\u76F8\u95DC\u7684\u5831\u540D\u8A18\u9304\u4E5F\u6703\u4E00\u4F75\u522A\u9664\u3002" }) }), (0, jsx_runtime_1.jsxs)(material_1.DialogActions, { children: [(0, jsx_runtime_1.jsx)(material_1.Button, { onClick: () => setConfirmOpen(false), children: "\u53D6\u6D88" }), (0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleDelete, color: "error", variant: "contained", children: "\u78BA\u5B9A\u522A\u9664" })] })] }), (0, jsx_runtime_1.jsxs)(material_1.Dialog, { open: registrationDialogOpen, onClose: handleCloseRegistrationDialog, maxWidth: "md", fullWidth: true, children: [(0, jsx_runtime_1.jsx)(material_1.DialogTitle, { children: "\u6D3B\u52D5\u5831\u540D" }), (0, jsx_runtime_1.jsx)(material_1.DialogContent, { children: (0, jsx_runtime_1.jsxs)(material_1.Grid, { container: true, spacing: 2, sx: { mt: 1 }, children: [(0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u5831\u540D\u59D3\u540D", name: "memberName", value: registrationForm.memberName, onChange: handleRegistrationInputChange, error: !!registrationErrors.memberName, helperText: registrationErrors.memberName, required: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u806F\u7D61\u96FB\u8A71", name: "phoneNumber", value: registrationForm.phoneNumber, onChange: handleRegistrationInputChange, error: !!registrationErrors.phoneNumber, helperText: registrationErrors.phoneNumber, required: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u7E3D\u4EBA\u6578", name: "totalParticipants", type: "number", value: registrationForm.totalParticipants, onChange: handleRegistrationNumberChange, error: !!registrationErrors.totalParticipants, helperText: registrationErrors.totalParticipants, InputProps: { inputProps: { min: 1 } }, required: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u7537\u6027\u4EBA\u6578", name: "maleCount", type: "number", value: registrationForm.maleCount, onChange: handleRegistrationNumberChange, error: !!registrationErrors.maleCount, helperText: registrationErrors.maleCount, InputProps: { inputProps: { min: 0 } }, required: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, sm: 6, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u5973\u6027\u4EBA\u6578", name: "femaleCount", type: "number", value: registrationForm.femaleCount, onChange: handleRegistrationNumberChange, error: !!registrationErrors.femaleCount, helperText: registrationErrors.femaleCount, InputProps: { inputProps: { min: 0 } }, required: true }) }), (0, jsx_runtime_1.jsx)(material_1.Grid, { item: true, xs: 12, children: (0, jsx_runtime_1.jsx)(material_1.TextField, { fullWidth: true, label: "\u5099\u8A3B", name: "notes", value: registrationForm.notes || '', onChange: handleRegistrationInputChange, multiline: true, rows: 3, placeholder: "\u7279\u6B8A\u9700\u6C42\u3001\u98F2\u98DF\u9650\u5236\u7B49" }) })] }) }), (0, jsx_runtime_1.jsxs)(material_1.DialogActions, { children: [(0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleCloseRegistrationDialog, children: "\u53D6\u6D88" }), (0, jsx_runtime_1.jsx)(material_1.Button, { onClick: handleRegistrationSubmit, variant: "contained", disabled: loading, children: loading ? '處理中...' : '確認報名' })] })] })] }));
 };
 exports.default = AnnualActivitiesTab;

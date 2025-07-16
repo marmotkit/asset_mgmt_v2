@@ -162,7 +162,15 @@ const ActivityRegistrationsTable: React.FC<ActivityRegistrationsTableProps> = ({
                 await MemberServiceAPI.updateRegistration(selectedRegistration.id, registrationForm);
                 enqueueSnackbar('報名記錄更新成功', { variant: 'success' });
             } else {
-                await MemberServiceAPI.createRegistration(registrationForm);
+                await MemberServiceAPI.createActivityRegistration({
+                    activityId: activityId,
+                    memberName: getMemberName(registrationForm.memberId || ''),
+                    phoneNumber: '', // 從會員資料中獲取
+                    totalParticipants: (registrationForm.companions || 0) + 1,
+                    maleCount: 0,
+                    femaleCount: 0,
+                    notes: registrationForm.notes || ''
+                });
                 enqueueSnackbar('報名記錄建立成功', { variant: 'success' });
             }
 

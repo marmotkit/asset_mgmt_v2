@@ -17,10 +17,12 @@ router.get('/', authMiddleware, async (req, res) => {
         let query = `
             SELECT 
                 ar.id, ar.activity_id, ar.member_id, ar.registration_date,
-                ar.status, ar.notes, ar.companions, ar.special_requests,
+                ar.status, ar.notes, ar.member_name, ar.phone_number,
+                ar.total_participants, ar.male_count, ar.female_count,
                 ar.created_at, ar.updated_at,
-                u.name as member_name, u.email as member_email,
-                aa.title as activity_title
+                u.name as user_name, u.email as user_email,
+                aa.title as activity_title, aa.start_date as activity_date,
+                aa.location as activity_location
             FROM activity_registrations ar
             LEFT JOIN users u ON ar.member_id = u.id
             LEFT JOIN annual_activities aa ON ar.activity_id = aa.id
@@ -65,10 +67,12 @@ router.get('/:id', authMiddleware, async (req, res) => {
         const query = `
             SELECT 
                 ar.id, ar.activity_id, ar.member_id, ar.registration_date,
-                ar.status, ar.notes, ar.companions, ar.special_requests,
+                ar.status, ar.notes, ar.member_name, ar.phone_number,
+                ar.total_participants, ar.male_count, ar.female_count,
                 ar.created_at, ar.updated_at,
-                u.name as member_name, u.email as member_email,
-                aa.title as activity_title
+                u.name as user_name, u.email as user_email,
+                aa.title as activity_title, aa.start_date as activity_date,
+                aa.location as activity_location
             FROM activity_registrations ar
             LEFT JOIN users u ON ar.member_id = u.id
             LEFT JOIN annual_activities aa ON ar.activity_id = aa.id
@@ -96,7 +100,8 @@ router.post('/', authMiddleware, async (req, res) => {
 
     try {
         const {
-            activityId, memberId, status, notes, companions, specialRequests
+            activityId, memberName, phoneNumber, totalParticipants,
+            maleCount, femaleCount, notes, memberId
         } = req.body;
 
         // 檢查活動是否存在
@@ -107,23 +112,38 @@ router.post('/', authMiddleware, async (req, res) => {
             return res.status(404).json({ error: '活動不存在' });
         }
 
-        // 檢查是否已經報名
-        const existingQuery = `
-            SELECT * FROM activity_registrations 
-            WHERE activity_id = $1 AND member_id = $2
-        `;
-        const existingResult = await client.query(existingQuery, [activityId, memberId]);
+        const activity = activityResult.rows[0];
 
-        if (existingResult.rows.length > 0) {
-            return res.status(400).json({ error: '已經報名過此活動' });
+        // 檢查活動是否在報名期間
+        const now = new Date();
+        const registrationDeadline = new Date(activity.registration_deadline);
+        if (now > registrationDeadline) {
+            return res.status(400).json({ error: '報名已截止' });
+        }
+
+        // 檢查活動狀態是否允許報名
+        if (activity.status !== 'registration') {
+            return res.status(400).json({ error: '活動目前不接受報名' });
+        }
+
+        // 檢查是否已經報名（如果提供了memberId）
+        if (memberId) {
+            const existingQuery = `
+                SELECT * FROM activity_registrations 
+                WHERE activity_id = $1 AND member_id = $2
+            `;
+            const existingResult = await client.query(existingQuery, [activityId, memberId]);
+
+            if (existingResult.rows.length > 0) {
+                return res.status(400).json({ error: '已經報名過此活動' });
+            }
         }
 
         // 檢查活動是否已滿員
         const capacityQuery = `
             SELECT 
                 aa.capacity,
-                COUNT(ar.id) as current_registrations,
-                COALESCE(SUM(ar.companions), 0) as total_companions
+                COALESCE(SUM(ar.total_participants), 0) as current_participants
             FROM annual_activities aa
             LEFT JOIN activity_registrations ar ON aa.id = ar.activity_id
             WHERE aa.id = $1
@@ -132,22 +152,34 @@ router.post('/', authMiddleware, async (req, res) => {
         const capacityResult = await client.query(capacityQuery, [activityId]);
 
         if (capacityResult.rows.length > 0) {
-            const { capacity, current_registrations, total_companions } = capacityResult.rows[0];
-            const totalParticipants = parseInt(current_registrations) + parseInt(total_companions) + (companions || 0);
+            const { capacity, current_participants } = capacityResult.rows[0];
+            const totalCurrentParticipants = parseInt(current_participants) + (totalParticipants || 0);
 
-            if (totalParticipants >= capacity) {
+            if (totalCurrentParticipants > capacity) {
                 return res.status(400).json({ error: '活動已達報名上限' });
             }
         }
 
         const query = `
             INSERT INTO activity_registrations (
-                activity_id, member_id, status, notes, companions, special_requests
-            ) VALUES ($1, $2, $3, $4, $5, $6)
+                activity_id, member_id, member_name, phone_number, 
+                total_participants, male_count, female_count, 
+                status, notes, registration_date
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
             RETURNING *
         `;
 
-        const values = [activityId, memberId, status || 'pending', notes || '', companions || 0, specialRequests];
+        const values = [
+            activityId,
+            memberId || null,
+            memberName,
+            phoneNumber,
+            totalParticipants || 1,
+            maleCount || 0,
+            femaleCount || 0,
+            'pending',
+            notes || ''
+        ];
 
         const result = await client.query(query, values);
 
@@ -166,17 +198,27 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     try {
         const { id } = req.params;
-        const { status, notes, companions, specialRequests } = req.body;
+        const { status, notes, memberName, phoneNumber, totalParticipants, maleCount, femaleCount } = req.body;
 
         const query = `
             UPDATE activity_registrations SET
-                status = $1, notes = $2, companions = $3, 
-                special_requests = $4, updated_at = CURRENT_TIMESTAMP
-            WHERE id = $5
+                status = $1, notes = $2, member_name = $3, phone_number = $4,
+                total_participants = $5, male_count = $6, female_count = $7,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $8
             RETURNING *
         `;
 
-        const values = [status, notes || '', companions || 0, specialRequests, id];
+        const values = [
+            status,
+            notes || '',
+            memberName,
+            phoneNumber,
+            totalParticipants || 1,
+            maleCount || 0,
+            femaleCount || 0,
+            id
+        ];
 
         const result = await client.query(query, values);
 
