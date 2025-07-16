@@ -1,5 +1,5 @@
 import express from 'express';
-import { db } from '../db/connection';
+import sequelize from '../db/connection';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = express.Router();
@@ -35,7 +35,7 @@ router.get('/investment-inquiries', authMiddleware, async (req, res) => {
 
         // 查詢總數
         const countQuery = `SELECT COUNT(*) as total FROM investment_inquiries ${whereClause}`;
-        const [countResult] = await db.query(countQuery, params);
+        const [countResult] = await sequelize.query(countQuery, { replacements: params });
         const total = (countResult as any[])[0].total;
 
         // 查詢資料
@@ -47,7 +47,7 @@ router.get('/investment-inquiries', authMiddleware, async (req, res) => {
             ORDER BY i.created_at DESC
             ${limitClause}
         `;
-        const [inquiries] = await db.query(query, params);
+        const [inquiries] = await sequelize.query(query, { replacements: params });
 
         res.json({
             inquiries,
@@ -72,7 +72,7 @@ router.get('/investment-inquiries/:id', authMiddleware, async (req, res) => {
             LEFT JOIN investment_opportunities o ON i.investment_id = o.id
             WHERE i.id = ?
         `;
-        const [inquiries] = await db.query(query, [id]);
+        const [inquiries] = await sequelize.query(query, { replacements: [id] });
 
         if ((inquiries as any[]).length === 0) {
             return res.status(404).json({ error: '找不到洽詢記錄' });
@@ -104,9 +104,9 @@ router.post('/investment-inquiries', async (req, res) => {
         }
 
         // 驗證投資標的是否存在
-        const [investment] = await db.query(
+        const [investment] = await sequelize.query(
             'SELECT id FROM investment_opportunities WHERE id = ? AND status = "active"',
-            [investment_id]
+            { replacements: [investment_id] }
         );
 
         if ((investment as any[]).length === 0) {
@@ -122,21 +122,23 @@ router.post('/investment-inquiries', async (req, res) => {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'new', NOW(), NOW())
         `;
 
-        await db.query(query, [
-            id, investment_id, name, email, phone || null, company || null,
-            investment_amount || null, message || null
-        ]);
+        await sequelize.query(query, {
+            replacements: [
+                id, investment_id, name, email, phone || null, company || null,
+                investment_amount || null, message || null
+            ]
+        });
 
         // 更新投資標的洽詢次數
-        await db.query(
+        await sequelize.query(
             'UPDATE investment_opportunities SET inquiry_count = inquiry_count + 1 WHERE id = ?',
-            [investment_id]
+            { replacements: [investment_id] }
         );
 
         // 回傳建立的洽詢
-        const [newInquiry] = await db.query(
+        const [newInquiry] = await sequelize.query(
             'SELECT * FROM investment_inquiries WHERE id = ?',
-            [id]
+            { replacements: [id] }
         );
 
         res.status(201).json((newInquiry as any[])[0]);
@@ -153,9 +155,9 @@ router.put('/investment-inquiries/:id', authMiddleware, async (req, res) => {
         const { status, admin_notes } = req.body;
 
         // 檢查洽詢是否存在
-        const [existing] = await db.query(
+        const [existing] = await sequelize.query(
             'SELECT id FROM investment_inquiries WHERE id = ?',
-            [id]
+            { replacements: [id] }
         );
 
         if ((existing as any[]).length === 0) {
@@ -189,12 +191,12 @@ router.put('/investment-inquiries/:id', authMiddleware, async (req, res) => {
             WHERE id = ?
         `;
 
-        await db.query(query, updateValues);
+        await sequelize.query(query, { replacements: updateValues });
 
         // 回傳更新後的洽詢
-        const [updatedInquiry] = await db.query(
+        const [updatedInquiry] = await sequelize.query(
             'SELECT * FROM investment_inquiries WHERE id = ?',
-            [id]
+            { replacements: [id] }
         );
 
         res.json((updatedInquiry as any[])[0]);
@@ -210,16 +212,16 @@ router.delete('/investment-inquiries/:id', authMiddleware, async (req, res) => {
         const { id } = req.params;
 
         // 檢查洽詢是否存在
-        const [existing] = await db.query(
+        const [existing] = await sequelize.query(
             'SELECT id FROM investment_inquiries WHERE id = ?',
-            [id]
+            { replacements: [id] }
         );
 
         if ((existing as any[]).length === 0) {
             return res.status(404).json({ error: '找不到洽詢記錄' });
         }
 
-        await db.query('DELETE FROM investment_inquiries WHERE id = ?', [id]);
+        await sequelize.query('DELETE FROM investment_inquiries WHERE id = ?', { replacements: [id] });
 
         res.json({ message: '洽詢記錄已刪除' });
     } catch (error) {

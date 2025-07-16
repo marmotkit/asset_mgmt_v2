@@ -1,5 +1,5 @@
 import express from 'express';
-import { db } from '../db/connection';
+import sequelize from '../db/connection';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = express.Router();
@@ -80,7 +80,7 @@ router.get('/investment-opportunities', async (req, res) => {
         }
 
         // 排序
-        const orderBy = `ORDER BY ${sortBy} ${sortOrder.toUpperCase()}`;
+        const orderBy = `ORDER BY ${sortBy} ${(sortOrder as string).toUpperCase()}`;
 
         // 分頁
         const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
@@ -88,7 +88,7 @@ router.get('/investment-opportunities', async (req, res) => {
 
         // 查詢總數
         const countQuery = `SELECT COUNT(*) as total FROM investment_opportunities ${whereClause}`;
-        const [countResult] = await db.query(countQuery, params);
+        const [countResult] = await sequelize.query(countQuery, { replacements: params });
         const total = (countResult as any[])[0].total;
 
         // 查詢資料
@@ -98,7 +98,7 @@ router.get('/investment-opportunities', async (req, res) => {
             ${orderBy} 
             ${limitClause}
         `;
-        const [opportunities] = await db.query(query, params);
+        const [opportunities] = await sequelize.query(query, { replacements: params });
 
         res.json({
             opportunities,
@@ -121,7 +121,7 @@ router.get('/investment-opportunities/:id', async (req, res) => {
             SELECT * FROM investment_opportunities 
             WHERE id = ?
         `;
-        const [opportunities] = await db.query(query, [id]);
+        const [opportunities] = await sequelize.query(query, { replacements: [id] });
 
         if ((opportunities as any[]).length === 0) {
             return res.status(404).json({ error: '找不到投資標的' });
@@ -169,18 +169,20 @@ router.post('/investment-opportunities', authMiddleware, async (req, res) => {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         `;
 
-        await db.query(query, [
-            id, title, subtitle, description, short_description,
-            investment_amount, min_investment, max_investment,
-            investment_type, location, industry, risk_level,
-            expected_return, investment_period, status, featured ? 1 : 0,
-            sort_order || 0, created_by
-        ]);
+        await sequelize.query(query, {
+            replacements: [
+                id, title, subtitle, description, short_description,
+                investment_amount, min_investment, max_investment,
+                investment_type, location, industry, risk_level,
+                expected_return, investment_period, status, featured ? 1 : 0,
+                sort_order || 0, created_by
+            ]
+        });
 
         // 回傳建立的標的
-        const [newOpportunity] = await db.query(
+        const [newOpportunity] = await sequelize.query(
             'SELECT * FROM investment_opportunities WHERE id = ?',
-            [id]
+            { replacements: [id] }
         );
 
         res.status(201).json((newOpportunity as any[])[0]);
@@ -197,9 +199,9 @@ router.put('/investment-opportunities/:id', authMiddleware, async (req, res) => 
         const updateData = req.body;
 
         // 檢查標的是否存在
-        const [existing] = await db.query(
+        const [existing] = await sequelize.query(
             'SELECT id FROM investment_opportunities WHERE id = ?',
-            [id]
+            { replacements: [id] }
         );
 
         if ((existing as any[]).length === 0) {
@@ -233,12 +235,12 @@ router.put('/investment-opportunities/:id', authMiddleware, async (req, res) => 
             WHERE id = ?
         `;
 
-        await db.query(query, updateValues);
+        await sequelize.query(query, { replacements: updateValues });
 
         // 回傳更新後的標的
-        const [updatedOpportunity] = await db.query(
+        const [updatedOpportunity] = await sequelize.query(
             'SELECT * FROM investment_opportunities WHERE id = ?',
-            [id]
+            { replacements: [id] }
         );
 
         res.json((updatedOpportunity as any[])[0]);
@@ -254,16 +256,16 @@ router.delete('/investment-opportunities/:id', authMiddleware, async (req, res) 
         const { id } = req.params;
 
         // 檢查標的是否存在
-        const [existing] = await db.query(
+        const [existing] = await sequelize.query(
             'SELECT id FROM investment_opportunities WHERE id = ?',
-            [id]
+            { replacements: [id] }
         );
 
         if ((existing as any[]).length === 0) {
             return res.status(404).json({ error: '找不到投資標的' });
         }
 
-        await db.query('DELETE FROM investment_opportunities WHERE id = ?', [id]);
+        await sequelize.query('DELETE FROM investment_opportunities WHERE id = ?', { replacements: [id] });
 
         res.json({ message: '投資標的已刪除' });
     } catch (error) {
@@ -288,12 +290,12 @@ router.patch('/investment-opportunities/:id/status', authMiddleware, async (req,
             WHERE id = ?
         `;
 
-        await db.query(query, [status, id]);
+        await sequelize.query(query, { replacements: [status, id] });
 
         // 回傳更新後的標的
-        const [updatedOpportunity] = await db.query(
+        const [updatedOpportunity] = await sequelize.query(
             'SELECT * FROM investment_opportunities WHERE id = ?',
-            [id]
+            { replacements: [id] }
         );
 
         res.json((updatedOpportunity as any[])[0]);
@@ -323,7 +325,7 @@ router.patch('/investment-opportunities/batch-status', authMiddleware, async (re
             WHERE id IN (${placeholders})
         `;
 
-        await db.query(query, [status, ...ids]);
+        await sequelize.query(query, { replacements: [status, ...ids] });
 
         res.json({ message: '批量更新狀態成功' });
     } catch (error) {
@@ -343,7 +345,7 @@ router.post('/investment-opportunities/:id/view', async (req, res) => {
             WHERE id = ?
         `;
 
-        await db.query(query, [id]);
+        await sequelize.query(query, { replacements: [id] });
 
         res.json({ message: '瀏覽次數已更新' });
     } catch (error) {

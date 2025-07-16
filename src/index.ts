@@ -37,6 +37,8 @@ import accountingReceivablesRoutes from './routes/accounting-receivables.routes'
 import accountingPayablesRoutes from './routes/accounting-payables.routes';
 import accountingMonthlyClosingsRoutes from './routes/accounting-monthly-closings.routes';
 import accountingReportsRoutes from './routes/accounting-reports.routes';
+import investmentOpportunitiesRoutes from './routes/investment-opportunities.routes';
+import investmentInquiriesRoutes from './routes/investment-inquiries.routes';
 
 // 加載環境變量
 dotenv.config();
@@ -72,6 +74,8 @@ app.use('/api/accounting/receivables', accountingReceivablesRoutes);
 app.use('/api/accounting/payables', accountingPayablesRoutes);
 app.use('/api/accounting/monthly-closings', accountingMonthlyClosingsRoutes);
 app.use('/api/accounting/reports', accountingReportsRoutes);
+app.use('/api', investmentOpportunitiesRoutes);
+app.use('/api', investmentInquiriesRoutes);
 
 // 基本路由測試
 app.get('/', (req, res) => {
