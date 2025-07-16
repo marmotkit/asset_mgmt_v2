@@ -25,31 +25,43 @@ export interface AccountRecord {
 // 應收帳款類型
 export interface AccountReceivable {
     id: string;
-    date: string;
-    dueDate: string;
-    clientName: string;
+    customer_id: string;
+    customer_name: string;
+    invoice_number?: string;
     amount: number;
+    due_date: string;
     status: 'pending' | 'partially_paid' | 'paid' | 'overdue';
-    paidAmount: number;
-    description: string;
-    invoiceNumber?: string;
-    createdAt: string;
-    updatedAt: string;
+    payment_date?: string;
+    payment_amount?: number;
+    remaining_amount: number;
+    description?: string;
+    created_at: string;
+    updated_at: string;
+    // 備用屬性，保持向後相容性
+    clientName?: string;
+    date?: string;
+    paidAmount?: number;
 }
 
 // 應付帳款類型
 export interface AccountPayable {
     id: string;
-    date: string;
-    dueDate: string;
-    vendorName: string;
+    supplier_id: string;
+    supplier_name: string;
+    invoice_number?: string;
     amount: number;
+    due_date: string;
     status: 'pending' | 'partially_paid' | 'paid' | 'overdue';
-    paidAmount: number;
-    description: string;
-    invoiceNumber?: string;
-    createdAt: string;
-    updatedAt: string;
+    payment_date?: string;
+    payment_amount?: number;
+    remaining_amount: number;
+    description?: string;
+    created_at: string;
+    updated_at: string;
+    // 備用屬性，保持向後相容性
+    vendorName?: string;
+    date?: string;
+    paidAmount?: number;
 }
 
 // 月結記錄類型

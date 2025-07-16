@@ -55,7 +55,7 @@ const statusOptions = [
 const initialFormData = {
     date: dayjs().format('YYYY-MM-DD'),
     dueDate: dayjs().add(30, 'day').format('YYYY-MM-DD'),
-    clientName: '',
+    customer_name: '',
     amount: 0,
     paidAmount: 0,
     status: 'pending' as 'pending' | 'partially_paid' | 'paid' | 'overdue',
@@ -70,7 +70,16 @@ const ReceivablesTab: React.FC = () => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
     const [editingReceivable, setEditingReceivable] = useState<AccountReceivable | null>(null);
-    const [formData, setFormData] = useState<typeof initialFormData>(initialFormData);
+    const [formData, setFormData] = useState({
+        customer_name: '',
+        invoiceNumber: '',
+        date: dayjs().format('YYYY-MM-DD'),
+        dueDate: dayjs().add(30, 'day').format('YYYY-MM-DD'),
+        amount: 0,
+        paidAmount: 0,
+        description: '',
+        status: 'pending' as 'pending' | 'partially_paid' | 'paid' | 'overdue'
+    });
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -114,29 +123,29 @@ const ReceivablesTab: React.FC = () => {
         // 搜尋條件過濾，所有欄位都要先檢查是否存在
         const searchLower = (searchTerm || '').toLowerCase();
         return (
-            (receivable.clientName && receivable.clientName.toLowerCase().includes(searchLower)) ||
+            (receivable.customer_name && receivable.customer_name.toLowerCase().includes(searchLower)) ||
             (receivable.description && receivable.description.toLowerCase().includes(searchLower)) ||
-            (receivable.invoiceNumber && receivable.invoiceNumber.toLowerCase().includes(searchLower))
+            (receivable.invoice_number && receivable.invoice_number.toLowerCase().includes(searchLower))
         );
     });
 
     // 處理對話框
     const handleOpenDialog = (receivable?: AccountReceivable) => {
         if (receivable) {
-            setEditingReceivable(receivable);
             setFormData({
-                date: receivable.date,
-                dueDate: receivable.dueDate,
-                clientName: receivable.clientName,
+                customer_name: receivable.customer_name,
+                invoiceNumber: receivable.invoice_number || '',
+                date: receivable.due_date,
+                dueDate: receivable.due_date,
                 amount: receivable.amount,
-                paidAmount: receivable.paidAmount,
-                status: receivable.status,
-                description: receivable.description,
-                invoiceNumber: receivable.invoiceNumber || ''
+                paidAmount: receivable.payment_amount || 0,
+                description: receivable.description || '',
+                status: receivable.status
             });
+            setEditingReceivable(receivable);
         } else {
-            setEditingReceivable(null);
             setFormData(initialFormData);
+            setEditingReceivable(null);
         }
         setFormErrors({});
         setDialogOpen(true);
@@ -178,16 +187,16 @@ const ReceivablesTab: React.FC = () => {
     const validateForm = () => {
         const errors: { [key: string]: string } = {};
 
+        if (!formData.customer_name.trim()) {
+            errors.customer_name = '請輸入客戶名稱';
+        }
+
         if (!formData.date) {
             errors.date = '請選擇日期';
         }
 
         if (!formData.dueDate) {
             errors.dueDate = '請選擇到期日';
-        }
-
-        if (!formData.clientName.trim()) {
-            errors.clientName = '請輸入客戶名稱';
         }
 
         if (!formData.amount || formData.amount <= 0) {
@@ -441,7 +450,7 @@ const ReceivablesTab: React.FC = () => {
                                             key={receivable.id}
                                             sx={balance > 0 ? { bgcolor: 'rgba(255, 152, 0, 0.05)' } : {}}
                                         >
-                                            <TableCell>{receivable.clientName || receivable.customer_name || '-'}</TableCell>
+                                            <TableCell>{receivable.customer_name || '-'}</TableCell>
                                             <TableCell>{receivable.description || '-'}</TableCell>
                                             <TableCell align="right">{(receivable.amount || 0).toLocaleString()}</TableCell>
                                             <TableCell align="right">{(receivable.paidAmount || 0).toLocaleString()}</TableCell>
@@ -503,11 +512,11 @@ const ReceivablesTab: React.FC = () => {
                             <TextField
                                 fullWidth
                                 label="客戶名稱"
-                                value={formData.clientName}
-                                onChange={e => handleFormChange('clientName', e.target.value)}
+                                value={formData.customer_name}
+                                onChange={e => handleFormChange('customer_name', e.target.value)}
                                 margin="normal"
-                                error={!!formErrors.clientName}
-                                helperText={formErrors.clientName}
+                                error={!!formErrors.customer_name}
+                                helperText={formErrors.customer_name}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -634,7 +643,7 @@ const ReceivablesTab: React.FC = () => {
                         <Grid container spacing={2} sx={{ mt: 1 }}>
                             <Grid item xs={12}>
                                 <Typography variant="subtitle1">
-                                    客戶: {editingReceivable.clientName}
+                                    客戶: {editingReceivable.customer_name}
                                 </Typography>
                                 <Typography variant="body2" color="textSecondary">
                                     {editingReceivable.description}
@@ -647,12 +656,12 @@ const ReceivablesTab: React.FC = () => {
                             </Grid>
                             <Grid item xs={6}>
                                 <Typography variant="body2">
-                                    已付金額: {(editingReceivable.paidAmount || 0).toLocaleString()}
+                                    已付金額: {(editingReceivable.payment_amount || 0).toLocaleString()}
                                 </Typography>
                             </Grid>
                             <Grid item xs={12}>
                                 <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                    尚欠金額: {((editingReceivable.amount || 0) - (editingReceivable.paidAmount || 0)).toLocaleString()}
+                                    尚欠金額: {((editingReceivable.amount || 0) - (editingReceivable.payment_amount || 0)).toLocaleString()}
                                 </Typography>
                             </Grid>
                             <Grid item xs={12} sx={{ mt: 2 }}>
@@ -664,7 +673,7 @@ const ReceivablesTab: React.FC = () => {
                                     onChange={e => setPaymentAmount(parseFloat(e.target.value) || 0)}
                                     inputProps={{
                                         min: 0,
-                                        max: editingReceivable.amount - editingReceivable.paidAmount
+                                        max: editingReceivable.amount - editingReceivable.payment_amount
                                     }}
                                 />
                             </Grid>

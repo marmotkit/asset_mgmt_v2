@@ -65,7 +65,7 @@ const paymentMethodOptions = [
 const initialFormData = {
     date: dayjs().format('YYYY-MM-DD'),
     dueDate: dayjs().add(30, 'day').format('YYYY-MM-DD'),
-    vendorName: '',
+    supplier_name: '',
     amount: 0,
     paidAmount: 0,
     status: 'pending' as 'pending' | 'partially_paid' | 'paid' | 'overdue',
@@ -80,7 +80,16 @@ const PayablesTab: React.FC = () => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
     const [editingPayable, setEditingPayable] = useState<AccountPayable | null>(null);
-    const [formData, setFormData] = useState<typeof initialFormData>(initialFormData);
+    const [formData, setFormData] = useState({
+        supplier_name: '',
+        invoiceNumber: '',
+        date: dayjs().format('YYYY-MM-DD'),
+        dueDate: dayjs().add(30, 'day').format('YYYY-MM-DD'),
+        amount: 0,
+        paidAmount: 0,
+        description: '',
+        status: 'pending' as 'pending' | 'partially_paid' | 'paid' | 'overdue'
+    });
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -127,9 +136,9 @@ const PayablesTab: React.FC = () => {
         // 搜尋條件過濾，所有欄位都要先檢查是否存在
         const searchLower = (searchTerm || '').toLowerCase();
         return (
-            (payable.vendorName && payable.vendorName.toLowerCase().includes(searchLower)) ||
+            (payable.supplier_name && payable.supplier_name.toLowerCase().includes(searchLower)) ||
             (payable.description && payable.description.toLowerCase().includes(searchLower)) ||
-            (payable.invoiceNumber && payable.invoiceNumber.toLowerCase().includes(searchLower))
+            (payable.invoice_number && payable.invoice_number.toLowerCase().includes(searchLower))
         );
     });
 
@@ -138,14 +147,14 @@ const PayablesTab: React.FC = () => {
         if (payable) {
             setEditingPayable(payable);
             setFormData({
-                date: payable.date,
-                dueDate: payable.dueDate,
-                vendorName: payable.vendorName,
+                supplier_name: payable.supplier_name,
+                invoiceNumber: payable.invoice_number || '',
+                date: payable.due_date,
+                dueDate: payable.due_date,
                 amount: payable.amount,
-                paidAmount: payable.paidAmount,
-                status: payable.status,
+                paidAmount: payable.payment_amount || 0,
                 description: payable.description,
-                invoiceNumber: payable.invoiceNumber || ''
+                status: payable.status
             });
         } else {
             setEditingPayable(null);
@@ -163,7 +172,7 @@ const PayablesTab: React.FC = () => {
     const handleOpenPaymentDialog = (payable: AccountPayable) => {
         setEditingPayable(payable);
         setPaymentData({
-            amount: payable.amount - payable.paidAmount,
+            amount: payable.amount - payable.payment_amount,
             method: 'bank_transfer'
         });
         setPaymentDialogOpen(true);
@@ -202,8 +211,8 @@ const PayablesTab: React.FC = () => {
             errors.dueDate = '請選擇到期日';
         }
 
-        if (!formData.vendorName.trim()) {
-            errors.vendorName = '請輸入供應商名稱';
+        if (!formData.supplier_name.trim()) {
+            errors.supplier_name = '請輸入供應商名稱';
         }
 
         if (!formData.amount || formData.amount <= 0) {
@@ -267,7 +276,7 @@ const PayablesTab: React.FC = () => {
     const handlePaymentSubmit = async () => {
         if (!editingPayable) return;
 
-        if (paymentData.amount <= 0 || paymentData.amount > (editingPayable.amount - editingPayable.paidAmount)) {
+        if (paymentData.amount <= 0 || paymentData.amount > (editingPayable.amount - editingPayable.payment_amount)) {
             setSnackbar({
                 open: true,
                 message: '請輸入有效的付款金額',
@@ -277,7 +286,7 @@ const PayablesTab: React.FC = () => {
         }
 
         try {
-            const newPaidAmount = editingPayable.paidAmount + paymentData.amount;
+            const newPaidAmount = editingPayable.payment_amount + paymentData.amount;
             const newStatus = (
                 newPaidAmount >= editingPayable.amount ? 'paid' :
                     newPaidAmount > 0 ? 'partially_paid' : 'pending'
@@ -286,7 +295,7 @@ const PayablesTab: React.FC = () => {
             // 這裡也可以添加會計記錄功能，記錄支出
 
             const updatedPayable = await payablesApiService.updatePayable(editingPayable.id, {
-                paidAmount: newPaidAmount,
+                payment_amount: newPaidAmount,
                 status: newStatus
             });
 
@@ -416,7 +425,7 @@ const PayablesTab: React.FC = () => {
                     </Grid>
                     <Grid item xs={12} md={4} sx={{ textAlign: 'right' }}>
                         <Typography>
-                            總計: {filteredPayables.reduce((sum, item) => sum + ((item.amount || 0) - (item.paidAmount || 0)), 0).toLocaleString()} 元
+                            總計: {filteredPayables.reduce((sum, item) => sum + ((item.amount || 0) - (item.payment_amount || 0)), 0).toLocaleString()} 元
                         </Typography>
                         <Typography>
                             共 {filteredPayables.length} 筆記錄
@@ -452,17 +461,17 @@ const PayablesTab: React.FC = () => {
                                 </TableRow>
                             ) : (
                                 filteredPayables.map(payable => {
-                                    const balance = (payable.amount || 0) - (payable.paidAmount || 0);
+                                    const balance = (payable.amount || 0) - (payable.payment_amount || 0);
 
                                     return (
                                         <TableRow
                                             key={payable.id}
                                             sx={balance > 0 ? { bgcolor: 'rgba(255, 152, 0, 0.05)' } : {}}
                                         >
-                                            <TableCell>{payable.vendorName || payable.supplier_name || '-'}</TableCell>
+                                            <TableCell>{payable.supplier_name || '-'}</TableCell>
                                             <TableCell>{payable.description || '-'}</TableCell>
                                             <TableCell align="right">{(payable.amount || 0).toLocaleString()}</TableCell>
-                                            <TableCell align="right">{(payable.paidAmount || 0).toLocaleString()}</TableCell>
+                                            <TableCell align="right">{(payable.payment_amount || 0).toLocaleString()}</TableCell>
                                             <TableCell
                                                 align="right"
                                                 sx={{
@@ -521,11 +530,11 @@ const PayablesTab: React.FC = () => {
                             <TextField
                                 fullWidth
                                 label="供應商名稱"
-                                value={formData.vendorName}
-                                onChange={e => handleFormChange('vendorName', e.target.value)}
+                                value={formData.supplier_name}
+                                onChange={e => handleFormChange('supplier_name', e.target.value)}
                                 margin="normal"
-                                error={!!formErrors.vendorName}
-                                helperText={formErrors.vendorName}
+                                error={!!formErrors.supplier_name}
+                                helperText={formErrors.supplier_name}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -652,14 +661,14 @@ const PayablesTab: React.FC = () => {
                         <Grid container spacing={2} sx={{ mt: 1 }}>
                             <Grid item xs={12}>
                                 <Typography variant="subtitle1">
-                                    供應商: {editingPayable.vendorName}
+                                    供應商: {editingPayable.supplier_name}
                                 </Typography>
                                 <Typography variant="body2" color="textSecondary">
                                     {editingPayable.description}
                                 </Typography>
-                                {editingPayable.invoiceNumber && (
+                                {editingPayable.invoice_number && (
                                     <Typography variant="body2" color="textSecondary">
-                                        發票號碼: {editingPayable.invoiceNumber}
+                                        發票號碼: {editingPayable.invoice_number}
                                     </Typography>
                                 )}
                             </Grid>
@@ -670,12 +679,12 @@ const PayablesTab: React.FC = () => {
                             </Grid>
                             <Grid item xs={6}>
                                 <Typography variant="body2">
-                                    已付金額: {(editingPayable.paidAmount || 0).toLocaleString()}
+                                    已付金額: {(editingPayable.payment_amount || 0).toLocaleString()}
                                 </Typography>
                             </Grid>
                             <Grid item xs={12}>
                                 <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                    尚欠金額: {((editingPayable.amount || 0) - (editingPayable.paidAmount || 0)).toLocaleString()}
+                                    尚欠金額: {((editingPayable.amount || 0) - (editingPayable.payment_amount || 0)).toLocaleString()}
                                 </Typography>
                             </Grid>
                             <Grid item xs={12} sx={{ mt: 2 }}>
@@ -690,7 +699,7 @@ const PayablesTab: React.FC = () => {
                                     })}
                                     inputProps={{
                                         min: 0,
-                                        max: editingPayable.amount - editingPayable.paidAmount
+                                        max: editingPayable.amount - editingPayable.payment_amount
                                     }}
                                 />
                             </Grid>
@@ -725,7 +734,7 @@ const PayablesTab: React.FC = () => {
                         disabled={
                             !editingPayable ||
                             paymentData.amount <= 0 ||
-                            paymentData.amount > (editingPayable?.amount - editingPayable?.paidAmount)
+                            paymentData.amount > (editingPayable?.amount - editingPayable?.payment_amount)
                         }
                     >
                         確認付款
