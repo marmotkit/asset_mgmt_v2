@@ -13,13 +13,15 @@ import {
     MonetizationOn as MonetizationOnIcon,
     PriceCheck as PriceCheckIcon,
     EventNote as EventNoteIcon,
-    Assessment as AssessmentIcon
+    Assessment as AssessmentIcon,
+    Sync as SyncIcon
 } from '@mui/icons-material';
 import JournalTab from './tabs/JournalTab';
 import ReceivablesTab from './tabs/ReceivablesTab';
 import PayablesTab from './tabs/PayablesTab';
 import MonthlyClosingTab from './tabs/MonthlyClosingTab';
 import FinancialReportsTab from './tabs/FinancialReportsTab';
+import AccountingIntegrationTab from './tabs/AccountingIntegrationTab';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -112,6 +114,11 @@ const AccountingManagement: React.FC = () => {
                             label="財務報表"
                             {...a11yProps(4)}
                         />
+                        <Tab
+                            icon={<SyncIcon />}
+                            label="資料整合"
+                            {...a11yProps(5)}
+                        />
                     </Tabs>
                 </Box>
 
@@ -130,6 +137,9 @@ const AccountingManagement: React.FC = () => {
                     </TabPanel>
                     <TabPanel value={tabValue} index={4}>
                         <FinancialReportsTab />
+                    </TabPanel>
+                    <TabPanel value={tabValue} index={5}>
+                        <AccountingIntegrationTab />
                     </TabPanel>
                 </Box>
             </Paper>

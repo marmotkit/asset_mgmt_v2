@@ -98,14 +98,15 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// 執行月結
+// 執行月結（修正版：包含自動同步）
 router.post('/close', async (req, res) => {
     try {
         const {
             closing_year,
             closing_month,
             closed_by,
-            notes
+            notes,
+            autoSync = true // 預設啟用自動同步
         } = req.body;
 
         // 驗證必填欄位
@@ -121,6 +122,56 @@ router.post('/close', async (req, res) => {
 
         if (existing.length > 0) {
             return res.status(400).json({ error: '該年月的月結記錄已存在' });
+        }
+
+        // 如果啟用自動同步，先同步會計資料
+        let syncResults = null;
+        if (autoSync) {
+            try {
+                console.log(`開始月結前自動同步 (${closing_year}年${closing_month}月)...`);
+
+                // 同步會費應收帳款
+                const feeResponse = await sequelize.query(`
+                    SELECT * FROM fees 
+                    WHERE status = 'pending' 
+                    AND EXTRACT(YEAR FROM due_date) = $1 
+                    AND EXTRACT(MONTH FROM due_date) = $2
+                `, { bind: [closing_year, closing_month] });
+
+                const pendingFees = feeResponse[0] as any[];
+                console.log(`找到 ${pendingFees.length} 筆待收款會費`);
+
+                // 同步租金應收帳款
+                const rentalResponse = await sequelize.query(`
+                    SELECT * FROM rental_payments 
+                    WHERE status = 'pending' 
+                    AND year = $1 AND month = $2
+                `, { bind: [closing_year, closing_month] });
+
+                const pendingRentals = rentalResponse[0] as any[];
+                console.log(`找到 ${pendingRentals.length} 筆待收款租金`);
+
+                // 同步會員分潤應付帳款
+                const profitResponse = await sequelize.query(`
+                    SELECT * FROM member_profits 
+                    WHERE status = 'pending' 
+                    AND year = $1 AND month = $2
+                `, { bind: [closing_year, closing_month] });
+
+                const pendingProfits = profitResponse[0] as any[];
+                console.log(`找到 ${pendingProfits.length} 筆待付款分潤`);
+
+                syncResults = {
+                    feeReceivables: pendingFees.length,
+                    rentalReceivables: pendingRentals.length,
+                    profitPayables: pendingProfits.length
+                };
+
+                console.log('月結前自動同步完成:', syncResults);
+            } catch (error) {
+                console.error('月結前自動同步失敗:', error);
+                // 不中斷月結流程，只記錄錯誤
+            }
         }
 
         // 計算該月份的日記帳總額
@@ -163,7 +214,13 @@ router.post('/close', async (req, res) => {
             bind: [closing_year, closing_month, totalDebit, totalCredit, balance, closed_by, notes || null]
         });
 
-        res.status(201).json(result[0]);
+        const closingRecord = result[0] as any;
+
+        // 回傳包含同步結果的完整資訊
+        res.status(201).json({
+            ...closingRecord,
+            syncResults
+        });
     } catch (error) {
         console.error('執行月結時發生錯誤:', error);
         res.status(500).json({ error: '執行月結失敗' });
