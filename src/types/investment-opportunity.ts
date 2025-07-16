@@ -46,6 +46,7 @@ export interface CreateInvestmentOpportunity {
     status: 'preview' | 'active' | 'hidden' | 'closed';
     featured?: boolean;
     sort_order?: number;
+    images?: UploadImage[];
 }
 
 export interface UpdateInvestmentOpportunity {
@@ -65,6 +66,7 @@ export interface UpdateInvestmentOpportunity {
     status?: 'preview' | 'active' | 'hidden' | 'closed';
     featured?: boolean;
     sort_order?: number;
+    images?: UploadImage[];
 }
 
 // 投資標的圖片
@@ -132,4 +134,11 @@ export interface InvestmentFilter {
 
 // 排序選項
 export type InvestmentSortBy = 'created_at' | 'investment_amount' | 'expected_return' | 'view_count' | 'sort_order';
-export type InvestmentSortOrder = 'asc' | 'desc'; 
+export type InvestmentSortOrder = 'asc' | 'desc';
+
+// 簡化的圖片類型，用於上傳時（還沒有 investment_id）
+export interface UploadImage {
+    image_url: string;
+    image_type: 'main' | 'gallery' | 'document';
+    sort_order: number;
+} 

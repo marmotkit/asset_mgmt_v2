@@ -187,7 +187,7 @@ const InvestmentManagement: React.FC = () => {
                 // 更新
                 const updated = await investmentOpportunityService.updateInvestmentOpportunity(
                     editingOpportunity.id,
-                    data as UpdateInvestmentOpportunity
+                    { ...data, images } as any
                 );
                 setOpportunities(prev => prev.map(item =>
                     item.id === editingOpportunity.id ? updated : item
@@ -195,7 +195,7 @@ const InvestmentManagement: React.FC = () => {
             } else {
                 // 新增
                 const created = await investmentOpportunityService.createInvestmentOpportunity(
-                    data as CreateInvestmentOpportunity
+                    { ...data, images } as any
                 );
                 setOpportunities(prev => [created, ...prev]);
             }

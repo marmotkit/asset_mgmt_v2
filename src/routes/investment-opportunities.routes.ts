@@ -100,8 +100,22 @@ router.get('/investment-opportunities', async (req, res) => {
         `;
         const [opportunities] = await sequelize.query(query, { replacements: params });
 
+        // 為每個投資標的取得圖片資料
+        const opportunitiesWithImages = await Promise.all(
+            (opportunities as any[]).map(async (opportunity) => {
+                const [images] = await sequelize.query(
+                    'SELECT * FROM investment_images WHERE investment_id = ? ORDER BY sort_order',
+                    { replacements: [opportunity.id] }
+                );
+                return {
+                    ...opportunity,
+                    images: images || []
+                };
+            })
+        );
+
         res.json({
-            opportunities,
+            opportunities: opportunitiesWithImages,
             total,
             page: parseInt(page as string),
             limit: parseInt(limit as string)
@@ -127,7 +141,18 @@ router.get('/investment-opportunities/:id', async (req, res) => {
             return res.status(404).json({ error: '找不到投資標的' });
         }
 
-        res.json((opportunities as any[])[0]);
+        // 取得關聯的圖片
+        const [images] = await sequelize.query(
+            'SELECT * FROM investment_images WHERE investment_id = ? ORDER BY sort_order',
+            { replacements: [id] }
+        );
+
+        const result = {
+            ...(opportunities as any[])[0],
+            images: images || []
+        };
+
+        res.json(result);
     } catch (error) {
         console.error('取得投資標的失敗:', error);
         res.status(500).json({ error: '取得投資標的失敗' });
@@ -153,7 +178,8 @@ router.post('/investment-opportunities', authMiddleware, async (req, res) => {
             investment_period,
             status,
             featured,
-            sort_order
+            sort_order,
+            images // 新增圖片資料
         } = req.body;
 
         const id = require('crypto').randomUUID();
@@ -192,13 +218,46 @@ router.post('/investment-opportunities', authMiddleware, async (req, res) => {
             ]
         });
 
-        // 回傳建立的標的
+        // 處理圖片資料
+        if (images && Array.isArray(images) && images.length > 0) {
+            for (const image of images) {
+                const imageId = require('crypto').randomUUID();
+                const imageQuery = `
+                    INSERT INTO investment_images (
+                        id, investment_id, image_url, image_type, sort_order, created_at
+                    ) VALUES (?, ?, ?, ?, ?, NOW())
+                `;
+
+                await sequelize.query(imageQuery, {
+                    replacements: [
+                        imageId,
+                        id,
+                        image.image_url,
+                        image.image_type || 'gallery',
+                        image.sort_order || 0
+                    ]
+                });
+            }
+        }
+
+        // 回傳建立的標的（包含圖片）
         const [newOpportunity] = await sequelize.query(
             'SELECT * FROM investment_opportunities WHERE id = ?',
             { replacements: [id] }
         );
 
-        res.status(201).json((newOpportunity as any[])[0]);
+        // 取得關聯的圖片
+        const [investmentImages] = await sequelize.query(
+            'SELECT * FROM investment_images WHERE investment_id = ? ORDER BY sort_order',
+            { replacements: [id] }
+        );
+
+        const result = {
+            ...(newOpportunity as any[])[0],
+            images: investmentImages || []
+        };
+
+        res.status(201).json(result);
     } catch (error) {
         console.error('建立投資標的失敗:', error);
         res.status(500).json({ error: '建立投資標的失敗' });
@@ -209,7 +268,7 @@ router.post('/investment-opportunities', authMiddleware, async (req, res) => {
 router.put('/investment-opportunities/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const updateData = req.body;
+        const { images, ...updateData } = req.body; // 分離圖片資料
 
         // 檢查標的是否存在
         const [existing] = await sequelize.query(
@@ -232,28 +291,68 @@ router.put('/investment-opportunities/:id', authMiddleware, async (req, res) => 
             }
         });
 
-        if (updateFields.length === 0) {
-            return res.status(400).json({ error: '沒有提供更新資料' });
+        if (updateFields.length > 0) {
+            updateFields.push('updated_at = NOW()');
+            updateValues.push(id);
+
+            const query = `
+                UPDATE investment_opportunities 
+                SET ${updateFields.join(', ')}
+                WHERE id = ?
+            `;
+
+            await sequelize.query(query, { replacements: updateValues });
         }
 
-        updateFields.push('updated_at = NOW()');
-        updateValues.push(id);
+        // 處理圖片更新
+        if (images !== undefined) {
+            // 先刪除現有圖片
+            await sequelize.query(
+                'DELETE FROM investment_images WHERE investment_id = ?',
+                { replacements: [id] }
+            );
 
-        const query = `
-            UPDATE investment_opportunities 
-            SET ${updateFields.join(', ')}
-            WHERE id = ?
-        `;
+            // 插入新圖片
+            if (Array.isArray(images) && images.length > 0) {
+                for (const image of images) {
+                    const imageId = require('crypto').randomUUID();
+                    const imageQuery = `
+                        INSERT INTO investment_images (
+                            id, investment_id, image_url, image_type, sort_order, created_at
+                        ) VALUES (?, ?, ?, ?, ?, NOW())
+                    `;
 
-        await sequelize.query(query, { replacements: updateValues });
+                    await sequelize.query(imageQuery, {
+                        replacements: [
+                            imageId,
+                            id,
+                            image.image_url,
+                            image.image_type || 'gallery',
+                            image.sort_order || 0
+                        ]
+                    });
+                }
+            }
+        }
 
-        // 回傳更新後的標的
+        // 回傳更新後的標的（包含圖片）
         const [updatedOpportunity] = await sequelize.query(
             'SELECT * FROM investment_opportunities WHERE id = ?',
             { replacements: [id] }
         );
 
-        res.json((updatedOpportunity as any[])[0]);
+        // 取得關聯的圖片
+        const [investmentImages] = await sequelize.query(
+            'SELECT * FROM investment_images WHERE investment_id = ? ORDER BY sort_order',
+            { replacements: [id] }
+        );
+
+        const result = {
+            ...(updatedOpportunity as any[])[0],
+            images: investmentImages || []
+        };
+
+        res.json(result);
     } catch (error) {
         console.error('更新投資標的失敗:', error);
         res.status(500).json({ error: '更新投資標的失敗' });
