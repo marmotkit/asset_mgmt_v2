@@ -18,11 +18,18 @@ import {
     Add as AddIcon,
     Photo as PhotoIcon,
 } from '@mui/icons-material';
-import { InvestmentImage, CreateInvestmentImage } from '../../../../types/investment-opportunity';
+import { InvestmentImage } from '../../../../types/investment-opportunity';
+
+// 簡化的圖片類型，用於上傳時（還沒有 investment_id）
+interface UploadImage {
+    image_url: string;
+    image_type: 'main' | 'gallery' | 'document';
+    sort_order: number;
+}
 
 interface ImageUploadProps {
     images: InvestmentImage[];
-    onImagesChange: (images: CreateInvestmentImage[]) => void;
+    onImagesChange: (images: UploadImage[]) => void;
     onImageDelete?: (imageId: string) => void;
     maxImages?: number;
     acceptedTypes?: string[];
@@ -73,7 +80,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         setUploading(true);
 
         try {
-            const newImages: CreateInvestmentImage[] = [];
+            const newImages: UploadImage[] = [];
             const fileArray = Array.from(files);
 
             // 檢查檔案數量限制

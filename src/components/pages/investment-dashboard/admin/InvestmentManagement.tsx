@@ -48,6 +48,13 @@ import { InvestmentOpportunity, CreateInvestmentOpportunity, UpdateInvestmentOpp
 import { investmentOpportunityService, investmentInquiryService } from '../../../../services/investmentOpportunity.service';
 import InvestmentForm from './InvestmentForm';
 
+// 簡化的圖片類型，用於上傳時（還沒有 investment_id）
+interface UploadImage {
+    image_url: string;
+    image_type: 'main' | 'gallery' | 'document';
+    sort_order: number;
+}
+
 const InvestmentManagement: React.FC = () => {
     const navigate = useNavigate();
     const [opportunities, setOpportunities] = useState<InvestmentOpportunity[]>([]);
@@ -174,7 +181,7 @@ const InvestmentManagement: React.FC = () => {
     };
 
     // 處理表單提交
-    const handleFormSubmit = async (data: CreateInvestmentOpportunity | UpdateInvestmentOpportunity, images?: CreateInvestmentImage[]) => {
+    const handleFormSubmit = async (data: CreateInvestmentOpportunity | UpdateInvestmentOpportunity, images?: UploadImage[]) => {
         try {
             if (editingOpportunity) {
                 // 更新

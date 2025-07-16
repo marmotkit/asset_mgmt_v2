@@ -15,12 +15,19 @@ import {
     Typography,
     Divider
 } from '@mui/material';
-import { InvestmentOpportunity, CreateInvestmentOpportunity, UpdateInvestmentOpportunity, CreateInvestmentImage } from '../../../../types/investment-opportunity';
+import { InvestmentOpportunity, CreateInvestmentOpportunity, UpdateInvestmentOpportunity } from '../../../../types/investment-opportunity';
 import ImageUpload from './ImageUpload';
+
+// 簡化的圖片類型，用於上傳時（還沒有 investment_id）
+interface UploadImage {
+    image_url: string;
+    image_type: 'main' | 'gallery' | 'document';
+    sort_order: number;
+}
 
 interface InvestmentFormProps {
     opportunity?: InvestmentOpportunity | null;
-    onSubmit: (data: CreateInvestmentOpportunity | UpdateInvestmentOpportunity, images?: CreateInvestmentImage[]) => Promise<void>;
+    onSubmit: (data: CreateInvestmentOpportunity | UpdateInvestmentOpportunity, images?: UploadImage[]) => Promise<void>;
 }
 
 const InvestmentForm: React.FC<InvestmentFormProps> = ({ opportunity, onSubmit }) => {
@@ -43,7 +50,7 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ opportunity, onSubmit }
         sort_order: 0
     });
 
-    const [images, setImages] = useState<CreateInvestmentImage[]>([]);
+    const [images, setImages] = useState<UploadImage[]>([]);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [loading, setLoading] = useState(false);
 
@@ -95,7 +102,7 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ opportunity, onSubmit }
     };
 
     // 處理圖片變更
-    const handleImagesChange = (newImages: CreateInvestmentImage[]) => {
+    const handleImagesChange = (newImages: UploadImage[]) => {
         setImages(newImages);
     };
 
