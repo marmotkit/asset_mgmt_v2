@@ -33,7 +33,8 @@ import {
     Visibility as VisibilityIcon,
     Favorite as FavoriteIcon,
     Share as ShareIcon,
-    FilterList as FilterIcon
+    FilterList as FilterIcon,
+    Settings as SettingsIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { InvestmentOpportunity, InvestmentFilter } from '../../../types/investment-opportunity';
@@ -160,6 +161,11 @@ const InvestmentDashboard: React.FC = () => {
         }
     };
 
+    // 處理進入管理頁面
+    const handleManageClick = () => {
+        navigate('/investment-dashboard-management');
+    };
+
     return (
         <Box sx={{
             minHeight: '100vh',
@@ -168,7 +174,7 @@ const InvestmentDashboard: React.FC = () => {
         }}>
             <Container maxWidth="xl">
                 {/* 標題區域 */}
-                <Box sx={{ textAlign: 'center', mb: 6 }}>
+                <Box sx={{ textAlign: 'center', mb: 6, position: 'relative' }}>
                     <Typography
                         variant="h2"
                         component="h1"
@@ -191,6 +197,24 @@ const InvestmentDashboard: React.FC = () => {
                     >
                         探索優質投資機會，實現財富增值
                     </Typography>
+
+                    {/* 管理按鈕 */}
+                    <Box sx={{ position: 'absolute', top: 0, right: 0 }}>
+                        <Tooltip title="管理投資標的">
+                            <IconButton
+                                onClick={handleManageClick}
+                                sx={{
+                                    color: 'white',
+                                    backgroundColor: 'rgba(255,255,255,0.2)',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(255,255,255,0.3)',
+                                    }
+                                }}
+                            >
+                                <SettingsIcon />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
                 </Box>
 
                 {/* 搜尋和篩選區域 */}
