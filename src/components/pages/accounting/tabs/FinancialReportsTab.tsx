@@ -29,7 +29,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from 'dayjs';
-import { accountingService } from '../../../../services/accounting.service';
+import { financialReportsApiService } from '../../../../services/accountingApi.service';
 
 // 導入報表組件
 import IncomeExpenseReport from './reports/IncomeExpenseReport';
@@ -92,13 +92,13 @@ const FinancialReportsTab: React.FC = () => {
             let data;
             switch (reportType) {
                 case 0: // 收支報表
-                    data = await accountingService.getFinancialReport({ year, month: month || undefined });
+                    data = await financialReportsApiService.getIncomeExpenseReport({ year, month: month || undefined });
                     break;
                 case 1: // 資產負債表
-                    data = await accountingService.getBalanceSheet({ date: date.format('YYYY-MM-DD') });
+                    data = await financialReportsApiService.getBalanceSheet({ date: date.format('YYYY-MM-DD') });
                     break;
                 case 2: // 現金流量表
-                    data = await accountingService.getCashFlowStatement({ year, month: month || undefined });
+                    data = await financialReportsApiService.getCashFlowStatement({ year, month: month || undefined });
                     break;
                 default:
                     data = null;

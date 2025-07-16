@@ -196,4 +196,40 @@ export const monthlyClosingApiService = {
             throw error;
         }
     }
+};
+
+// 財務報表 API 服務
+export const financialReportsApiService = {
+    // 取得收支報表
+    getIncomeExpenseReport: async (params: { year: number; month?: number }) => {
+        try {
+            const response = await apiClient.get('/accounting/reports/income-expense', { params });
+            return response.data;
+        } catch (error) {
+            console.error('取得收支報表失敗:', error);
+            throw error;
+        }
+    },
+
+    // 取得資產負債表
+    getBalanceSheet: async (params: { date: string }) => {
+        try {
+            const response = await apiClient.get('/accounting/reports/balance-sheet', { params });
+            return response.data;
+        } catch (error) {
+            console.error('取得資產負債表失敗:', error);
+            throw error;
+        }
+    },
+
+    // 取得現金流量表
+    getCashFlowStatement: async (params: { year: number; month?: number }) => {
+        try {
+            const response = await apiClient.get('/accounting/reports/cash-flow', { params });
+            return response.data;
+        } catch (error) {
+            console.error('取得現金流量表失敗:', error);
+            throw error;
+        }
+    }
 }; 
