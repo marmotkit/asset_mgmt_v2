@@ -107,9 +107,18 @@ router.get('/investment-opportunities', async (req, res) => {
                     'SELECT * FROM investment_images WHERE investment_id = ? ORDER BY sort_order',
                     { replacements: [opportunity.id] }
                 );
+
+                // 過濾掉舊的圖片 URL
+                const filteredImages = (images as any[]).map(img => ({
+                    ...img,
+                    image_url: img.image_url.includes('via.placeholder.com')
+                        ? 'https://picsum.photos/400/300?random=1'
+                        : img.image_url
+                }));
+
                 return {
                     ...opportunity,
-                    images: images || []
+                    images: filteredImages || []
                 };
             })
         );
@@ -147,9 +156,17 @@ router.get('/investment-opportunities/:id', async (req, res) => {
             { replacements: [id] }
         );
 
+        // 過濾掉舊的圖片 URL
+        const filteredImages = (images as any[]).map(img => ({
+            ...img,
+            image_url: img.image_url.includes('via.placeholder.com')
+                ? 'https://picsum.photos/400/300?random=1'
+                : img.image_url
+        }));
+
         const result = {
             ...(opportunities as any[])[0],
-            images: images || []
+            images: filteredImages || []
         };
 
         res.json(result);
