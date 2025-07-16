@@ -58,6 +58,11 @@ export interface ActivityRegistration {
     notes: string;
     companions: number;
     specialRequests?: string;
+    memberName?: string; // 新增
+    phoneNumber?: string; // 新增
+    totalParticipants?: number; // 新增
+    maleCount?: number; // 新增
+    femaleCount?: number; // 新增
     createdAt: string;
     updatedAt: string;
 }

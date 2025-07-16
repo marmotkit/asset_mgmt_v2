@@ -161,10 +161,15 @@ const ActivityRegistrationsTable: React.FC<ActivityRegistrationsTableProps> = ({
             setLoading(true);
 
             if (editMode && selectedRegistration) {
-                await MemberServiceAPI.updateRegistration(selectedRegistration.id, registrationForm);
+                // 更新現有報名記錄
+                await MemberServiceAPI.updateRegistration(selectedRegistration.id, {
+                    status: registrationForm.status,
+                    notes: registrationForm.notes,
+                    companions: registrationForm.companions
+                });
                 enqueueSnackbar('報名記錄更新成功', { variant: 'success' });
             } else {
-                // 使用新的報名API
+                // 建立新報名記錄
                 const member = members.find(m => m.id === registrationForm.memberId);
                 await MemberServiceAPI.createActivityRegistration({
                     activityId: activityId,
@@ -250,7 +255,13 @@ const ActivityRegistrationsTable: React.FC<ActivityRegistrationsTableProps> = ({
         return statusMap[status] || '未知';
     };
 
-    const getMemberName = (memberId: string) => {
+    const getMemberName = (memberId: string, memberName?: string) => {
+        // 優先使用 member_name 欄位
+        if (memberName) {
+            return memberName;
+        }
+
+        // 如果沒有 member_name，則從 members 陣列中查找
         const member = members.find(m => m.id === memberId);
         return member ? member.name : '未找到會員';
     };
@@ -300,7 +311,7 @@ const ActivityRegistrationsTable: React.FC<ActivityRegistrationsTableProps> = ({
                             ) : (
                                 registrations.map((registration) => (
                                     <TableRow key={registration.id}>
-                                        <TableCell>{getMemberName(registration.memberId)}</TableCell>
+                                        <TableCell>{getMemberName(registration.memberId, registration.memberName)}</TableCell>
                                         <TableCell>{formatDate(registration.registrationDate)}</TableCell>
                                         <TableCell>{registration.companions} 人</TableCell>
                                         <TableCell>{registration.notes}</TableCell>

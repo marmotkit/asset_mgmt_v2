@@ -180,25 +180,61 @@ router.put('/:id', auth_middleware_1.authMiddleware, async (req, res) => {
     const client = await pool.connect();
     try {
         const { id } = req.params;
-        const { status, notes, memberName, phoneNumber, totalParticipants, maleCount, femaleCount } = req.body;
+        const { status, notes, memberName, phoneNumber, totalParticipants, maleCount, femaleCount, companions } = req.body;
+        // 構建動態更新查詢
+        let updateFields = [];
+        let values = [];
+        let paramIndex = 1;
+        if (status !== undefined) {
+            updateFields.push(`status = $${paramIndex}`);
+            values.push(status);
+            paramIndex++;
+        }
+        if (notes !== undefined) {
+            updateFields.push(`notes = $${paramIndex}`);
+            values.push(notes);
+            paramIndex++;
+        }
+        if (memberName !== undefined) {
+            updateFields.push(`member_name = $${paramIndex}`);
+            values.push(memberName);
+            paramIndex++;
+        }
+        if (phoneNumber !== undefined) {
+            updateFields.push(`phone_number = $${paramIndex}`);
+            values.push(phoneNumber);
+            paramIndex++;
+        }
+        if (totalParticipants !== undefined) {
+            updateFields.push(`total_participants = $${paramIndex}`);
+            values.push(totalParticipants);
+            paramIndex++;
+        }
+        if (maleCount !== undefined) {
+            updateFields.push(`male_count = $${paramIndex}`);
+            values.push(maleCount);
+            paramIndex++;
+        }
+        if (femaleCount !== undefined) {
+            updateFields.push(`female_count = $${paramIndex}`);
+            values.push(femaleCount);
+            paramIndex++;
+        }
+        if (companions !== undefined) {
+            updateFields.push(`companions = $${paramIndex}`);
+            values.push(companions);
+            paramIndex++;
+        }
+        // 添加更新時間
+        updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+        // 添加ID到values陣列
+        values.push(id);
         const query = `
             UPDATE activity_registrations SET
-                status = $1, notes = $2, member_name = $3, phone_number = $4,
-                total_participants = $5, male_count = $6, female_count = $7,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = $8
+                ${updateFields.join(', ')}
+            WHERE id = $${paramIndex}
             RETURNING *
         `;
-        const values = [
-            status,
-            notes || '',
-            memberName,
-            phoneNumber,
-            totalParticipants || 1,
-            maleCount || 0,
-            femaleCount || 0,
-            id
-        ];
         const result = await client.query(query, values);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: '找不到指定的報名記錄' });

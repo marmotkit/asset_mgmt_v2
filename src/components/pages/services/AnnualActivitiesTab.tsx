@@ -357,10 +357,12 @@ const AnnualActivitiesTab: React.FC = () => {
     const handleOpenRegistrationDialog = (activity: AnnualActivity) => {
         // 自動帶出登入會員資訊
         const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        console.log('當前用戶資訊:', currentUser); // 除錯用
+
         setRegistrationForm({
             activityId: activity.id,
-            memberName: currentUser.name || '',
-            phoneNumber: currentUser.phone || '',
+            memberName: currentUser.name || currentUser.username || '',
+            phoneNumber: currentUser.phone || currentUser.phoneNumber || '',
             totalParticipants: 1,
             maleCount: 0,
             femaleCount: 0,
