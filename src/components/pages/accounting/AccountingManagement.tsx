@@ -1,21 +1,5 @@
 import React, { useState } from 'react';
-import {
-    Box,
-    Tabs,
-    Tab,
-    Typography,
-    useTheme,
-    Paper,
-    Container
-} from '@mui/material';
-import {
-    Book as BookIcon,
-    MonetizationOn as MonetizationOnIcon,
-    PriceCheck as PriceCheckIcon,
-    EventNote as EventNoteIcon,
-    Assessment as AssessmentIcon,
-    Sync as SyncIcon
-} from '@mui/icons-material';
+import { Box, Tabs, Tab, Typography } from '@mui/material';
 import JournalTab from './tabs/JournalTab';
 import ReceivablesTab from './tabs/ReceivablesTab';
 import PayablesTab from './tabs/PayablesTab';
@@ -39,10 +23,9 @@ function TabPanel(props: TabPanelProps) {
             id={`accounting-tabpanel-${index}`}
             aria-labelledby={`accounting-tab-${index}`}
             {...other}
-            style={{ paddingTop: '1rem' }}
         >
             {value === index && (
-                <Box>
+                <Box sx={{ p: 3 }}>
                     {children}
                 </Box>
             )}
@@ -58,92 +41,48 @@ function a11yProps(index: number) {
 }
 
 const AccountingManagement: React.FC = () => {
-    const theme = useTheme();
-    const [tabValue, setTabValue] = useState(0);
+    const [value, setValue] = useState(0);
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        setTabValue(newValue);
+    const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+        setValue(newValue);
     };
 
     return (
-        <Container maxWidth="xl">
-            <Box mb={4}>
-                <Typography variant="h4" component="h1" gutterBottom>
-                    帳務管理
-                </Typography>
-                <Typography variant="subtitle1" color="textSecondary" gutterBottom>
-                    管理財務記錄、應收應付帳款及查看財務報表
-                </Typography>
+        <Box sx={{ width: '100%' }}>
+            <Typography variant="h4" gutterBottom>
+                帳務管理
+            </Typography>
+
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <Tabs value={value} onChange={handleChange} aria-label="帳務管理功能">
+                    <Tab label="日記帳" {...a11yProps(0)} />
+                    <Tab label="應收帳款" {...a11yProps(1)} />
+                    <Tab label="應付帳款" {...a11yProps(2)} />
+                    <Tab label="月結" {...a11yProps(3)} />
+                    <Tab label="財務報表" {...a11yProps(4)} />
+                    <Tab label="資料整合" {...a11yProps(5)} />
+                </Tabs>
             </Box>
 
-            <Paper elevation={3}>
-                <Box sx={{
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                    bgcolor: theme.palette.background.paper
-                }}>
-                    <Tabs
-                        value={tabValue}
-                        onChange={handleTabChange}
-                        variant="scrollable"
-                        scrollButtons="auto"
-                        aria-label="accounting management tabs"
-                    >
-                        <Tab
-                            icon={<BookIcon />}
-                            label="日記帳"
-                            {...a11yProps(0)}
-                        />
-                        <Tab
-                            icon={<MonetizationOnIcon />}
-                            label="應收帳款"
-                            {...a11yProps(1)}
-                        />
-                        <Tab
-                            icon={<PriceCheckIcon />}
-                            label="應付帳款"
-                            {...a11yProps(2)}
-                        />
-                        <Tab
-                            icon={<EventNoteIcon />}
-                            label="月結"
-                            {...a11yProps(3)}
-                        />
-                        <Tab
-                            icon={<AssessmentIcon />}
-                            label="財務報表"
-                            {...a11yProps(4)}
-                        />
-                        <Tab
-                            icon={<SyncIcon />}
-                            label="資料整合"
-                            {...a11yProps(5)}
-                        />
-                    </Tabs>
-                </Box>
-
-                <Box sx={{ p: 2 }}>
-                    <TabPanel value={tabValue} index={0}>
-                        <JournalTab />
-                    </TabPanel>
-                    <TabPanel value={tabValue} index={1}>
-                        <ReceivablesTab />
-                    </TabPanel>
-                    <TabPanel value={tabValue} index={2}>
-                        <PayablesTab />
-                    </TabPanel>
-                    <TabPanel value={tabValue} index={3}>
-                        <MonthlyClosingTab />
-                    </TabPanel>
-                    <TabPanel value={tabValue} index={4}>
-                        <FinancialReportsTab />
-                    </TabPanel>
-                    <TabPanel value={tabValue} index={5}>
-                        <AccountingIntegrationTab />
-                    </TabPanel>
-                </Box>
-            </Paper>
-        </Container>
+            <TabPanel value={value} index={0}>
+                <JournalTab />
+            </TabPanel>
+            <TabPanel value={value} index={1}>
+                <ReceivablesTab />
+            </TabPanel>
+            <TabPanel value={value} index={2}>
+                <PayablesTab />
+            </TabPanel>
+            <TabPanel value={value} index={3}>
+                <MonthlyClosingTab />
+            </TabPanel>
+            <TabPanel value={value} index={4}>
+                <FinancialReportsTab />
+            </TabPanel>
+            <TabPanel value={value} index={5}>
+                <AccountingIntegrationTab />
+            </TabPanel>
+        </Box>
     );
 };
 

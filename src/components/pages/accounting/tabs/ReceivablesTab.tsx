@@ -83,6 +83,7 @@ const ReceivablesTab: React.FC = () => {
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [filterBusinessType, setFilterBusinessType] = useState<string>('all');
     const [paymentAmount, setPaymentAmount] = useState<number>(0);
     const [snackbar, setSnackbar] = useState({
         open: false,
@@ -119,6 +120,16 @@ const ReceivablesTab: React.FC = () => {
         // 狀態過濾
         if (filterStatus !== 'all' && receivable.status !== filterStatus) {
             return false;
+        }
+        // 業務類型過濾
+        if (filterBusinessType !== 'all') {
+            const description = receivable.description || '';
+            if (filterBusinessType === 'membership' && !description.includes('會費')) {
+                return false;
+            }
+            if (filterBusinessType === 'rental' && !description.includes('租金')) {
+                return false;
+            }
         }
         // 搜尋條件過濾，所有欄位都要先檢查是否存在
         const searchLower = (searchTerm || '').toLowerCase();
@@ -158,7 +169,7 @@ const ReceivablesTab: React.FC = () => {
     // 處理付款對話框
     const handleOpenPaymentDialog = (receivable: AccountReceivable) => {
         setEditingReceivable(receivable);
-        setPaymentAmount(receivable.amount - receivable.paidAmount);
+        setPaymentAmount(receivable.amount - receivable.payment_amount);
         setPaymentDialogOpen(true);
     };
 
@@ -260,7 +271,7 @@ const ReceivablesTab: React.FC = () => {
     const handlePaymentSubmit = async () => {
         if (!editingReceivable) return;
 
-        if (paymentAmount <= 0 || paymentAmount > (editingReceivable.amount - editingReceivable.paidAmount)) {
+        if (paymentAmount <= 0 || paymentAmount > (editingReceivable.amount - editingReceivable.payment_amount)) {
             setSnackbar({
                 open: true,
                 message: '請輸入有效的付款金額',
@@ -270,14 +281,14 @@ const ReceivablesTab: React.FC = () => {
         }
 
         try {
-            const newPaidAmount = editingReceivable.paidAmount + paymentAmount;
+            const newPaidAmount = editingReceivable.payment_amount + paymentAmount;
             const newStatus = (
                 newPaidAmount >= editingReceivable.amount ? 'paid' :
                     newPaidAmount > 0 ? 'partially_paid' : 'pending'
             ) as 'pending' | 'partially_paid' | 'paid' | 'overdue';
 
             const updatedReceivable = await receivablesApiService.updateReceivable(editingReceivable.id, {
-                paidAmount: newPaidAmount,
+                payment_amount: newPaidAmount,
                 status: newStatus
             });
 
@@ -356,6 +367,13 @@ const ReceivablesTab: React.FC = () => {
         );
     };
 
+    // 取得業務類型
+    const getBusinessType = (description: string): string => {
+        if (description.includes('會費')) return '會費';
+        if (description.includes('租金')) return '租金';
+        return '其他';
+    };
+
     // 渲染內容
     return (
         <Box>
@@ -372,13 +390,13 @@ const ReceivablesTab: React.FC = () => {
             </Box>
 
             <Paper sx={{ p: 2, mb: 3 }}>
-                <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} md={5}>
+                <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                    <Grid item xs={12} md={4}>
                         <TextField
                             fullWidth
                             placeholder="搜尋客戶、描述或發票號碼"
                             value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
@@ -388,26 +406,53 @@ const ReceivablesTab: React.FC = () => {
                             }}
                         />
                     </Grid>
-                    <Grid item xs={12} md={3}>
+                    <Grid item xs={12} md={2}>
                         <FormControl fullWidth>
                             <InputLabel>狀態</InputLabel>
                             <Select
                                 value={filterStatus}
-                                onChange={e => setFilterStatus(e.target.value)}
+                                onChange={(e) => setFilterStatus(e.target.value)}
                                 label="狀態"
                             >
                                 <MenuItem value="all">全部</MenuItem>
-                                {statusOptions.map(status => (
-                                    <MenuItem key={status.value} value={status.value}>
-                                        {status.label}
-                                    </MenuItem>
-                                ))}
+                                <MenuItem value="pending">待付款</MenuItem>
+                                <MenuItem value="partially_paid">部分付款</MenuItem>
+                                <MenuItem value="paid">已付款</MenuItem>
+                                <MenuItem value="overdue">逾期</MenuItem>
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={12} md={4} sx={{ textAlign: 'right' }}>
+                    <Grid item xs={12} md={2}>
+                        <FormControl fullWidth>
+                            <InputLabel>業務類型</InputLabel>
+                            <Select
+                                value={filterBusinessType}
+                                onChange={(e) => setFilterBusinessType(e.target.value)}
+                                label="業務類型"
+                            >
+                                <MenuItem value="all">全部</MenuItem>
+                                <MenuItem value="membership">會費</MenuItem>
+                                <MenuItem value="rental">租金</MenuItem>
+                                <MenuItem value="other">其他</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                            <Button
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={() => handleOpenDialog()}
+                            >
+                                新增應收帳款
+                            </Button>
+                        </Box>
+                    </Grid>
+                </Grid>
+                <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} md={5}>
                         <Typography>
-                            總計: {filteredReceivables.reduce((sum, item) => sum + ((item.amount || 0) - (item.paidAmount || 0)), 0).toLocaleString()} 元
+                            總計: {filteredReceivables.reduce((sum, item) => sum + ((item.amount || 0) - (item.payment_amount || 0)), 0).toLocaleString()} 元
                         </Typography>
                         <Typography>
                             共 {filteredReceivables.length} 筆記錄
@@ -426,6 +471,8 @@ const ReceivablesTab: React.FC = () => {
                         <TableHead>
                             <TableRow>
                                 <TableCell>客戶</TableCell>
+                                <TableCell>業務類型</TableCell>
+                                <TableCell>到期日</TableCell>
                                 <TableCell>描述</TableCell>
                                 <TableCell align="right">金額</TableCell>
                                 <TableCell align="right">已付金額</TableCell>
@@ -437,13 +484,14 @@ const ReceivablesTab: React.FC = () => {
                         <TableBody>
                             {filteredReceivables.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} align="center">
+                                    <TableCell colSpan={9} align="center">
                                         無符合條件的應收帳款
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredReceivables.map(receivable => {
-                                    const balance = (receivable.amount || 0) - (receivable.paidAmount || 0);
+                                filteredReceivables.map((receivable) => {
+                                    const balance = (receivable.amount || 0) - (receivable.payment_amount || 0);
+                                    const businessType = getBusinessType(receivable.description || '');
 
                                     return (
                                         <TableRow
@@ -451,9 +499,17 @@ const ReceivablesTab: React.FC = () => {
                                             sx={balance > 0 ? { bgcolor: 'rgba(255, 152, 0, 0.05)' } : {}}
                                         >
                                             <TableCell>{receivable.customer_name || '-'}</TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={businessType}
+                                                    size="small"
+                                                    color={businessType === '會費' ? 'primary' : businessType === '租金' ? 'secondary' : 'default'}
+                                                />
+                                            </TableCell>
+                                            <TableCell>{receivable.due_date ? dayjs(receivable.due_date).format('YYYY/MM/DD') : '-'}</TableCell>
                                             <TableCell>{receivable.description || '-'}</TableCell>
                                             <TableCell align="right">{(receivable.amount || 0).toLocaleString()}</TableCell>
-                                            <TableCell align="right">{(receivable.paidAmount || 0).toLocaleString()}</TableCell>
+                                            <TableCell align="right">{(receivable.payment_amount || 0).toLocaleString()}</TableCell>
                                             <TableCell
                                                 align="right"
                                                 sx={{
@@ -689,7 +745,7 @@ const ReceivablesTab: React.FC = () => {
                         disabled={
                             !editingReceivable ||
                             paymentAmount <= 0 ||
-                            paymentAmount > (editingReceivable?.amount - editingReceivable?.paidAmount)
+                            paymentAmount > (editingReceivable?.amount - editingReceivable?.payment_amount)
                         }
                     >
                         確認付款
