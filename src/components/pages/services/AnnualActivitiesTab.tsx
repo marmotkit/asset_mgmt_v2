@@ -421,6 +421,7 @@ const AnnualActivitiesTab: React.FC = () => {
         }
     };
 
+    // 報名表單
     const validateRegistrationForm = () => {
         const errors: Record<string, string> = {};
 
@@ -434,19 +435,6 @@ const AnnualActivitiesTab: React.FC = () => {
 
         if (!registrationForm.totalParticipants || registrationForm.totalParticipants < 1) {
             errors.totalParticipants = '總人數至少為1人';
-        }
-
-        if (registrationForm.maleCount < 0) {
-            errors.maleCount = '男性人數不能為負數';
-        }
-
-        if (registrationForm.femaleCount < 0) {
-            errors.femaleCount = '女性人數不能為負數';
-        }
-
-        const total = (registrationForm.maleCount || 0) + (registrationForm.femaleCount || 0);
-        if (total !== registrationForm.totalParticipants) {
-            errors.totalParticipants = '男性人數 + 女性人數必須等於總人數';
         }
 
         setRegistrationErrors(errors);
@@ -647,18 +635,11 @@ const AnnualActivitiesTab: React.FC = () => {
         if (!selectedActivityForManagement) return;
 
         const csvData = [
-            ['報名者姓名', '聯絡電話', '總人數', '男性人數', '女性人數', '報名狀態', '報名日期', '備註'],
+            ['報名者姓名', '聯絡電話', '總人數', '報名日期', '備註'],
             ...activityRegistrations.map(reg => [
                 reg.memberName || '未知',
                 reg.phoneNumber || '',
                 reg.totalParticipants || 0,
-                reg.maleCount || 0,
-                reg.femaleCount || 0,
-                reg.status === 'pending' ? '待確認' :
-                    reg.status === 'confirmed' ? '已確認' :
-                        reg.status === 'attended' ? '已出席' :
-                            reg.status === 'cancelled' ? '已取消' :
-                                reg.status === 'absent' ? '未出席' : '未知',
                 formatDate(reg.registrationDate),
                 reg.notes || ''
             ])
@@ -1177,6 +1158,7 @@ const AnnualActivitiesTab: React.FC = () => {
                             />
                         </Grid>
 
+                        {/* 報名表單 */}
                         <Grid item xs={12} sm={6}>
                             <TextField
                                 fullWidth
@@ -1188,36 +1170,6 @@ const AnnualActivitiesTab: React.FC = () => {
                                 error={!!registrationErrors.totalParticipants}
                                 helperText={registrationErrors.totalParticipants}
                                 InputProps={{ inputProps: { min: 1 } }}
-                                required
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="男性人數"
-                                name="maleCount"
-                                type="number"
-                                value={registrationForm.maleCount}
-                                onChange={handleRegistrationNumberChange}
-                                error={!!registrationErrors.maleCount}
-                                helperText={registrationErrors.maleCount}
-                                InputProps={{ inputProps: { min: 0 } }}
-                                required
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="女性人數"
-                                name="femaleCount"
-                                type="number"
-                                value={registrationForm.femaleCount}
-                                onChange={handleRegistrationNumberChange}
-                                error={!!registrationErrors.femaleCount}
-                                helperText={registrationErrors.femaleCount}
-                                InputProps={{ inputProps: { min: 0 } }}
                                 required
                             />
                         </Grid>
@@ -1260,7 +1212,7 @@ const AnnualActivitiesTab: React.FC = () => {
                                     </Typography>
                                     {statistics && (
                                         <Grid container spacing={2}>
-                                            <Grid item xs={12} sm={3}>
+                                            <Grid item xs={12} sm={6}>
                                                 <Typography variant="body2" color="text.secondary">
                                                     總報名數
                                                 </Typography>
@@ -1268,28 +1220,12 @@ const AnnualActivitiesTab: React.FC = () => {
                                                     {statistics.totalRegistrations}
                                                 </Typography>
                                             </Grid>
-                                            <Grid item xs={12} sm={3}>
+                                            <Grid item xs={12} sm={6}>
                                                 <Typography variant="body2" color="text.secondary">
                                                     總人數
                                                 </Typography>
                                                 <Typography variant="h4" color="secondary">
                                                     {statistics.totalParticipants}
-                                                </Typography>
-                                            </Grid>
-                                            <Grid item xs={12} sm={3}>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    男性
-                                                </Typography>
-                                                <Typography variant="h4" color="info.main">
-                                                    {statistics.maleCount}
-                                                </Typography>
-                                            </Grid>
-                                            <Grid item xs={12} sm={3}>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    女性
-                                                </Typography>
-                                                <Typography variant="h4" color="error.main">
-                                                    {statistics.femaleCount}
                                                 </Typography>
                                             </Grid>
                                         </Grid>
@@ -1378,8 +1314,6 @@ const AnnualActivitiesTab: React.FC = () => {
                                             <TableCell>報名者</TableCell>
                                             <TableCell>聯絡電話</TableCell>
                                             <TableCell>總人數</TableCell>
-                                            <TableCell>男性</TableCell>
-                                            <TableCell>女性</TableCell>
                                             <TableCell>報名日期</TableCell>
                                             <TableCell>狀態</TableCell>
                                             <TableCell>備註</TableCell>
@@ -1388,7 +1322,7 @@ const AnnualActivitiesTab: React.FC = () => {
                                     <TableBody>
                                         {activityRegistrations.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={9} align="center">
+                                                <TableCell colSpan={7} align="center">
                                                     暫無報名記錄
                                                 </TableCell>
                                             </TableRow>
@@ -1410,8 +1344,6 @@ const AnnualActivitiesTab: React.FC = () => {
                                                     <TableCell>{registration.memberName}</TableCell>
                                                     <TableCell>{registration.phoneNumber}</TableCell>
                                                     <TableCell>{registration.totalParticipants}</TableCell>
-                                                    <TableCell>{registration.maleCount}</TableCell>
-                                                    <TableCell>{registration.femaleCount}</TableCell>
                                                     <TableCell>{formatDate(registration.registrationDate)}</TableCell>
                                                     <TableCell>{getRegistrationStatusChip(registration.status)}</TableCell>
                                                     <TableCell>{registration.notes}</TableCell>
