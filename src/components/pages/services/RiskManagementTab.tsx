@@ -400,7 +400,7 @@ const OtherAnomaliesPanel: React.FC = () => {
                                     <TableRow key={anomaly.id || index}>
                                         <TableCell>{anomaly.type}</TableCell>
                                         <TableCell>{anomaly.personName}</TableCell>
-                                        <TableCell>{new Date(anomaly.occurrenceDate).toLocaleDateString()}</TableCell>
+                                        <TableCell>{new Date(anomaly.occurrenceDate).toLocaleDateString('zh-TW')}</TableCell>
                                         <TableCell>{anomaly.description}</TableCell>
                                         <TableCell>
                                             <Chip
