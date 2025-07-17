@@ -22,7 +22,7 @@ import {
   AccountBalance as InvestmentIcon,
   Support as ServiceIcon,
   Payment as PaymentIcon,
-  Notifications as NotificationIcon,
+  Receipt as ReceiptIcon,
   Info as InfoIcon,
   Receipt as FeeIcon,
   Dashboard as DashboardIcon,
@@ -125,9 +125,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open = true, onToggle }) => {
         adminOnly: false
       },
       {
-        text: '通知提醒',
-        icon: <NotificationIcon />,
-        path: '/notifications',
+        text: '系統記錄',
+        icon: <ReceiptIcon />,
+        path: '/system-records',
         adminOnly: true
       },
       {

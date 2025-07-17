@@ -17,6 +17,7 @@ import InvestmentDashboardManagement from '../components/pages/investment-dashbo
 import InquiryManagement from '../components/pages/investment-dashboard/admin/InquiryManagement';
 import SystemInfo from '../components/pages/SystemInfo';
 import RoleBasedRoute from '../components/common/RoleBasedRoute';
+import SystemRecords from '../components/pages/SystemRecords';
 
 // 保護路由的高階組件
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -123,16 +124,10 @@ const AppRoutes = () => {
         </AdminRoute>
       } />
 
-      <Route path="/notifications" element={
+      <Route path="/system-records" element={
         <AdminRoute>
-          <div>通知提醒</div>
+          <SystemRecords />
         </AdminRoute>
-      } />
-
-      <Route path="/system-info" element={
-        <PublicRoute>
-          <SystemInfo />
-        </PublicRoute>
       } />
 
       {/* 一般用戶可訪問的路由 */}
