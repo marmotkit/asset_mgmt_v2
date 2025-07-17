@@ -6,10 +6,12 @@ const material_1 = require("@mui/material");
 const icons_material_1 = require("@mui/icons-material");
 const react_router_dom_1 = require("react-router-dom");
 const AuthContext_1 = require("../../contexts/AuthContext");
-const Sidebar = () => {
+const Sidebar = ({ open = true, onToggle }) => {
     const navigate = (0, react_router_dom_1.useNavigate)();
     const location = (0, react_router_dom_1.useLocation)();
     const { user } = (0, AuthContext_1.useAuth)();
+    const theme = (0, material_1.useTheme)();
+    const isMobile = (0, material_1.useMediaQuery)(theme.breakpoints.down('md'));
     const [version, setVersion] = (0, react_1.useState)(() => {
         // 從 localStorage 讀取版本號，如果沒有則使用預設值 '1.0'
         return localStorage.getItem('app_version') || '1.0';
@@ -94,23 +96,24 @@ const Sidebar = () => {
                 adminOnly: true
             },
             {
-                text: '安全隱私',
-                icon: (0, jsx_runtime_1.jsx)(icons_material_1.Security, {}),
-                path: '/security',
-                adminOnly: true
+                text: '系統說明',
+                icon: (0, jsx_runtime_1.jsx)(icons_material_1.Info, {}),
+                path: '/system-info',
+                adminOnly: false
             }
         ];
         // 根據用戶角色過濾菜單項目
         return allMenuItems.filter(item => !item.adminOnly || isAdmin);
     };
     const menuItems = getMenuItems();
-    return ((0, jsx_runtime_1.jsxs)(material_1.Drawer, { variant: "permanent", sx: {
-            width: '240px',
+    const drawerWidth = open ? 240 : 64;
+    return ((0, jsx_runtime_1.jsxs)(material_1.Drawer, { variant: isMobile ? 'temporary' : 'permanent', open: open, onClose: onToggle, sx: {
+            width: drawerWidth,
             flexShrink: 0,
             position: 'fixed',
             height: '100vh',
             '& .MuiDrawer-paper': {
-                width: '240px',
+                width: drawerWidth,
                 boxSizing: 'border-box',
                 borderRight: '1px solid rgba(0, 0, 0, 0.12)',
                 backgroundColor: '#fff',
@@ -118,11 +121,21 @@ const Sidebar = () => {
                 height: '100vh',
                 display: 'flex',
                 flexDirection: 'column',
+                transition: theme.transitions.create('width', {
+                    easing: theme.transitions.easing.sharp,
+                    duration: theme.transitions.duration.enteringScreen,
+                }),
+                overflowX: 'hidden',
             },
         }, children: [(0, jsx_runtime_1.jsx)(material_1.Toolbar, {}), " ", (0, jsx_runtime_1.jsx)(material_1.Box, { sx: {
                     overflow: 'auto',
                     flex: 1,
-                }, children: (0, jsx_runtime_1.jsx)(material_1.List, { children: menuItems.map((item) => ((0, jsx_runtime_1.jsx)(material_1.ListItem, { disablePadding: true, children: (0, jsx_runtime_1.jsxs)(material_1.ListItemButton, { selected: location.pathname === item.path, onClick: () => navigate(item.path), sx: {
+                }, children: (0, jsx_runtime_1.jsx)(material_1.List, { children: menuItems.map((item) => ((0, jsx_runtime_1.jsx)(material_1.ListItem, { disablePadding: true, children: (0, jsx_runtime_1.jsxs)(material_1.ListItemButton, { selected: location.pathname === item.path, onClick: () => {
+                                navigate(item.path);
+                                if (isMobile && onToggle) {
+                                    onToggle();
+                                }
+                            }, sx: {
                                 '&.Mui-selected': {
                                     backgroundColor: 'rgba(25, 118, 210, 0.08)',
                                 },
@@ -130,10 +143,24 @@ const Sidebar = () => {
                                     backgroundColor: 'rgba(25, 118, 210, 0.12)',
                                 },
                                 py: 1.5, // 增加按鈕高度
-                            }, children: [(0, jsx_runtime_1.jsx)(material_1.ListItemIcon, { sx: { minWidth: 40 }, children: item.icon }), (0, jsx_runtime_1.jsx)(material_1.ListItemText, { primary: item.text })] }) }, item.path))) }) }), (0, jsx_runtime_1.jsxs)(material_1.Box, { sx: {
+                                minHeight: 48,
+                                justifyContent: open ? 'initial' : 'center',
+                                px: 2.5,
+                            }, children: [(0, jsx_runtime_1.jsx)(material_1.ListItemIcon, { sx: {
+                                        minWidth: 0,
+                                        mr: open ? 3 : 'auto',
+                                        justifyContent: 'center',
+                                    }, children: item.icon }), (0, jsx_runtime_1.jsx)(material_1.ListItemText, { primary: item.text, sx: {
+                                        opacity: open ? 1 : 0,
+                                        transition: theme.transitions.create('opacity', {
+                                            easing: theme.transitions.easing.sharp,
+                                            duration: theme.transitions.duration.enteringScreen,
+                                        }),
+                                    } })] }) }, item.path))) }) }), (0, jsx_runtime_1.jsxs)(material_1.Box, { sx: {
                     p: 2,
                     borderTop: '1px solid rgba(0, 0, 0, 0.12)',
                     backgroundColor: '#f5f5f5',
+                    display: open ? 'block' : 'none',
                 }, children: [(0, jsx_runtime_1.jsxs)(material_1.Typography, { variant: "caption", component: "div", align: "center", color: "text.secondary", sx: { mb: 1 }, children: ["Copy Right \u00A9 ", currentYear, " XXXX"] }), (0, jsx_runtime_1.jsxs)(material_1.Typography, { variant: "caption", component: "div", align: "center", sx: {
                             cursor: 'pointer',
                             userSelect: 'none',

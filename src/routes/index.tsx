@@ -15,6 +15,7 @@ import InvestmentDashboard from '../components/pages/investment-dashboard/Invest
 import InvestmentDetail from '../components/pages/investment-dashboard/InvestmentDetail';
 import InvestmentDashboardManagement from '../components/pages/investment-dashboard/admin/InvestmentManagement';
 import InquiryManagement from '../components/pages/investment-dashboard/admin/InquiryManagement';
+import SystemInfo from '../components/pages/SystemInfo';
 import RoleBasedRoute from '../components/common/RoleBasedRoute';
 
 // 保護路由的高階組件
@@ -128,10 +129,10 @@ const AppRoutes = () => {
         </AdminRoute>
       } />
 
-      <Route path="/security" element={
-        <AdminRoute>
-          <div>安全隱私</div>
-        </AdminRoute>
+      <Route path="/system-info" element={
+        <PublicRoute>
+          <SystemInfo />
+        </PublicRoute>
       } />
 
       {/* 一般用戶可訪問的路由 */}

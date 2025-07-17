@@ -23,7 +23,7 @@ import {
   Support as ServiceIcon,
   Payment as PaymentIcon,
   Notifications as NotificationIcon,
-  Security as SecurityIcon,
+  Info as InfoIcon,
   Receipt as FeeIcon,
   Dashboard as DashboardIcon,
   ChevronLeft as ChevronLeftIcon,
@@ -131,10 +131,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open = true, onToggle }) => {
         adminOnly: true
       },
       {
-        text: '安全隱私',
-        icon: <SecurityIcon />,
-        path: '/security',
-        adminOnly: true
+        text: '系統說明',
+        icon: <InfoIcon />,
+        path: '/system-info',
+        adminOnly: false
       }
     ];
 
