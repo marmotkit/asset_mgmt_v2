@@ -247,47 +247,51 @@ const SystemInfo: React.FC = () => {
                 </CardContent>
             </Card>
 
-            {/* 主要功能 */}
-            <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-                📋 主要功能模組
-            </Typography>
-            <Grid container spacing={3}>
-                {systemInfo.modules.map((module, index) => (
-                    <Grid item xs={12} md={6} key={index}>
-                        <Card sx={{
-                            height: '100%',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
-                            '&:hover': {
-                                transform: 'translateY(-4px)',
-                                boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                            }
-                        }}>
-                            <CardContent>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                    {module.icon}
-                                    <Typography variant="h6" sx={{ ml: 2, fontWeight: 'bold' }}>
-                                        {module.title}
-                                    </Typography>
-                                </Box>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                    {module.description}
-                                </Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                    {module.features.map((feature, featureIndex) => (
-                                        <Chip
-                                            key={featureIndex}
-                                            label={feature}
-                                            size="small"
-                                            variant="outlined"
-                                            sx={{ fontSize: '0.75rem' }}
-                                        />
-                                    ))}
-                                </Box>
-                            </CardContent>
-                        </Card>
+            {/* 主要功能模組 - 僅管理者可見 */}
+            {isAdmin && (
+                <>
+                    <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
+                        📋 主要功能模組
+                    </Typography>
+                    <Grid container spacing={3}>
+                        {systemInfo.modules.map((module, index) => (
+                            <Grid item xs={12} md={6} key={index}>
+                                <Card sx={{
+                                    height: '100%',
+                                    transition: 'transform 0.2s, box-shadow 0.2s',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                        boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
+                                    }
+                                }}>
+                                    <CardContent>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                            {module.icon}
+                                            <Typography variant="h6" sx={{ ml: 2, fontWeight: 'bold' }}>
+                                                {module.title}
+                                            </Typography>
+                                        </Box>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                            {module.description}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                            {module.features.map((feature, featureIndex) => (
+                                                <Chip
+                                                    key={featureIndex}
+                                                    label={feature}
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{ fontSize: '0.75rem' }}
+                                                />
+                                            ))}
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
                     </Grid>
-                ))}
-            </Grid>
+                </>
+            )}
 
             {/* 核心功能列表 */}
             <Card sx={{ mt: 4, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
@@ -310,11 +314,11 @@ const SystemInfo: React.FC = () => {
                 </CardContent>
             </Card>
 
-            {/* 適用對象 */}
+            {/* 操作部門 */}
             <Card sx={{ mt: 4, background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
                 <CardContent>
                     <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-                        🎯 適用對象
+                        🏢 操作部門
                     </Typography>
                     <Grid container spacing={2}>
                         {[
