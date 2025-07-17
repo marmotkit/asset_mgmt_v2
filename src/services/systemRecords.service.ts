@@ -107,12 +107,12 @@ export const systemRecordsService = {
                     type: '租金收款',
                     year: rental.year,
                     date: displayDate,
-                    desc: `${rental.investmentName || '未知投資案'} - ${rental.year}年${rental.month}月租金收款`,
+                    desc: `${rental.investment_name || '未知投資案'} - ${rental.year}年${rental.month}月租金收款`,
                     amount: rental.amount || 0,
                     status: rental.status || '正常',
                     hidden: false,
                     sourceId: rental.id,
-                    investmentName: rental.investmentName,
+                    investmentName: rental.investment_name,
                     sortDate
                 };
             });
