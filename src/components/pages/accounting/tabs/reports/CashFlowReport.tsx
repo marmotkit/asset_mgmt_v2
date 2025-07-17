@@ -12,7 +12,8 @@ import {
     TableHead,
     TableRow,
     Paper,
-    Divider
+    Divider,
+    Alert
 } from '@mui/material';
 import {
     Chart as ChartJS,
@@ -46,34 +47,132 @@ interface CashFlowReportProps {
 }
 
 const CashFlowReport: React.FC<CashFlowReportProps> = ({ data }) => {
+    // 檢查資料是否存在
+    if (!data || !data.operatingActivities || !data.investingActivities || !data.financingActivities) {
+        return (
+            <Box>
+                <Alert severity="info">
+                    目前沒有現金流量表資料，請先建立會計科目和帳務記錄。
+                </Alert>
+            </Box>
+        );
+    }
+
+    // 安全地取得數值，避免 undefined 錯誤
+    const safeGetValue = (obj: any, path: string, defaultValue: number = 0): number => {
+        const keys = path.split('.');
+        let value = obj;
+        for (const key of keys) {
+            if (value && typeof value === 'object' && key in value) {
+                value = value[key];
+            } else {
+                return defaultValue;
+            }
+        }
+        return typeof value === 'number' ? value : defaultValue;
+    };
+
+    // 從 API 資料中整理出前端需要的結構
+    const processedData = {
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
+        startingCash: 0, // 期初現金，需要從其他地方取得或計算
+        operatingActivities: {
+            inflows: [] as any[],
+            outflows: [] as any[]
+        },
+        investingActivities: {
+            inflows: [] as any[],
+            outflows: [] as any[]
+        },
+        financingActivities: {
+            inflows: [] as any[],
+            outflows: [] as any[]
+        }
+    };
+
+    // 處理營業活動
+    if (data.operatingActivities && data.operatingActivities.items) {
+        data.operatingActivities.items.forEach((item: any) => {
+            const netCashFlow = parseFloat(item.net_cash_flow) || 0;
+            if (netCashFlow > 0) {
+                processedData.operatingActivities.inflows.push({
+                    name: item.account_name,
+                    amount: netCashFlow
+                });
+            } else if (netCashFlow < 0) {
+                processedData.operatingActivities.outflows.push({
+                    name: item.account_name,
+                    amount: Math.abs(netCashFlow)
+                });
+            }
+        });
+    }
+
+    // 處理投資活動
+    if (data.investingActivities && data.investingActivities.items) {
+        data.investingActivities.items.forEach((item: any) => {
+            const netCashFlow = parseFloat(item.net_cash_flow) || 0;
+            if (netCashFlow > 0) {
+                processedData.investingActivities.inflows.push({
+                    name: item.account_name,
+                    amount: netCashFlow
+                });
+            } else if (netCashFlow < 0) {
+                processedData.investingActivities.outflows.push({
+                    name: item.account_name,
+                    amount: Math.abs(netCashFlow)
+                });
+            }
+        });
+    }
+
+    // 處理融資活動
+    if (data.financingActivities && data.financingActivities.items) {
+        data.financingActivities.items.forEach((item: any) => {
+            const netCashFlow = parseFloat(item.net_cash_flow) || 0;
+            if (netCashFlow > 0) {
+                processedData.financingActivities.inflows.push({
+                    name: item.account_name,
+                    amount: netCashFlow
+                });
+            } else if (netCashFlow < 0) {
+                processedData.financingActivities.outflows.push({
+                    name: item.account_name,
+                    amount: Math.abs(netCashFlow)
+                });
+            }
+        });
+    }
+
     // 計算各部分的淨現金流
     const calculateNetCashFlows = () => {
         // 營業活動
-        const operatingInflowsTotal = data.operatingActivities.inflows.reduce(
+        const operatingInflowsTotal = processedData.operatingActivities.inflows.reduce(
             (sum: number, item: any) => sum + item.amount, 0
         );
-        const operatingOutflowsTotal = data.operatingActivities.outflows.reduce(
+        const operatingOutflowsTotal = processedData.operatingActivities.outflows.reduce(
             (sum: number, item: any) => sum + item.amount, 0
         );
-        const netOperating = operatingInflowsTotal + operatingOutflowsTotal;
+        const netOperating = operatingInflowsTotal - operatingOutflowsTotal;
 
         // 投資活動
-        const investingInflowsTotal = data.investingActivities.inflows.reduce(
+        const investingInflowsTotal = processedData.investingActivities.inflows.reduce(
             (sum: number, item: any) => sum + item.amount, 0
         );
-        const investingOutflowsTotal = data.investingActivities.outflows.reduce(
+        const investingOutflowsTotal = processedData.investingActivities.outflows.reduce(
             (sum: number, item: any) => sum + item.amount, 0
         );
-        const netInvesting = investingInflowsTotal + investingOutflowsTotal;
+        const netInvesting = investingInflowsTotal - investingOutflowsTotal;
 
         // 融資活動
-        const financingInflowsTotal = data.financingActivities.inflows.reduce(
+        const financingInflowsTotal = processedData.financingActivities.inflows.reduce(
             (sum: number, item: any) => sum + item.amount, 0
         );
-        const financingOutflowsTotal = data.financingActivities.outflows.reduce(
+        const financingOutflowsTotal = processedData.financingActivities.outflows.reduce(
             (sum: number, item: any) => sum + item.amount, 0
         );
-        const netFinancing = financingInflowsTotal + financingOutflowsTotal;
+        const netFinancing = financingInflowsTotal - financingOutflowsTotal;
 
         // 淨現金流
         const netCashFlow = netOperating + netInvesting + netFinancing;
@@ -106,7 +205,7 @@ const CashFlowReport: React.FC<CashFlowReportProps> = ({ data }) => {
     } = calculateNetCashFlows();
 
     // 計算期末現金
-    const endingCash = data.startingCash + netCashFlow;
+    const endingCash = processedData.startingCash + netCashFlow;
 
     // 準備現金流量圖表數據
     const prepareCashFlowChartData = () => {
@@ -141,7 +240,7 @@ const CashFlowReport: React.FC<CashFlowReportProps> = ({ data }) => {
             datasets: [
                 {
                     label: '現金變化',
-                    data: [data.startingCash, netCashFlow, endingCash],
+                    data: [processedData.startingCash, netCashFlow, endingCash],
                     backgroundColor: [
                         'rgba(54, 162, 235, 0.6)',
                         netCashFlow >= 0 ? 'rgba(75, 192, 192, 0.6)' : 'rgba(255, 99, 132, 0.6)',
@@ -163,13 +262,13 @@ const CashFlowReport: React.FC<CashFlowReportProps> = ({ data }) => {
             <Card sx={{ mb: 3 }}>
                 <CardContent>
                     <Typography variant="h6" gutterBottom>
-                        現金流量表 - {data.month ? `${data.year}年${data.month}月` : `${data.year}年度`}
+                        現金流量表 - {processedData.month ? `${processedData.year}年${processedData.month}月` : `${processedData.year}年度`}
                     </Typography>
                     <Grid container spacing={3}>
                         <Grid item xs={12} md={3}>
                             <Typography variant="subtitle1" color="textSecondary">期初現金</Typography>
                             <Typography variant="h5" color="primary.main">
-                                {data.startingCash.toLocaleString()} 元
+                                {processedData.startingCash.toLocaleString()} 元
                             </Typography>
                         </Grid>
                         <Grid item xs={12} md={3}>
@@ -193,9 +292,9 @@ const CashFlowReport: React.FC<CashFlowReportProps> = ({ data }) => {
                                 variant="h5"
                                 color={netCashFlow >= 0 ? "success.main" : "error.main"}
                             >
-                                {data.startingCash === 0
+                                {processedData.startingCash === 0
                                     ? '-'
-                                    : ((netCashFlow / data.startingCash) * 100).toFixed(1) + '%'}
+                                    : ((netCashFlow / processedData.startingCash) * 100).toFixed(1) + '%'}
                             </Typography>
                         </Grid>
                     </Grid>
@@ -231,7 +330,7 @@ const CashFlowReport: React.FC<CashFlowReportProps> = ({ data }) => {
                 <Grid item xs={12} md={6}>
                     <Card>
                         <CardContent>
-                            <Typography variant="h6" gutterBottom>現金變化</Typography>
+                            <Typography variant="h6" gutterBottom>現金變化趨勢</Typography>
                             <Box sx={{ height: 300 }}>
                                 <Bar data={prepareCashChangeChartData()} options={{
                                     responsive: true,
@@ -269,19 +368,21 @@ const CashFlowReport: React.FC<CashFlowReportProps> = ({ data }) => {
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {data.operatingActivities.inflows.map((item: any, index: number) => (
-                                                    <TableRow key={index}>
-                                                        <TableCell>{item.description}</TableCell>
-                                                        <TableCell align="right" sx={{ color: 'success.main' }}>
-                                                            {item.amount.toLocaleString()}
-                                                        </TableCell>
+                                                {processedData.operatingActivities.inflows.length > 0 ? (
+                                                    processedData.operatingActivities.inflows.map((item, index) => (
+                                                        <TableRow key={index}>
+                                                            <TableCell>{item.name}</TableCell>
+                                                            <TableCell align="right">{item.amount.toLocaleString()}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={2} align="center">無現金流入</TableCell>
                                                     </TableRow>
-                                                ))}
+                                                )}
                                                 <TableRow>
-                                                    <TableCell><strong>流入合計</strong></TableCell>
-                                                    <TableCell align="right" sx={{ color: 'success.main' }}>
-                                                        <strong>{operatingInflowsTotal.toLocaleString()}</strong>
-                                                    </TableCell>
+                                                    <TableCell><strong>營業活動現金流入合計</strong></TableCell>
+                                                    <TableCell align="right"><strong>{operatingInflowsTotal.toLocaleString()}</strong></TableCell>
                                                 </TableRow>
                                             </TableBody>
                                         </Table>
@@ -298,38 +399,39 @@ const CashFlowReport: React.FC<CashFlowReportProps> = ({ data }) => {
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {data.operatingActivities.outflows.map((item: any, index: number) => (
-                                                    <TableRow key={index}>
-                                                        <TableCell>{item.description}</TableCell>
-                                                        <TableCell align="right" sx={{ color: 'error.main' }}>
-                                                            {item.amount.toLocaleString()}
-                                                        </TableCell>
+                                                {processedData.operatingActivities.outflows.length > 0 ? (
+                                                    processedData.operatingActivities.outflows.map((item, index) => (
+                                                        <TableRow key={index}>
+                                                            <TableCell>{item.name}</TableCell>
+                                                            <TableCell align="right">{item.amount.toLocaleString()}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={2} align="center">無現金流出</TableCell>
                                                     </TableRow>
-                                                ))}
+                                                )}
                                                 <TableRow>
-                                                    <TableCell><strong>流出合計</strong></TableCell>
-                                                    <TableCell align="right" sx={{ color: 'error.main' }}>
-                                                        <strong>{operatingOutflowsTotal.toLocaleString()}</strong>
-                                                    </TableCell>
+                                                    <TableCell><strong>營業活動現金流出合計</strong></TableCell>
+                                                    <TableCell align="right"><strong>{operatingOutflowsTotal.toLocaleString()}</strong></TableCell>
                                                 </TableRow>
                                             </TableBody>
                                         </Table>
                                     </TableContainer>
                                 </Grid>
-                                <Grid item xs={12}>
-                                    <Divider sx={{ my: 2 }} />
-                                    <Typography variant="subtitle1">
-                                        營業活動淨現金流:
-                                        <span style={{
-                                            color: netOperating >= 0 ? '#4caf50' : '#f44336',
-                                            marginLeft: '16px',
-                                            fontWeight: 'bold'
-                                        }}>
-                                            {netOperating.toLocaleString()} 元
-                                        </span>
-                                    </Typography>
-                                </Grid>
                             </Grid>
+                            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                                <Typography variant="subtitle1" align="center">
+                                    營業活動淨現金流:
+                                    <span style={{
+                                        color: netOperating >= 0 ? 'green' : 'red',
+                                        fontWeight: 'bold',
+                                        marginLeft: '8px'
+                                    }}>
+                                        {netOperating.toLocaleString()} 元
+                                    </span>
+                                </Typography>
+                            </Box>
                         </CardContent>
                     </Card>
                 </Grid>
@@ -351,19 +453,21 @@ const CashFlowReport: React.FC<CashFlowReportProps> = ({ data }) => {
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {data.investingActivities.inflows.map((item: any, index: number) => (
-                                                    <TableRow key={index}>
-                                                        <TableCell>{item.description}</TableCell>
-                                                        <TableCell align="right" sx={{ color: 'success.main' }}>
-                                                            {item.amount.toLocaleString()}
-                                                        </TableCell>
+                                                {processedData.investingActivities.inflows.length > 0 ? (
+                                                    processedData.investingActivities.inflows.map((item, index) => (
+                                                        <TableRow key={index}>
+                                                            <TableCell>{item.name}</TableCell>
+                                                            <TableCell align="right">{item.amount.toLocaleString()}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={2} align="center">無現金流入</TableCell>
                                                     </TableRow>
-                                                ))}
+                                                )}
                                                 <TableRow>
-                                                    <TableCell><strong>流入合計</strong></TableCell>
-                                                    <TableCell align="right" sx={{ color: 'success.main' }}>
-                                                        <strong>{investingInflowsTotal.toLocaleString()}</strong>
-                                                    </TableCell>
+                                                    <TableCell><strong>投資活動現金流入合計</strong></TableCell>
+                                                    <TableCell align="right"><strong>{investingInflowsTotal.toLocaleString()}</strong></TableCell>
                                                 </TableRow>
                                             </TableBody>
                                         </Table>
@@ -380,38 +484,39 @@ const CashFlowReport: React.FC<CashFlowReportProps> = ({ data }) => {
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {data.investingActivities.outflows.map((item: any, index: number) => (
-                                                    <TableRow key={index}>
-                                                        <TableCell>{item.description}</TableCell>
-                                                        <TableCell align="right" sx={{ color: 'error.main' }}>
-                                                            {item.amount.toLocaleString()}
-                                                        </TableCell>
+                                                {processedData.investingActivities.outflows.length > 0 ? (
+                                                    processedData.investingActivities.outflows.map((item, index) => (
+                                                        <TableRow key={index}>
+                                                            <TableCell>{item.name}</TableCell>
+                                                            <TableCell align="right">{item.amount.toLocaleString()}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={2} align="center">無現金流出</TableCell>
                                                     </TableRow>
-                                                ))}
+                                                )}
                                                 <TableRow>
-                                                    <TableCell><strong>流出合計</strong></TableCell>
-                                                    <TableCell align="right" sx={{ color: 'error.main' }}>
-                                                        <strong>{investingOutflowsTotal.toLocaleString()}</strong>
-                                                    </TableCell>
+                                                    <TableCell><strong>投資活動現金流出合計</strong></TableCell>
+                                                    <TableCell align="right"><strong>{investingOutflowsTotal.toLocaleString()}</strong></TableCell>
                                                 </TableRow>
                                             </TableBody>
                                         </Table>
                                     </TableContainer>
                                 </Grid>
-                                <Grid item xs={12}>
-                                    <Divider sx={{ my: 2 }} />
-                                    <Typography variant="subtitle1">
-                                        投資活動淨現金流:
-                                        <span style={{
-                                            color: netInvesting >= 0 ? '#4caf50' : '#f44336',
-                                            marginLeft: '16px',
-                                            fontWeight: 'bold'
-                                        }}>
-                                            {netInvesting.toLocaleString()} 元
-                                        </span>
-                                    </Typography>
-                                </Grid>
                             </Grid>
+                            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                                <Typography variant="subtitle1" align="center">
+                                    投資活動淨現金流:
+                                    <span style={{
+                                        color: netInvesting >= 0 ? 'green' : 'red',
+                                        fontWeight: 'bold',
+                                        marginLeft: '8px'
+                                    }}>
+                                        {netInvesting.toLocaleString()} 元
+                                    </span>
+                                </Typography>
+                            </Box>
                         </CardContent>
                     </Card>
                 </Grid>
@@ -433,19 +538,21 @@ const CashFlowReport: React.FC<CashFlowReportProps> = ({ data }) => {
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {data.financingActivities.inflows.map((item: any, index: number) => (
-                                                    <TableRow key={index}>
-                                                        <TableCell>{item.description}</TableCell>
-                                                        <TableCell align="right" sx={{ color: 'success.main' }}>
-                                                            {item.amount.toLocaleString()}
-                                                        </TableCell>
+                                                {processedData.financingActivities.inflows.length > 0 ? (
+                                                    processedData.financingActivities.inflows.map((item, index) => (
+                                                        <TableRow key={index}>
+                                                            <TableCell>{item.name}</TableCell>
+                                                            <TableCell align="right">{item.amount.toLocaleString()}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={2} align="center">無現金流入</TableCell>
                                                     </TableRow>
-                                                ))}
+                                                )}
                                                 <TableRow>
-                                                    <TableCell><strong>流入合計</strong></TableCell>
-                                                    <TableCell align="right" sx={{ color: 'success.main' }}>
-                                                        <strong>{financingInflowsTotal.toLocaleString()}</strong>
-                                                    </TableCell>
+                                                    <TableCell><strong>融資活動現金流入合計</strong></TableCell>
+                                                    <TableCell align="right"><strong>{financingInflowsTotal.toLocaleString()}</strong></TableCell>
                                                 </TableRow>
                                             </TableBody>
                                         </Table>
@@ -462,38 +569,39 @@ const CashFlowReport: React.FC<CashFlowReportProps> = ({ data }) => {
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {data.financingActivities.outflows.map((item: any, index: number) => (
-                                                    <TableRow key={index}>
-                                                        <TableCell>{item.description}</TableCell>
-                                                        <TableCell align="right" sx={{ color: 'error.main' }}>
-                                                            {item.amount.toLocaleString()}
-                                                        </TableCell>
+                                                {processedData.financingActivities.outflows.length > 0 ? (
+                                                    processedData.financingActivities.outflows.map((item, index) => (
+                                                        <TableRow key={index}>
+                                                            <TableCell>{item.name}</TableCell>
+                                                            <TableCell align="right">{item.amount.toLocaleString()}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={2} align="center">無現金流出</TableCell>
                                                     </TableRow>
-                                                ))}
+                                                )}
                                                 <TableRow>
-                                                    <TableCell><strong>流出合計</strong></TableCell>
-                                                    <TableCell align="right" sx={{ color: 'error.main' }}>
-                                                        <strong>{financingOutflowsTotal.toLocaleString()}</strong>
-                                                    </TableCell>
+                                                    <TableCell><strong>融資活動現金流出合計</strong></TableCell>
+                                                    <TableCell align="right"><strong>{financingOutflowsTotal.toLocaleString()}</strong></TableCell>
                                                 </TableRow>
                                             </TableBody>
                                         </Table>
                                     </TableContainer>
                                 </Grid>
-                                <Grid item xs={12}>
-                                    <Divider sx={{ my: 2 }} />
-                                    <Typography variant="subtitle1">
-                                        融資活動淨現金流:
-                                        <span style={{
-                                            color: netFinancing >= 0 ? '#4caf50' : '#f44336',
-                                            marginLeft: '16px',
-                                            fontWeight: 'bold'
-                                        }}>
-                                            {netFinancing.toLocaleString()} 元
-                                        </span>
-                                    </Typography>
-                                </Grid>
                             </Grid>
+                            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                                <Typography variant="subtitle1" align="center">
+                                    融資活動淨現金流:
+                                    <span style={{
+                                        color: netFinancing >= 0 ? 'green' : 'red',
+                                        fontWeight: 'bold',
+                                        marginLeft: '8px'
+                                    }}>
+                                        {netFinancing.toLocaleString()} 元
+                                    </span>
+                                </Typography>
+                            </Box>
                         </CardContent>
                     </Card>
                 </Grid>
@@ -508,7 +616,7 @@ const CashFlowReport: React.FC<CashFlowReportProps> = ({ data }) => {
                                     <TableBody>
                                         <TableRow>
                                             <TableCell>期初現金餘額</TableCell>
-                                            <TableCell align="right">{data.startingCash.toLocaleString()}</TableCell>
+                                            <TableCell align="right">{processedData.startingCash.toLocaleString()}</TableCell>
                                         </TableRow>
                                         <TableRow>
                                             <TableCell>營業活動淨現金流</TableCell>
