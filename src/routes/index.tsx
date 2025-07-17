@@ -149,6 +149,12 @@ const AppRoutes = () => {
         </PublicRoute>
       } />
 
+      <Route path="/system-info" element={
+        <PublicRoute>
+          <SystemInfo />
+        </PublicRoute>
+      } />
+
       {/* 預設路由重定向 */}
       <Route path="/" element={
         <ProtectedRoute>
