@@ -90,9 +90,9 @@ const Sidebar = ({ open = true, onToggle }) => {
                 adminOnly: false
             },
             {
-                text: '通知提醒',
-                icon: (0, jsx_runtime_1.jsx)(icons_material_1.Notifications, {}),
-                path: '/notifications',
+                text: '系統記錄',
+                icon: (0, jsx_runtime_1.jsx)(icons_material_1.Receipt, {}),
+                path: '/system-records',
                 adminOnly: true
             },
             {

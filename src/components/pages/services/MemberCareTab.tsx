@@ -25,18 +25,26 @@ import {
     Grid,
     SelectChangeEvent,
     Tabs,
-    Tab
+    Tab,
+    Card,
+    CardContent,
+    Badge,
+    Tooltip,
+    Stack
 } from '@mui/material';
 import {
     Add as AddIcon,
     Edit as EditIcon,
-    Delete as DeleteIcon
+    Delete as DeleteIcon,
+    ChevronLeft as ChevronLeftIcon,
+    ChevronRight as ChevronRightIcon,
+    Today as TodayIcon
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import zhTW from 'date-fns/locale/zh-TW';
-import { formatISO, format } from 'date-fns';
+import { formatISO, format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isToday } from 'date-fns';
 
 import { MemberCare, CareType, CareStatus } from '../../../types/services';
 import { MemberServiceAPI } from '../../../services/memberServiceAPI';
@@ -92,6 +100,7 @@ const MemberCareTab: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<CareStatus | ''>('');
     const [members, setMembers] = useState<User[]>([]);
     const [currentTab, setCurrentTab] = useState(0);
+    const [currentDate, setCurrentDate] = useState(new Date());
 
     const { enqueueSnackbar } = useSnackbar();
 
@@ -365,6 +374,91 @@ const MemberCareTab: React.FC = () => {
         }
     };
 
+    // 日曆視圖相關函數
+    const getDaysInMonth = (date: Date) => {
+        const start = startOfWeek(startOfMonth(date), { weekStartsOn: 1 }); // 週一開始
+        const end = endOfWeek(endOfMonth(date), { weekStartsOn: 1 });
+        return eachDayOfInterval({ start, end });
+    };
+
+    const getCaresForDate = (date: Date) => {
+        return cares.filter(care => {
+            const careDate = new Date(care.date);
+            return isSameDay(careDate, date);
+        });
+    };
+
+    const handleDateClick = (date: Date) => {
+        const caresForDate = getCaresForDate(date);
+        if (caresForDate.length > 0) {
+            // 如果該日期有關懷記錄，顯示第一個記錄的詳情
+            handleOpenDialog(caresForDate[0]);
+        } else {
+            // 如果該日期沒有關懷記錄，開啟新增對話框並設定日期
+            setCareForm({
+                memberId: '',
+                type: CareType.BIRTHDAY,
+                title: '',
+                description: '',
+                date: formatISO(date),
+                status: CareStatus.PLANNED,
+                notes: ''
+            });
+            setEditMode(false);
+            setSelectedCare(null);
+            setFormErrors({});
+            setDialogOpen(true);
+        }
+    };
+
+    const handlePrevMonth = () => {
+        setCurrentDate(subMonths(currentDate, 1));
+    };
+
+    const handleNextMonth = () => {
+        setCurrentDate(addMonths(currentDate, 1));
+    };
+
+    const handleToday = () => {
+        setCurrentDate(new Date());
+    };
+
+    const getTypeColor = (type: CareType) => {
+        switch (type) {
+            case CareType.BIRTHDAY:
+                return '#1976d2'; // primary blue
+            case CareType.HOLIDAY:
+                return '#2e7d32'; // success green
+            case CareType.ANNIVERSARY:
+                return '#ed6c02'; // warning orange
+            case CareType.CONDOLENCE:
+                return '#d32f2f'; // error red
+            case CareType.CONGRATULATION:
+                return '#7b1fa2'; // secondary purple
+            case CareType.FOLLOW_UP:
+                return '#f57c00'; // orange
+            case CareType.OTHER:
+                return '#757575'; // grey
+            default:
+                return '#757575';
+        }
+    };
+
+    const getStatusColor = (status: CareStatus) => {
+        switch (status) {
+            case CareStatus.PLANNED:
+                return '#1976d2'; // blue
+            case CareStatus.PROCESSING:
+                return '#ed6c02'; // orange
+            case CareStatus.COMPLETED:
+                return '#2e7d32'; // green
+            case CareStatus.CANCELLED:
+                return '#d32f2f'; // red
+            default:
+                return '#757575';
+        }
+    };
+
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={zhTW}>
             <Box sx={{ mb: 2 }}>
@@ -426,7 +520,7 @@ const MemberCareTab: React.FC = () => {
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <Tabs value={currentTab} onChange={handleTabChange}>
                         <Tab label="關懷列表" />
-                        <Tab label="日曆視圖" disabled />
+                        <Tab label="日曆視圖" />
                     </Tabs>
                 </Box>
 
@@ -491,7 +585,157 @@ const MemberCareTab: React.FC = () => {
                 </TabPanel>
 
                 <TabPanel value={currentTab} index={1}>
-                    <Typography>日曆視圖（開發中）</Typography>
+                    {loading ? (
+                        <LoadingSpinner />
+                    ) : (
+                        <Box>
+                            {/* 日曆標題和導航 */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                                <Typography variant="h6">
+                                    {format(currentDate, 'yyyy年MM月', { locale: zhTW })}
+                                </Typography>
+                                <Stack direction="row" spacing={1}>
+                                    <IconButton onClick={handlePrevMonth}>
+                                        <ChevronLeftIcon />
+                                    </IconButton>
+                                    <IconButton onClick={handleToday}>
+                                        <TodayIcon />
+                                    </IconButton>
+                                    <IconButton onClick={handleNextMonth}>
+                                        <ChevronRightIcon />
+                                    </IconButton>
+                                </Stack>
+                            </Box>
+
+                            {/* 日曆網格 */}
+                            <Paper sx={{ p: 2 }}>
+                                <Grid container>
+                                    {/* 星期標題 */}
+                                    {['一', '二', '三', '四', '五', '六', '日'].map((day) => (
+                                        <Grid item xs={12 / 7} key={day} sx={{ p: 1, textAlign: 'center' }}>
+                                            <Typography variant="subtitle2" color="text.secondary">
+                                                {day}
+                                            </Typography>
+                                        </Grid>
+                                    ))}
+
+                                    {/* 日期格子 */}
+                                    {getDaysInMonth(currentDate).map((date, index) => {
+                                        const caresForDate = getCaresForDate(date);
+                                        const isCurrentMonth = isSameMonth(date, currentDate);
+                                        const isCurrentDay = isToday(date);
+
+                                        return (
+                                            <Grid item xs={12 / 7} key={index} sx={{ p: 0.5 }}>
+                                                <Card
+                                                    sx={{
+                                                        minHeight: 80,
+                                                        cursor: 'pointer',
+                                                        backgroundColor: isCurrentDay ? '#e3f2fd' : 'transparent',
+                                                        border: isCurrentDay ? '2px solid #1976d2' : '1px solid #e0e0e0',
+                                                        '&:hover': {
+                                                            backgroundColor: '#f5f5f5',
+                                                            borderColor: '#1976d2'
+                                                        }
+                                                    }}
+                                                    onClick={() => handleDateClick(date)}
+                                                >
+                                                    <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                                                        <Typography
+                                                            variant="body2"
+                                                            sx={{
+                                                                color: isCurrentMonth ? 'text.primary' : 'text.disabled',
+                                                                fontWeight: isCurrentDay ? 'bold' : 'normal',
+                                                                mb: 1
+                                                            }}
+                                                        >
+                                                            {format(date, 'd')}
+                                                        </Typography>
+
+                                                        {/* 事件標記 */}
+                                                        {caresForDate.map((care, careIndex) => (
+                                                            <Tooltip
+                                                                key={care.id}
+                                                                title={`${care.title} - ${getMemberName(care.memberId)}`}
+                                                                placement="top"
+                                                            >
+                                                                <Box
+                                                                    sx={{
+                                                                        height: 4,
+                                                                        backgroundColor: getTypeColor(care.type),
+                                                                        borderRadius: 1,
+                                                                        mb: 0.5,
+                                                                        position: 'relative'
+                                                                    }}
+                                                                >
+                                                                    <Box
+                                                                        sx={{
+                                                                            position: 'absolute',
+                                                                            top: -2,
+                                                                            right: -2,
+                                                                            width: 6,
+                                                                            height: 6,
+                                                                            borderRadius: '50%',
+                                                                            backgroundColor: getStatusColor(care.status),
+                                                                            border: '1px solid white'
+                                                                        }}
+                                                                    />
+                                                                </Box>
+                                                            </Tooltip>
+                                                        ))}
+
+                                                        {/* 如果事件太多，顯示數量 */}
+                                                        {caresForDate.length > 3 && (
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                +{caresForDate.length - 3} 更多
+                                                            </Typography>
+                                                        )}
+                                                    </CardContent>
+                                                </Card>
+                                            </Grid>
+                                        );
+                                    })}
+                                </Grid>
+                            </Paper>
+
+                            {/* 圖例 */}
+                            <Box sx={{ mt: 2 }}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    圖例：
+                                </Typography>
+                                <Stack direction="row" spacing={2} flexWrap="wrap">
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Box sx={{ width: 16, height: 4, backgroundColor: '#1976d2', borderRadius: 1 }} />
+                                        <Typography variant="caption">生日祝福</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Box sx={{ width: 16, height: 4, backgroundColor: '#2e7d32', borderRadius: 1 }} />
+                                        <Typography variant="caption">節日祝福</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Box sx={{ width: 16, height: 4, backgroundColor: '#ed6c02', borderRadius: 1 }} />
+                                        <Typography variant="caption">紀念日</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Box sx={{ width: 16, height: 4, backgroundColor: '#d32f2f', borderRadius: 1 }} />
+                                        <Typography variant="caption">慰問關懷</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Box sx={{ width: 16, height: 4, backgroundColor: '#7b1fa2', borderRadius: 1 }} />
+                                        <Typography variant="caption">恭賀祝福</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Box sx={{ width: 16, height: 4, backgroundColor: '#f57c00', borderRadius: 1 }} />
+                                        <Typography variant="caption">追蹤關懷</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Box sx={{ width: 16, height: 4, backgroundColor: '#757575', borderRadius: 1 }} />
+                                        <Typography variant="caption">其他</Typography>
+                                    </Box>
+                                </Stack>
+                            </Box>
+                        </Box>
+                    )}
                 </TabPanel>
             </Box>
 
@@ -582,21 +826,6 @@ const MemberCareTab: React.FC = () => {
                         </Grid>
 
                         <Grid item xs={12} sm={6}>
-                            <DatePicker
-                                label="追蹤日期（可選）"
-                                value={careForm.followUpDate ? new Date(careForm.followUpDate) : null}
-                                onChange={handleFollowUpDateChange}
-                                slotProps={{
-                                    textField: {
-                                        fullWidth: true,
-                                        error: !!formErrors.followUpDate,
-                                        helperText: formErrors.followUpDate
-                                    }
-                                }}
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} sm={6}>
                             <FormControl fullWidth error={!!formErrors.status}>
                                 <InputLabel id="status-label">狀態</InputLabel>
                                 <Select
@@ -615,12 +844,17 @@ const MemberCareTab: React.FC = () => {
                         </Grid>
 
                         <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="負責人員（可選）"
-                                name="assignedTo"
-                                value={careForm.assignedTo || ''}
-                                onChange={handleInputChange}
+                            <DatePicker
+                                label="追蹤日期"
+                                value={careForm.followUpDate ? new Date(careForm.followUpDate) : null}
+                                onChange={handleFollowUpDateChange}
+                                slotProps={{
+                                    textField: {
+                                        fullWidth: true,
+                                        error: !!formErrors.followUpDate,
+                                        helperText: formErrors.followUpDate
+                                    }
+                                }}
                             />
                         </Grid>
 
@@ -633,14 +867,16 @@ const MemberCareTab: React.FC = () => {
                                 onChange={handleInputChange}
                                 multiline
                                 rows={2}
+                                error={!!formErrors.notes}
+                                helperText={formErrors.notes}
                             />
                         </Grid>
                     </Grid>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseDialog}>取消</Button>
-                    <Button onClick={handleSubmit} variant="contained" disabled={loading}>
-                        {loading ? '處理中...' : '儲存'}
+                    <Button onClick={handleSubmit} variant="contained">
+                        {editMode ? '更新' : '新增'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -649,12 +885,12 @@ const MemberCareTab: React.FC = () => {
             <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
                 <DialogTitle>確認刪除</DialogTitle>
                 <DialogContent>
-                    <Typography>確定要刪除這個關懷記錄嗎？</Typography>
+                    <Typography>確定要刪除這筆關懷記錄嗎？此操作無法復原。</Typography>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setConfirmOpen(false)}>取消</Button>
                     <Button onClick={handleDelete} color="error" variant="contained">
-                        確定刪除
+                        刪除
                     </Button>
                 </DialogActions>
             </Dialog>
